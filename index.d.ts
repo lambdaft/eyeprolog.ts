@@ -248,6 +248,13 @@ export class HaltSignal extends Error {
   code: number;
   constructor(code?: number);
 }
+export class DCG {
+  static load(sourceCode: string, options?: EyePrologRunOptions): DCG;
+  static loadFile(path: string, options?: EyePrologRunOptions): DCG;
+  parse(startRule: string, tokens: string[]): boolean;
+  parseWithBindings(startRuleSyntax: string, tokens: string[]): Map<string, string> | null;
+  generate(startRule: string, maxResults?: number): string[][];
+}
 export function run(source: string | Program, options?: EyePrologRunOptions): EyePrologRunResult;
 export function runQuads(source: string | Program, options?: EyePrologRunOptions & { initialize?: boolean }): EyePrologQuadRunResult;
 export function whyProof(program: Program, goal: EyePrologTerm, options?: EyePrologRunOptions): { ok: boolean; text: string };
@@ -266,6 +273,7 @@ declare const eyeprolog: {
   Env: typeof Env;
   Program: typeof Program;
   Solver: typeof Solver;
+  DCG: typeof DCG;
   BuiltinRegistry: typeof BuiltinRegistry;
   PrologError: typeof PrologError;
   HaltSignal: typeof HaltSignal;

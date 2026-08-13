@@ -1648,7 +1648,7 @@ const numberCodesBuiltin = numberListBuiltin('codes');
 function* findallBuiltin({ solver, goal, env }: any): any {
   const [template, innerGoal, bag] = goal.args;
   assertListOrPartial(bag, env);
-  const collector = solver.cloneForInnerGoal(10000000);
+  const collector = solver.cloneForInnerGoal(solver.solutionLimit);
   const collected = [];
   for (const answerEnv of collector.solve([callable(innerGoal, env)], env.clone(), 0)) {
     collected.push(freshCopy(template, answerEnv));

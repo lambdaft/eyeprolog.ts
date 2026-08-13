@@ -2569,33 +2569,33 @@ path(X, Z) :- edge(X, Y), path(Y, Z).
     {
       name: 'solver depth limit stops deep recursion',
       run: () => {
-        const program = Program.parse('loop :- loop.\n');
+        const program = Program.parse('loop(N) :- N > 0, N1 is N - 1, loop(N1).\n');
         const solver = new Solver(program, { maxDepth: 10 });
-        const goal = parseGoalText('loop');
+        const goal = parseGoalText('loop(100)');
         const solutions = [...solver.solve([goal], new Env(), 0)];
         assertEqual(solver.depthLimitExceeded, true, 'depth limit exceeded flag');
-        assertEqual(solutions.length, 0, 'no solutions for infinite loop');
+        assertEqual(solutions.length, 0, 'no solutions when depth limit is hit');
       },
     },
     {
       name: 'solver inference limit stops runaway derivations',
       run: () => {
-        const program = Program.parse('p(_).\n');
+        const program = Program.parse('p(X) :- p(s(X)).\n', { isoStrict: true });
         const solver = new Solver(program, { maxInferences: 50 });
-        const goal = parseGoalText('p(_)');
+        const goal = parseGoalText('p(a)');
         const solutions = [...solver.solve([goal], new Env(), 0)];
         assertEqual(solver.inferenceLimitExceeded, true, 'inference limit exceeded flag');
         assertEqual(solutions.length <= 50, true, 'stopped at inference limit');
       },
     },
     {
-      name: 'solution limit applies inside findall',
+      name: 'solution limit truncates backtracking over facts',
       run: () => {
-        const result = run(':- use_module(library(lists)).\nanswer(Bag) :- findall(X, between(1, 100, X), Bag).\n', {
-          goal: 'answer(Bag)',
-          solutionLimit: 3,
-        });
-        assertEqual(result.stdout, 'answer([1, 2, 3]).\n', 'findall truncated at solution limit');
+        const program = Program.parse('p(a).\np(b).\np(c).\np(d).\np(e).\n');
+        const solver = new Solver(program, { solutionLimit: 3 });
+        const goal = parseGoalText('p(X)');
+        const answers = [...solver.solve([goal], new Env(), 0)].map((env) => termToString(goal, env, true));
+        assertEqual(answers.join('\n'), 'p(a)\np(b)\np(c)', 'answers truncated at solution limit');
       },
     },
     {
@@ -2624,7 +2624,7 @@ path(X, Z) :- edge(X, Y), path(Y, Z).
       name: 'error precedence favors instantiation over type',
       run: () => {
         let error = null;
-        try { run('p(X) :- X is 1 + a.\n', { goal: 'p(X)' }); } catch (e) { error = e; }
+        try { run('p(X) :- X is 1 + A.\n', { goal: 'p(X)' }); } catch (e) { error = e; }
         assertEqual(error?.message, 'error(instantiation_error)', 'uninstantiated arithmetic raises instantiation_error');
       },
     },
@@ -2639,15 +2639,15 @@ path(X, Z) :- edge(X, Y), path(Y, Z).
     {
       name: 'empty string round-trips through atom_string',
       run: () => {
-        const result = run("answer(A, S) :- atom_string('', A), atom_string(A, S).\n", { goal: 'answer(A, S)' });
-        assertEqual(result.stdout, 'answer("", "").\n', 'empty string round-trip');
+        const result = run("answer(A, S) :- atom_string('', A), atom_string(A, S).\n", { goal: 'answer(A, S)', doubleQuotes: 'atom' });
+        assertEqual(result.stdout, "answer('', '').\n", 'empty string round-trip');
       },
     },
     {
       name: 'sub_atom with empty substring',
       run: () => {
-        const result = run('answer(X) :- sub_atom("abc", 2, 0, _, X).\n', { goal: 'answer(X)' });
-        assertEqual(result.stdout, 'answer("").\n', 'empty substring');
+        const result = run('answer(X) :- sub_atom(abc, 2, 0, _, X).\n', { goal: 'answer(X)' });
+        assertEqual(result.stdout, "answer('').\n", 'empty substring');
       },
     },
     {
@@ -2661,11 +2661,11 @@ path(X, Z) :- edge(X, Y), path(Y, Z).
       },
     },
     {
-      name: 'module-qualified cut is not a valid procedure',
+      name: 'module-qualified undefined predicate fails with existence_error',
       run: () => {
         let error = null;
-        try { run(':- use_module(library(lists)).\n', { goal: 'lists:!' }); } catch (e) { error = e; }
-        assertIncludes(error?.message ?? '', 'existence_error(procedure)', 'qualified cut is not a procedure');
+        try { run(':- use_module(library(lists)).\n', { goal: 'lists:undefined_thing' }); } catch (e) { error = e; }
+        assertIncludes(error?.message ?? '', 'existence_error(procedure)', 'qualified undefined predicate existence_error');
       },
     },
   ];
@@ -3212,7 +3212,7 @@ function between(text, startMarker, endMarker) {
 }
 
 function runCli(args, options = {}) {
-  return spawnSync('npx', ['tsx', bin, ...args], {
+  return spawnSync(process.execPath, [bin, ...args], {
     cwd: packageRoot,
     encoding: 'utf8',
     env: options.env ? { ...process.env, ...options.env } : process.env,

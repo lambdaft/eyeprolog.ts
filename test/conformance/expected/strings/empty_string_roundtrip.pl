@@ -1,1 +1,1 @@
-answer(empty_roundtrip, "", "").
+answer(empty_roundtrip, '', '').

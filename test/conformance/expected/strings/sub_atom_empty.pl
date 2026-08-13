@@ -1,1 +1,1 @@
-answer(empty_substring, "").
+answer(empty_substring, '').

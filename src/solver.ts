@@ -516,6 +516,71 @@ export class Solver {
     }
   }
 
+  /**
+   * Create a Solver with default EyeProlog configuration
+   * @param program The Prolog program to solve
+   * @returns A new Solver instance with default settings
+   * @example
+   * const solver = Solver.createDefault(program);
+   * const results = solver.query('person(X, Y)');
+   */
+  static createDefault(program: any): Solver {
+    return new Solver(program, {
+      registry: getEyePrologRegistry(),
+      maxDepth: 100000,
+      solutionLimit: 10000000,
+    });
+  }
+
+  /**
+   * Create a Solver in strict ISO 13211-1 mode
+   * @param program The Prolog program to solve
+   * @returns A new Solver instance in strict ISO mode
+   * @example
+   * const solver = Solver.createStrict(program);
+   * // Only uses ISO standard predicates, no EyeProlog extensions
+   */
+  static createStrict(program: any): Solver {
+    return new Solver(program, {
+      isoStrict: true,
+      registry: getStrictIsoRegistry(),
+      maxDepth: 100000,
+    });
+  }
+
+  /**
+   * Create a Solver with EyeProlog optimizations enabled
+   * @param program The Prolog program to solve
+   * @returns A new Solver instance with fast paths enabled
+   * @example
+   * const solver = Solver.createEyeProlog(program);
+   * // Uses EyeProlog extensions and optimizations
+   */
+  static createEyeProlog(program: any): Solver {
+    return new Solver(program, {
+      registry: getEyePrologRegistry(),
+      maxDepth: 100000,
+      solutionLimit: 10000000,
+      fastPaths: true,
+    });
+  }
+
+  /**
+   * Create a lightweight Solver for resource-constrained environments
+   * @param program The Prolog program to solve
+   * @returns A new Solver instance with conservative limits
+   * @example
+   * const solver = Solver.createLight(program);
+   * // For embedded use, IoT, or minimal resources
+   */
+  static createLight(program: any): Solver {
+    return new Solver(program, {
+      registry: getEyePrologRegistry(),
+      maxDepth: 10000,
+      solutionLimit: 1000,
+    });
+  }
+
     solutionLimit: any;
     program: any;
     registry: any;

@@ -45,6 +45,7 @@
     "node": ">=18"
   },
   "scripts": {
+    "build": "tsc -p tsconfig.json",
     "test": "node test/run-all.mjs",
     "generate": "node tools/extract-book-examples.mjs",
     "test:eyeprolog": "node test/run-all.mjs",

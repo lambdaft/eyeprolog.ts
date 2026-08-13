@@ -129,6 +129,10 @@ function runProgramExample(programFile, filename, options) {
 }
 
 function compareOutput(name, expected, actual, label) {
+  if (process.env.UPDATE_GOLDENS === '1') {
+    fs.writeFileSync(expected, actual, 'utf8');
+    return;
+  }
   if (!fs.existsSync(expected)) {
     throw new Error(`missing expected ${label} file: ${path.relative(root, expected)}`);
   }

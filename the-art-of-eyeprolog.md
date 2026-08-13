@@ -6949,7 +6949,7 @@ precedence still need one-by-one closure. `test/conformance/ISO-MATRIX.md`
 maps language families to representative executable cases.
 
 The complete suite must pass before release. The file-based conformance corpus
-contains 783 cases, including 377 focused ISO
+contains 787 cases, including 378 focused ISO
 cases derived from the success, failure, mode, and error behavior in
 ISO/IEC 13211-1 clauses 7 and 8, Part 2 modules, and Part 3 grammar rules.
 Separate exact-output suites check 189 normal

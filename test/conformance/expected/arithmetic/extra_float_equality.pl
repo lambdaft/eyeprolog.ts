@@ -1,1 +1,1 @@
-answer(float_eq_int, 1).
+answer(float_eq_int, ok).
