@@ -51,7 +51,7 @@ export class Solver {
     this.inferenceLimitExceeded = false;
     this.solutionLimit = options.solutionLimit ?? 10000000;
     this.solutionsSeen = 0;
-    this.fastPathsEnabled = options.fastPaths === true;
+    this.fastPathsEnabled = options.fastPaths !== false;
     this.prologFlags = options.prologFlags ?? defaultPrologFlags('error', this.isoStrict);
     if (this.isoStrict) {
       for (const name of [...this.prologFlags.keys()]) {

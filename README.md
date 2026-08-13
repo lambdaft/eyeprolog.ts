@@ -8,14 +8,14 @@ The public API is typed, but the internal engine model currently uses **gradual 
 
 <p>
   <a href="https://eyereasoner.github.io/eyeprolog/the-art-of-eyeprolog">
-    <img src="book-assets/title-page.svg" alt="Read The Art of EyeProlog" title="Click to read The Art of EyeProlog" width="320">
+    <img src="docs/book-assets/title-page.svg" alt="Read The Art of EyeProlog" title="Click to read The Art of EyeProlog" width="320">
   </a><br>
   <strong>Click the cover to read <em>The Art of EyeProlog</em> (the original comprehensive manual).</strong>
 </p>
 
 - **[Web Playground](https://eyereasoner.github.io/eyeprolog/playground)**
 - **[Why EyeProlog?](https://eyereasoner.github.io/eyeprolog/why-eyeprolog)**
-- **[Enhancements Guide](ENHANCEMENTS.md)** — TypeScript-specific improvements over the original engine
+- **[Enhancements Guide](docs/ENHANCEMENTS.md)** — TypeScript-specific improvements over the original engine
 
 The book is the reference for the language, command line, API, examples, proofs, and conformance for both `eyeprolog` and `eyeprolog.ts`.
 
@@ -52,7 +52,7 @@ The book is the reference for the language, command line, API, examples, proofs,
 
 ## Quick start
 
-EyeProlog.ts requires **Node.js 18 or newer** ([official download](https://nodejs.org/en/download)). Check your runtime:
+EyeProlog.ts requires **Node.js 18 or newer**. Check your runtime:
 
 ```sh
 node --version
@@ -63,7 +63,7 @@ node --version
 Launch the REPL or run a goal directly via `npx`:
 
 ```sh
-npx --yes eyeprolog
+npx --yes eyeprolog.ts
 ?- use_module(library(lists)).
    true.
 ?- member(X, [prolog, logic]).
@@ -77,7 +77,7 @@ npx --yes eyeprolog
 For a global `eyeprolog` command without administrator access, install into a user-owned prefix:
 
 ```sh
-npm install --global --prefix "$HOME/.local" eyeprolog
+npm install --global --prefix "$HOME/.local" eyeprolog.ts
 export PATH="$HOME/.local/bin:$PATH"
 eyeprolog
 ```
@@ -244,11 +244,11 @@ Test scripts (see `package.json`):
 - **[The Art of EyeProlog](https://eyereasoner.github.io/eyeprolog/the-art-of-eyeprolog)** — the original comprehensive manual (language, CLI, API, proofs, conformance).
 - **[Why EyeProlog?](https://eyereasoner.github.io/eyeprolog/why-eyeprolog)** — design rationale.
 - **[Web Playground](https://eyereasoner.github.io/eyeprolog/playground)** — try it in the browser.
-- **[Enhancements Guide](ENHANCEMENTS.md)** — TypeScript-specific improvements and API additions.
-- **[Conformance report](conformance-report.md)** — current test status.
+- **[Enhancements Guide](docs/ENHANCEMENTS.md)** — TypeScript-specific improvements and API additions.
+- **[Conformance report](docs/conformance-report.md)** — current test status.
 
 ---
 
 ## License
 
-EyeProlog.ts (like the original EyeProlog) is released under the [MIT License](LICENSE.md).
+EyeProlog.ts (like the original EyeProlog) is released under the [MIT License](docs/LICENSE.md).
