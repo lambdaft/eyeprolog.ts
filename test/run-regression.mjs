@@ -1555,7 +1555,7 @@ function documentationSyncCases() {
         assertEqual(pkg.bin?.eyeprolog, './bin/eyeprolog.js', 'package eyeprolog bin');
         const binPath = path.join(packageRoot, pkg.bin.eyeprolog);
         const binText = fs.readFileSync(binPath, 'utf8');
-        assertEqual(binText.startsWith('#!/usr/bin/env node\n'), true, 'bin shebang');
+        assertEqual(binText.startsWith('#!/usr/bin/env node\n') || binText.startsWith('#!/usr/bin/env -S npx tsx\n'), true, 'bin shebang');
         assertArrayEqual(misleadingDependencyInstallDocs(), [], 'misleading dependency install docs');
       },
     },
@@ -3110,7 +3110,7 @@ function between(text, startMarker, endMarker) {
 }
 
 function runCli(args, options = {}) {
-  return spawnSync(process.execPath, [bin, ...args], {
+  return spawnSync('npx', ['tsx', bin, ...args], {
     cwd: packageRoot,
     encoding: 'utf8',
     env: options.env ? { ...process.env, ...options.env } : process.env,

@@ -4,6 +4,7 @@
 // use_module/2 requests their module.
 import { createDefaultRegistry, eyePrologLibraryBuiltins } from './iso.js';
 import { clpzBuiltins } from './clpz.js';
+// @ts-expect-error TS7034: auto-suppressed
 import { fs, isNode } from './platform.js';
 
 const moduleFiles = Object.freeze({
@@ -24,21 +25,22 @@ const cacheKey = isNode
   ? null
   : (new URL(import.meta.url).searchParams.get('playground') ?? '20260811c');
 
-export const standardLibrarySources = new Map(await Promise.all(
-  Object.entries(moduleFiles).map(async ([name, filename]) => [name, {
+export const standardLibrarySources = new Map<any, any>(await Promise.all(
+  Object.entries(moduleFiles).map(async ([name, filename]: any) => [name, {
     filename: `src/lib/${filename}`,
     source: await loadSource(libraryUrl(filename)),
-  }]),
+  }] as any),
 ));
 
-async function loadSource(url) {
+async function loadSource(url: any): Promise<any> {
+  // @ts-expect-error TS7005: auto-suppressed
   if (isNode) return fs.readFileSync(url, 'utf8');
   const response = await fetch(url);
   if (!response.ok) throw new Error(`could not load Prolog module: ${response.status}`);
   return response.text();
 }
 
-function libraryUrl(filename) {
+function libraryUrl(filename: any): any {
   const url = new URL(`./lib/${filename}`, import.meta.url);
   if (!isNode && cacheKey) url.searchParams.set('playground', cacheKey);
   return url;
@@ -73,7 +75,7 @@ export const eyePrologLibraryIndicators = Object.freeze([
   ...eyePrologNativeLibraryIndicators,
 ]);
 
-export function createEyePrologRegistry() {
+export function createEyePrologRegistry(): any {
   const registry = createDefaultRegistry();
   eyePrologLibraryBuiltins.register(registry);
   clpzBuiltins.register(registry);
@@ -81,8 +83,8 @@ export function createEyePrologRegistry() {
   return registry;
 }
 
-let registry = null;
-export function getEyePrologRegistry() {
+let registry: any = null;
+export function getEyePrologRegistry(): any {
   if (registry == null) registry = createEyePrologRegistry();
   return registry;
 }

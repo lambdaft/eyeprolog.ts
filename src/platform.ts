@@ -15,6 +15,6 @@ if (isNode) {
 
 export { fs, path, BufferCtor, isNode };
 
-export function currentWorkingDirectory() {
+export function currentWorkingDirectory(): any {
   return isNode && typeof process.cwd === 'function' ? process.cwd() : '/';
 }

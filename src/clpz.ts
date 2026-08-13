@@ -16,7 +16,7 @@ const domainCacheByState = new WeakMap();
 const mutableDomainEnvs = new WeakSet();
 
 export const clpzBuiltins = {
-  register(registry) {
+  register(registry: any) {
     registry.add('eyeprolog__clpz_post', 1, postBuiltin, { deterministic: true, eyePrologLibrary: true });
     registry.add('eyeprolog__clpz_in', 2, inBuiltin, { deterministic: true, eyePrologLibrary: true });
     registry.add('eyeprolog__clpz_ins', 2, insBuiltin, { deterministic: true, eyePrologLibrary: true });
@@ -41,15 +41,15 @@ export const clpzBuiltins = {
   },
 };
 
-function emptyStore() {
+function emptyStore(): any {
   return { domains: new Map(), constraints: [], globals: [] };
 }
 
-function storeOf(env) {
+function storeOf(env: any): any {
   return env._clpz ?? emptyStore();
 }
 
-function updateStore(env, change) {
+function updateStore(env: any, change: any): any {
   const current = storeOf(env);
   env._clpz = {
     domains: change.domains ?? current.domains,
@@ -58,7 +58,7 @@ function updateStore(env, change) {
   };
 }
 
-function integerValue(term, env) {
+function integerValue(term: any, env: any): any {
   term = deref(term, env);
   if (term.type === VAR) return null;
   if (term.type !== NUMBER || !/^-?\d+$/.test(term.name)) {
@@ -67,7 +67,7 @@ function integerValue(term, env) {
   return BigInt(term.name);
 }
 
-function expressionValue(term, env) {
+function expressionValue(term: any, env: any): any {
   term = deref(term, env);
   if (term.type === VAR) return null;
   if (term.type === NUMBER) {
@@ -75,8 +75,8 @@ function expressionValue(term, env) {
     return BigInt(term.name);
   }
   if (term.type !== COMPOUND) throw new PrologError('type_error(evaluable)', term);
-  const values = term.args.map((arg) => expressionValue(arg, env));
-  if (values.some((value) => value == null)) return null;
+  const values = term.args.map((arg: any) => expressionValue(arg, env));
+  if (values.some((value: any) => value == null)) return null;
   const [a, b] = values;
   if (term.arity === 1 && term.name === '+') return a;
   if (term.arity === 1 && term.name === '-') return -a;
@@ -94,6 +94,7 @@ function expressionValue(term, env) {
   if (term.name === 'div') {
     const q = a / b;
     const r = a % b;
+    // @ts-expect-error TS2367: auto-suppressed
     return r !== 0n && ((a < 0n) !== (b < 0n)) ? q - 1n : q;
   }
   if (term.name === 'mod') return ((a % b) + b) % b;
@@ -101,7 +102,7 @@ function expressionValue(term, env) {
   throw new PrologError('type_error(evaluable)', term);
 }
 
-function relationTruth(term, env) {
+function relationTruth(term: any, env: any): any {
   term = deref(term, env);
   if (term.type === VAR) return null;
   if (term.type === NUMBER) {
@@ -140,7 +141,7 @@ function relationTruth(term, env) {
   return value == null ? null : value !== 0n;
 }
 
-function relationName(term, env) {
+function relationName(term: any, env: any): any {
   term = deref(term, env);
   if (term.type !== ATOM || !['#=', '#\\=', '#<', '#>', '#=<', '#>='].includes(term.name)) {
     throw new PrologError('domain_error(clpz_relation)', term);
@@ -148,22 +149,22 @@ function relationName(term, env) {
   return term.name;
 }
 
-function relationTerm(name, left, right) {
+function relationTerm(name: any, left: any, right: any): any {
   return compound(name, [left, right]);
 }
 
-function postTo(next, constraint) {
+function postTo(next: any, constraint: any): any {
   const store = storeOf(next);
   updateStore(next, { constraints: [...store.constraints, constraint] });
   return propagate(next) && clpzStateConsistent(next);
 }
 
-function* postBuiltin({ goal, env }) {
+function* postBuiltin({ goal, env }: any): any {
   const next = env.clone();
   if (postTo(next, goal.args[0])) yield next;
 }
 
-function domainValues(term, env) {
+function domainValues(term: any, env: any): any {
   term = deref(term, env);
   if (term.type === COMPOUND && term.name === '\\/' && term.arity === 2) {
     const values = [...domainValues(term.args[0], env), ...domainValues(term.args[1], env)];
@@ -174,6 +175,7 @@ function domainValues(term, env) {
     const upper = expressionValue(term.args[1], env);
     if (lower == null || upper == null) throw new PrologError('instantiation_error');
     if (upper < lower) return [];
+    // @ts-expect-error TS2365: auto-suppressed
     if (upper - lower + 1n > BigInt(MAX_ENUMERATED_DOMAIN)) {
       throw new PrologError('representation_error(clpz_domain)');
     }
@@ -186,16 +188,16 @@ function domainValues(term, env) {
   return [value];
 }
 
-function compareBigInt(a, b) {
+function compareBigInt(a: any, b: any): any {
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
-function rootVariableName(term, env) {
+function rootVariableName(term: any, env: any): any {
   term = deref(term, env);
   return term.type === VAR ? term.name : null;
 }
 
-function domainsByRoot(env) {
+function domainsByRoot(env: any): any {
   const store = storeOf(env);
   const cached = domainCacheByState.get(env._state);
   if (cached?.domains === store.domains) return cached.roots;
@@ -210,32 +212,32 @@ function domainsByRoot(env) {
   return roots;
 }
 
-function intersectValues(left, right) {
+function intersectValues(left: any, right: any): any {
   const allowed = new Set(right);
-  return left.filter((value) => allowed.has(value));
+  return left.filter((value: any) => allowed.has(value));
 }
 
-function domainForRoot(root, env) {
+function domainForRoot(root: any, env: any): any {
   return domainsByRoot(env).get(root) ?? null;
 }
 
-function constrainTermDomain(next, term, values) {
+function constrainTermDomain(next: any, term: any, values: any): any {
   const result = narrowTermDomain(next, term, values);
   return result.ok && clpzStateConsistent(next);
 }
 
-function narrowTermDomain(next, term, values) {
+function narrowTermDomain(next: any, term: any, values: any): any {
   const resolved = deref(term, next);
   if (resolved.type === NUMBER) {
     const value = integerValue(resolved, next);
-    return { ok: values.some((candidate) => candidate === value), changed: false };
+    return { ok: values.some((candidate: any) => candidate === value), changed: false };
   }
   if (resolved.type !== VAR) throw new PrologError('type_error(integer)', resolved);
   const existing = domainForRoot(resolved.name, next);
   const narrowed = existing == null ? values : intersectValues(existing, values);
   if (narrowed.length === 0) return { ok: false, changed: false };
   const changed = existing == null || existing.length !== narrowed.length ||
-    existing.some((value, index) => value !== narrowed[index]);
+    existing.some((value: any, index: any) => value !== narrowed[index]);
   if (!changed) return { ok: true, changed: false };
   if (mutableDomainEnvs.has(next)) {
     storeOf(next).domains.set(resolved.name, narrowed);
@@ -251,12 +253,12 @@ function narrowTermDomain(next, term, values) {
   return { ok: true, changed: true };
 }
 
-function* inBuiltin({ goal, env }) {
+function* inBuiltin({ goal, env }: any): any {
   const next = env.clone();
   if (constrainTermDomain(next, goal.args[0], domainValues(goal.args[1], next))) yield next;
 }
 
-function* insBuiltin({ goal, env }) {
+function* insBuiltin({ goal, env }: any): any {
   const items = properListItems(goal.args[0], env);
   if (items == null) throw new PrologError('type_error(list)', deref(goal.args[0], env));
   const values = domainValues(goal.args[1], env);
@@ -265,55 +267,55 @@ function* insBuiltin({ goal, env }) {
   yield next;
 }
 
-function addGlobal(next, global) {
+function addGlobal(next: any, global: any): any {
   const store = storeOf(next);
   updateStore(next, { globals: [...store.globals, global] });
   return propagate(next) && clpzStateConsistent(next);
 }
 
-function listArgument(term, env) {
+function listArgument(term: any, env: any): any {
   const items = properListItems(term, env);
   if (items == null) throw new PrologError('type_error(list)', deref(term, env));
   return items;
 }
 
-function nestedListArgument(term, env) {
-  return listArgument(term, env).map((item) => listArgument(item, env));
+function nestedListArgument(term: any, env: any): any {
+  return listArgument(term, env).map((item: any) => listArgument(item, env));
 }
 
-function integerListArgument(term, env) {
-  return listArgument(term, env).map((item) => {
+function integerListArgument(term: any, env: any): any {
+  return listArgument(term, env).map((item: any) => {
     const value = integerValue(item, env);
     if (value == null) throw new PrologError('instantiation_error');
     return value;
   });
 }
 
-function integerRange(lower, upper) {
+function integerRange(lower: any, upper: any): any {
   const values = [];
   for (let value = BigInt(lower); value <= BigInt(upper); value++) values.push(value);
   return values;
 }
 
-function* allDistinctBuiltin({ goal, env }) {
+function* allDistinctBuiltin({ goal, env }: any): any {
   const next = env.clone();
   if (addGlobal(next, { kind: 'allDistinct', terms: listArgument(goal.args[0], env) })) yield next;
 }
 
-function* nvalueBuiltin({ goal, env }) {
+function* nvalueBuiltin({ goal, env }: any): any {
   const terms = listArgument(goal.args[1], env);
   const next = env.clone();
   if (!constrainTermDomain(next, goal.args[0], integerRange(terms.length === 0 ? 0 : 1, terms.length))) return;
   if (addGlobal(next, { kind: 'nvalue', count: goal.args[0], terms })) yield next;
 }
 
-function* sumBuiltin({ goal, env }) {
+function* sumBuiltin({ goal, env }: any): any {
   const next = env.clone();
   const relation = relationName(goal.args[1], env);
   if (addGlobal(next, { kind: 'sum', terms: listArgument(goal.args[0], env), relation, value: goal.args[2] })) yield next;
 }
 
-function* scalarProductBuiltin({ goal, env }) {
+function* scalarProductBuiltin({ goal, env }: any): any {
   const coefficients = listArgument(goal.args[0], env);
   const terms = listArgument(goal.args[1], env);
   if (coefficients.length !== terms.length) throw new PrologError('domain_error(same_length)');
@@ -323,9 +325,9 @@ function* scalarProductBuiltin({ goal, env }) {
   if (addGlobal(next, { kind: 'scalarProduct', coefficients, terms, relation, value: goal.args[3] })) yield next;
 }
 
-function* tuplesInBuiltin({ goal, env }) {
+function* tuplesInBuiltin({ goal, env }: any): any {
   const tuples = nestedListArgument(goal.args[0], env);
-  const relation = nestedListArgument(goal.args[1], env).map((row) => row.map((item) => {
+  const relation = nestedListArgument(goal.args[1], env).map((row: any) => row.map((item: any) => {
     const value = integerValue(item, env);
     if (value == null) throw new PrologError('instantiation_error');
     return value;
@@ -334,24 +336,24 @@ function* tuplesInBuiltin({ goal, env }) {
   if (addGlobal(next, { kind: 'tuplesIn', tuples, relation })) yield next;
 }
 
-function* lexChainBuiltin({ goal, env }) {
+function* lexChainBuiltin({ goal, env }: any): any {
   const lists = nestedListArgument(goal.args[0], env);
-  if (lists.some((list) => list.length !== (lists[0]?.length ?? 0))) return;
+  if (lists.some((list: any) => list.length !== (lists[0]?.length ?? 0))) return;
   const next = env.clone();
   if (addGlobal(next, { kind: 'lexChain', lists })) yield next;
 }
 
-function* serializedBuiltin({ goal, env }) {
+function* serializedBuiltin({ goal, env }: any): any {
   const starts = listArgument(goal.args[0], env);
   const durations = integerListArgument(goal.args[1], env);
   if (starts.length !== durations.length) throw new PrologError('domain_error(same_length)');
-  if (durations.some((duration) => duration < 0n)) throw new PrologError('domain_error(not_less_than_zero)');
+  if (durations.some((duration: any) => duration < 0n)) throw new PrologError('domain_error(not_less_than_zero)');
   const next = env.clone();
   if (addGlobal(next, { kind: 'serialized', starts, durations })) yield next;
 }
 
-function gccPairs(term, env) {
-  const pairs = listArgument(term, env).map((pair) => {
+function gccPairs(term: any, env: any): any {
+  const pairs = listArgument(term, env).map((pair: any) => {
     const resolved = deref(pair, env);
     if (resolved.type !== COMPOUND || resolved.name !== '-' || resolved.arity !== 2) {
       throw new PrologError('domain_error(gcc_pair)', resolved);
@@ -360,12 +362,12 @@ function gccPairs(term, env) {
     if (key == null) throw new PrologError('instantiation_error');
     return { key, count: resolved.args[1] };
   });
-  const keys = new Set(pairs.map(({ key }) => key.toString()));
+  const keys = new Set(pairs.map(({ key }: any) => key.toString()));
   if (keys.size !== pairs.length) throw new PrologError('domain_error(gcc_unique_key_pairs)', deref(term, env));
   return pairs;
 }
 
-function gccOptions(term, env, rowCount, columnCount) {
+function gccOptions(term: any, env: any, rowCount: any, columnCount: any): any {
   let cost = null;
   let matrix = null;
   for (const option of listArgument(term, env)) {
@@ -374,12 +376,12 @@ function gccOptions(term, env, rowCount, columnCount) {
         deref(resolved.args[0], env).type === ATOM && deref(resolved.args[0], env).name === 'value') continue;
     if (resolved.type === COMPOUND && resolved.name === 'cost' && resolved.arity === 2 && cost == null) {
       cost = resolved.args[0];
-      matrix = nestedListArgument(resolved.args[1], env).map((row) => row.map((item) => {
+      matrix = nestedListArgument(resolved.args[1], env).map((row: any) => row.map((item: any) => {
         const value = integerValue(item, env);
         if (value == null) throw new PrologError('instantiation_error');
         return value;
       }));
-      if (matrix.length !== rowCount || matrix.some((row) => row.length !== columnCount)) {
+      if (matrix.length !== rowCount || matrix.some((row: any) => row.length !== columnCount)) {
         throw new PrologError('domain_error(gcc_cost_matrix)', resolved.args[1]);
       }
       continue;
@@ -389,18 +391,18 @@ function gccOptions(term, env, rowCount, columnCount) {
   return { cost, matrix };
 }
 
-function* globalCardinalityBuiltin({ goal, env }) {
+function* globalCardinalityBuiltin({ goal, env }: any): any {
   const terms = listArgument(goal.args[0], env);
   const pairs = gccPairs(goal.args[1], env);
   const options = gccOptions(goal.args[2], env, terms.length, pairs.length);
-  const keys = pairs.map(({ key }) => key).sort(compareBigInt);
+  const keys = pairs.map(({ key }: any) => key).sort(compareBigInt);
   const next = env.clone();
   for (const term of terms) if (!constrainTermDomain(next, term, keys)) return;
   for (const { count } of pairs) if (!constrainTermDomain(next, count, integerRange(0, terms.length))) return;
   if (addGlobal(next, { kind: 'globalCardinality', terms, pairs, ...options })) yield next;
 }
 
-function* circuitBuiltin({ goal, env }) {
+function* circuitBuiltin({ goal, env }: any): any {
   const terms = listArgument(goal.args[0], env);
   const next = env.clone();
   if (terms.length > 0) {
@@ -410,7 +412,7 @@ function* circuitBuiltin({ goal, env }) {
   if (addGlobal(next, { kind: 'circuit', terms })) yield next;
 }
 
-function* chainBuiltin({ goal, env }) {
+function* chainBuiltin({ goal, env }: any): any {
   const terms = listArgument(goal.args[1], env);
   const relation = relationName(goal.args[0], env);
   if (relation === '#\\=') throw new PrologError('domain_error(chain_relation)', deref(goal.args[0], env));
@@ -418,27 +420,27 @@ function* chainBuiltin({ goal, env }) {
   if (addGlobal(next, { kind: 'chain', terms, relation })) yield next;
 }
 
-function* elementBuiltin({ goal, env }) {
+function* elementBuiltin({ goal, env }: any): any {
   const next = env.clone();
   if (addGlobal(next, { kind: 'element', index: goal.args[0], terms: listArgument(goal.args[1], env), value: goal.args[2] })) yield next;
 }
 
-function* zcompareBuiltin({ goal, env }) {
+function* zcompareBuiltin({ goal, env }: any): any {
   const next = env.clone();
   if (addGlobal(next, { kind: 'zcompare', order: goal.args[0], left: goal.args[1], right: goal.args[2] })) yield next;
 }
 
-function tupleCandidates(tuple, relation, env) {
-  return relation.filter((row) => row.length === tuple.length && row.every((candidate, index) => {
+function tupleCandidates(tuple: any, relation: any, env: any): any {
+  return relation.filter((row: any) => row.length === tuple.length && row.every((candidate: any, index: any) => {
     const resolved = deref(tuple[index], env);
     if (resolved.type === NUMBER) return integerValue(resolved, env) === candidate;
     if (resolved.type !== VAR) throw new PrologError('type_error(integer)', resolved);
     const domain = domainForRoot(resolved.name, env);
-    return domain == null || domain.some((value) => value === candidate);
+    return domain == null || domain.some((value: any) => value === candidate);
   }));
 }
 
-function lexPairTruth(left, right, env) {
+function lexPairTruth(left: any, right: any, env: any): any {
   if (left.length !== right.length) return false;
   for (let index = 0; index < left.length; index++) {
     const a = expressionValue(left[index], env);
@@ -450,9 +452,9 @@ function lexPairTruth(left, right, env) {
   return true;
 }
 
-function circuitTruth(terms, env) {
+function circuitTruth(terms: any, env: any): any {
   if (terms.length === 0) return true;
-  const values = terms.map((term) => expressionValue(term, env));
+  const values = terms.map((term: any) => expressionValue(term, env));
   const seenValues = new Set();
   for (let index = 0; index < values.length; index++) {
     const value = values[index];
@@ -463,7 +465,7 @@ function circuitTruth(terms, env) {
     if (seenValues.has(key)) return false;
     seenValues.add(key);
   }
-  if (values.some((value) => value == null)) return true;
+  if (values.some((value: any) => value == null)) return true;
   const visited = new Set();
   let node = 1;
   for (let step = 0; step < values.length; step++) {
@@ -474,7 +476,7 @@ function circuitTruth(terms, env) {
   return node === 1 && visited.size === values.length;
 }
 
-function orderAtom(term, env) {
+function orderAtom(term: any, env: any): any {
   const resolved = deref(term, env);
   if (resolved.type === VAR) return null;
   if (resolved.type !== ATOM || !['<', '=', '>'].includes(resolved.name)) {
@@ -483,11 +485,11 @@ function orderAtom(term, env) {
   return resolved.name;
 }
 
-function comparedOrder(left, right) {
+function comparedOrder(left: any, right: any): any {
   return left < right ? '<' : left > right ? '>' : '=';
 }
 
-function globalTruth(global, env) {
+function globalTruth(global: any, env: any): any {
   if (global.kind === 'allDistinct') {
     const seen = new Set();
     for (const term of global.terms) {
@@ -500,30 +502,31 @@ function globalTruth(global, env) {
     return true;
   }
   if (global.kind === 'nvalue') {
-    const values = global.terms.map((term) => expressionValue(term, env));
-    const known = new Set(values.filter((value) => value != null).map(String));
+    const values = global.terms.map((term: any) => expressionValue(term, env));
+    const known = new Set(values.filter((value: any) => value != null).map(String));
     const count = expressionValue(global.count, env);
     if (count == null) return true;
-    if (count < BigInt(known.size) || count > BigInt(known.size + values.filter((value) => value == null).length)) return false;
-    return values.some((value) => value == null) || count === BigInt(known.size);
+    if (count < BigInt(known.size) || count > BigInt(known.size + values.filter((value: any) => value == null).length)) return false;
+    return values.some((value: any) => value == null) || count === BigInt(known.size);
   }
   if (global.kind === 'sum') {
-    const values = global.terms.map((term) => expressionValue(term, env));
+    const values = global.terms.map((term: any) => expressionValue(term, env));
     const right = expressionValue(global.value, env);
-    if (right == null || values.some((value) => value == null)) return true;
-    const total = values.reduce((sum, value) => sum + value, 0n);
+    if (right == null || values.some((value: any) => value == null)) return true;
+    const total = values.reduce((sum: any, value: any) => sum + value, 0n);
     return relationTruth(relationTerm(global.relation, numberTerm(total.toString()), global.value), env) !== false;
   }
   if (global.kind === 'scalarProduct') {
-    const values = global.terms.map((term) => expressionValue(term, env));
+    const values = global.terms.map((term: any) => expressionValue(term, env));
     const right = expressionValue(global.value, env);
-    if (right == null || values.some((value) => value == null)) return true;
+    if (right == null || values.some((value: any) => value == null)) return true;
     let total = 0n;
+    // @ts-expect-error TS2365: auto-suppressed
     for (let i = 0; i < values.length; i++) total += integerValue(global.coefficients[i], env) * values[i];
     return relationTruth(relationTerm(global.relation, numberTerm(total.toString()), global.value), env) !== false;
   }
   if (global.kind === 'tuplesIn') {
-    return global.tuples.every((tuple) => tupleCandidates(tuple, global.relation, env).length > 0);
+    return global.tuples.every((tuple: any) => tupleCandidates(tuple, global.relation, env).length > 0);
   }
   if (global.kind === 'lexChain') {
     for (let index = 1; index < global.lists.length; index++) {
@@ -544,23 +547,23 @@ function globalTruth(global, env) {
     return true;
   }
   if (global.kind === 'globalCardinality') {
-    const values = global.terms.map((term) => expressionValue(term, env));
+    const values = global.terms.map((term: any) => expressionValue(term, env));
     for (const { key, count: countTerm } of global.pairs) {
-      const known = values.filter((value) => value === key).length;
-      const possible = global.terms.filter((term, index) => {
+      const known = values.filter((value: any) => value === key).length;
+      const possible = global.terms.filter((term: any, index: any) => {
         if (values[index] != null) return false;
         const resolved = deref(term, env);
         const domain = resolved.type === VAR ? domainForRoot(resolved.name, env) : null;
-        return domain == null || domain.some((value) => value === key);
+        return domain == null || domain.some((value: any) => value === key);
       }).length;
       const count = expressionValue(countTerm, env);
       if (count != null && (count < BigInt(known) || count > BigInt(known + possible))) return false;
       if (possible === 0 && count != null && count !== BigInt(known)) return false;
     }
-    if (global.cost != null && values.every((value) => value != null)) {
+    if (global.cost != null && values.every((value: any) => value != null)) {
       let total = 0n;
       for (let row = 0; row < values.length; row++) {
-        const column = global.pairs.findIndex(({ key }) => key === values[row]);
+        const column = global.pairs.findIndex(({ key }: any) => key === values[row]);
         if (column < 0) return false;
         total += global.matrix[row][column];
       }
@@ -595,7 +598,7 @@ function globalTruth(global, env) {
   return true;
 }
 
-function bindExpressionEquality(left, right, env) {
+function bindExpressionEquality(left: any, right: any, env: any): any {
   const resolvedLeft = deref(left, env);
   const resolvedRight = deref(right, env);
   if (resolvedLeft.type === VAR) {
@@ -611,7 +614,7 @@ function bindExpressionEquality(left, right, env) {
   return { ok: true, changed: false };
 }
 
-function linearExpression(term, env) {
+function linearExpression(term: any, env: any): any {
   term = deref(term, env);
   if (term.type === VAR) return { constant: 0n, coefficients: new Map([[term.name, 1n]]) };
   if (term.type === NUMBER) return { constant: integerValue(term, env), coefficients: new Map() };
@@ -632,7 +635,7 @@ function linearExpression(term, env) {
   return null;
 }
 
-function addLinear(left, right) {
+function addLinear(left: any, right: any): any {
   const coefficients = new Map(left.coefficients);
   for (const [name, coefficient] of right.coefficients) {
     const total = (coefficients.get(name) ?? 0n) + coefficient;
@@ -642,14 +645,14 @@ function addLinear(left, right) {
   return { constant: left.constant + right.constant, coefficients };
 }
 
-function scaleLinear(value, factor) {
+function scaleLinear(value: any, factor: any): any {
   return {
     constant: value.constant * factor,
-    coefficients: new Map([...value.coefficients].map(([name, coefficient]) => [name, coefficient * factor])),
+    coefficients: new Map([...value.coefficients].map(([name, coefficient]: any) => [name, coefficient * factor])),
   };
 }
 
-function bindLinearEquality(left, right, env) {
+function bindLinearEquality(left: any, right: any, env: any): any {
   const linearLeft = linearExpression(left, env);
   const linearRight = linearExpression(right, env);
   if (!linearLeft || !linearRight) return { ok: true, changed: false };
@@ -657,23 +660,24 @@ function bindLinearEquality(left, right, env) {
   if (difference.coefficients.size === 0) return { ok: difference.constant === 0n, changed: false };
   if (difference.coefficients.size !== 1) return { ok: true, changed: false };
   const [[name, coefficient]] = difference.coefficients;
+  // @ts-expect-error TS2367: auto-suppressed
   if (coefficient === 0n || (-difference.constant) % coefficient !== 0n) return { ok: false, changed: false };
   const value = (-difference.constant) / coefficient;
   return { ok: unify(variable(name), numberTerm(value.toString()), env), changed: true };
 }
 
-function hasDistinctMatching(domains, forcedIndex = -1, forcedValue = null) {
+function hasDistinctMatching(domains: any, forcedIndex: any = -1, forcedValue: any = null): any {
   const matchedByValue = new Map();
   if (forcedIndex >= 0) {
-    if (!domains[forcedIndex].some((value) => value === forcedValue)) return false;
+    if (!domains[forcedIndex].some((value: any) => value === forcedValue)) return false;
     matchedByValue.set(forcedValue, forcedIndex);
   }
   const indices = domains
-    .map((_, index) => index)
-    .filter((index) => index !== forcedIndex)
-    .sort((left, right) => domains[left].length - domains[right].length);
+    .map((_: any, index: any) => index)
+    .filter((index: any) => index !== forcedIndex)
+    .sort((left: any, right: any) => domains[left].length - domains[right].length);
 
-  function augment(index, seen) {
+  function augment(index: any, seen: any) {
     for (const value of domains[index]) {
       if (seen.has(value)) continue;
       seen.add(value);
@@ -687,17 +691,17 @@ function hasDistinctMatching(domains, forcedIndex = -1, forcedValue = null) {
     return false;
   }
 
-  return indices.every((index) => augment(index, new Set()));
+  return indices.every((index: any) => augment(index, new Set()));
 }
 
-function popcount32(value) {
+function popcount32(value: any): any {
   value >>>= 0;
   value -= (value >>> 1) & 0x55555555;
   value = (value & 0x33333333) + ((value >>> 2) & 0x33333333);
   return (((value + (value >>> 4)) & 0x0f0f0f0f) * 0x01010101) >>> 24;
 }
 
-function hallSetDomains(domains) {
+function hallSetDomains(domains: any): any {
   const valueIndices = new Map();
   for (const domain of domains) {
     for (const value of domain) {
@@ -705,8 +709,8 @@ function hallSetDomains(domains) {
       if (valueIndices.size > 30) return null;
     }
   }
-  const masks = domains.map((domain) => domain.reduce(
-    (mask, value) => mask | (1 << valueIndices.get(value)), 0));
+  const masks = domains.map((domain: any) => domain.reduce(
+    (mask: any, value: any) => mask | (1 << valueIndices.get(value)), 0));
   const removed = new Array(domains.length).fill(0);
   const subsetLimit = 2 ** domains.length;
   for (let subset = 1; subset < subsetLimit; subset++) {
@@ -722,11 +726,11 @@ function hallSetDomains(domains) {
       if (!(subset & (1 << index))) removed[index] |= union;
     }
   }
-  return domains.map((domain, index) => domain.filter(
-    (value) => !(removed[index] & (1 << valueIndices.get(value)))));
+  return domains.map((domain: any, index: any) => domain.filter(
+    (value: any) => !(removed[index] & (1 << valueIndices.get(value)))));
 }
 
-function propagateAllDistinct(global, env) {
+function propagateAllDistinct(global: any, env: any): any {
   const bound = new Set();
   const variables = new Set();
   for (const term of global.terms) {
@@ -747,7 +751,7 @@ function propagateAllDistinct(global, env) {
     if (resolved.type !== VAR) continue;
     const domain = domainForRoot(resolved.name, env);
     if (domain == null) continue;
-    const result = narrowTermDomain(env, term, domain.filter((value) => !bound.has(value)));
+    const result = narrowTermDomain(env, term, domain.filter((value: any) => !bound.has(value)));
     if (!result.ok) return { ok: false, changed: false };
     changed ||= result.changed;
   }
@@ -756,13 +760,13 @@ function propagateAllDistinct(global, env) {
   // small all_distinct/1 groups common in puzzles. Fall back to matching-based
   // support when the compact bit-set representation is not applicable.
   if (global.terms.length <= 16) {
-    const domains = global.terms.map((term) => {
+    const domains = global.terms.map((term: any) => {
       const resolved = deref(term, env);
       if (resolved.type === NUMBER) return [integerValue(resolved, env)];
       if (resolved.type !== VAR) return null;
       return domainForRoot(resolved.name, env);
     });
-    if (domains.every((domain) => domain != null)) {
+    if (domains.every((domain: any) => domain != null)) {
       const hallDomains = global.terms.length <= 12 ? hallSetDomains(domains) : null;
       if (hallDomains === false || (hallDomains == null && !hasDistinctMatching(domains))) {
         return { ok: false, changed: false };
@@ -771,7 +775,7 @@ function propagateAllDistinct(global, env) {
         const resolved = deref(global.terms[index], env);
         if (resolved.type !== VAR) continue;
         const supported = hallDomains == null
-          ? domains[index].filter((value) => hasDistinctMatching(domains, index, value))
+          ? domains[index].filter((value: any) => hasDistinctMatching(domains, index, value))
           : hallDomains[index];
         const result = narrowTermDomain(env, global.terms[index], supported);
         if (!result.ok) return { ok: false, changed: false };
@@ -783,7 +787,7 @@ function propagateAllDistinct(global, env) {
   return { ok: true, changed };
 }
 
-function propagate(env) {
+function propagate(env: any): any {
   const store = env._clpz;
   if (!store) return true;
   // A propagation pass owns one domain-map copy. Individual narrowings can
@@ -797,7 +801,7 @@ function propagate(env) {
   }
 }
 
-function propagateMutable(env) {
+function propagateMutable(env: any): any {
   const store = env._clpz;
   let changed;
   do {
@@ -816,9 +820,9 @@ function propagateMutable(env) {
         if (!result.ok) return false;
         changed ||= result.changed;
       } else if (global.kind === 'nvalue') {
-        const values = global.terms.map((term) => expressionValue(term, env));
-        const known = new Set(values.filter((value) => value != null).map(String));
-        const unresolved = values.filter((value) => value == null).length;
+        const values = global.terms.map((term: any) => expressionValue(term, env));
+        const known = new Set(values.filter((value: any) => value != null).map(String));
+        const unresolved = values.filter((value: any) => value == null).length;
         const result = narrowTermDomain(env, global.count, integerRange(known.size, known.size + unresolved));
         if (!result.ok) return false;
         changed ||= result.changed;
@@ -827,21 +831,22 @@ function propagateMutable(env) {
           const candidates = tupleCandidates(tuple, global.relation, env);
           if (candidates.length === 0) return false;
           for (let index = 0; index < tuple.length; index++) {
-            const values = [...new Set(candidates.map((row) => row[index].toString()))].map(BigInt).sort(compareBigInt);
+            // @ts-expect-error TS2345: auto-suppressed
+            const values = [...new Set(candidates.map((row: any) => row[index].toString()))].map(BigInt).sort(compareBigInt);
             const result = narrowTermDomain(env, tuple[index], values);
             if (!result.ok) return false;
             changed ||= result.changed;
           }
         }
       } else if (global.kind === 'globalCardinality') {
-        const values = global.terms.map((term) => expressionValue(term, env));
+        const values = global.terms.map((term: any) => expressionValue(term, env));
         for (const { key, count: countTerm } of global.pairs) {
-          const known = values.filter((value) => value === key).length;
-          const possibleTerms = global.terms.filter((term, index) => {
+          const known = values.filter((value: any) => value === key).length;
+          const possibleTerms = global.terms.filter((term: any, index: any) => {
             if (values[index] != null) return false;
             const resolved = deref(term, env);
             const domain = resolved.type === VAR ? domainForRoot(resolved.name, env) : null;
-            return domain == null || domain.some((value) => value === key);
+            return domain == null || domain.some((value: any) => value === key);
           });
           const countResult = narrowTermDomain(env, countTerm, integerRange(known, known + possibleTerms.length));
           if (!countResult.ok) return false;
@@ -852,7 +857,7 @@ function propagateMutable(env) {
               const resolved = deref(term, env);
               if (resolved.type !== VAR) continue;
               const domain = domainForRoot(resolved.name, env);
-              const result = narrowTermDomain(env, term, domain.filter((value) => value !== key));
+              const result = narrowTermDomain(env, term, domain.filter((value: any) => value !== key));
               if (!result.ok) return false;
               changed ||= result.changed;
             }
@@ -864,10 +869,10 @@ function propagateMutable(env) {
             }
           }
         }
-        if (global.cost != null && values.every((value) => value != null)) {
+        if (global.cost != null && values.every((value: any) => value != null)) {
           let total = 0n;
           for (let row = 0; row < values.length; row++) {
-            const column = global.pairs.findIndex(({ key }) => key === values[row]);
+            const column = global.pairs.findIndex(({ key }: any) => key === values[row]);
             if (column < 0) return false;
             total += global.matrix[row][column];
           }
@@ -904,17 +909,18 @@ function propagateMutable(env) {
           }
         }
       } else if (global.kind === 'sum' && global.relation === '#=') {
-        const values = global.terms.map((term) => expressionValue(term, env));
-        if (!values.some((value) => value == null)) {
-          const total = values.reduce((sum, value) => sum + value, 0n);
+        const values = global.terms.map((term: any) => expressionValue(term, env));
+        if (!values.some((value: any) => value == null)) {
+          const total = values.reduce((sum: any, value: any) => sum + value, 0n);
           const result = bindExpressionEquality(global.value, numberTerm(total.toString()), env);
           if (!result.ok) return false;
           changed ||= result.changed;
         }
       } else if (global.kind === 'scalarProduct' && global.relation === '#=') {
-        const values = global.terms.map((term) => expressionValue(term, env));
-        if (!values.some((value) => value == null)) {
+        const values = global.terms.map((term: any) => expressionValue(term, env));
+        if (!values.some((value: any) => value == null)) {
           let total = 0n;
+          // @ts-expect-error TS2365: auto-suppressed
           for (let i = 0; i < values.length; i++) total += integerValue(global.coefficients[i], env) * values[i];
           const result = bindExpressionEquality(global.value, numberTerm(total.toString()), env);
           if (!result.ok) return false;
@@ -926,22 +932,22 @@ function propagateMutable(env) {
   return true;
 }
 
-export function clpzStateConsistent(env) {
+export function clpzStateConsistent(env: any): any {
   const store = env._clpz;
   if (!store) return true;
   for (const [name, values] of store.domains) {
     const resolved = deref(variable(name), env);
     if (resolved.type === VAR) continue;
     const value = integerValue(resolved, env);
-    if (!values.some((candidate) => candidate === value)) return false;
+    if (!values.some((candidate: any) => candidate === value)) return false;
   }
   for (const constraint of store.constraints) {
     if (relationTruth(constraint, env) === false) return false;
   }
-  return store.globals.every((global) => globalTruth(global, env));
+  return store.globals.every((global: any) => globalTruth(global, env));
 }
 
-function parseLabelingOptions(term, env) {
+function parseLabelingOptions(term: any, env: any): any {
   const options = listArgument(term, env);
   let variableOrder = 'leftmost';
   let valueOrder = 'up';
@@ -955,7 +961,7 @@ function parseLabelingOptions(term, env) {
   return { variableOrder, valueOrder };
 }
 
-function unresolvedLabelVariables(terms, env) {
+function unresolvedLabelVariables(terms: any, env: any): any {
   const variables = [];
   const seen = new Set();
   for (const term of terms) {
@@ -973,7 +979,7 @@ function unresolvedLabelVariables(terms, env) {
   return variables;
 }
 
-function chooseVariable(variables, env, variableOrder) {
+function chooseVariable(variables: any, env: any, variableOrder: any): any {
   if (variableOrder !== 'ff') return { index: 0, values: domainForRoot(variables[0].name, env) };
   let selected = null;
   for (let index = 0; index < variables.length; index++) {
@@ -984,7 +990,7 @@ function chooseVariable(variables, env, variableOrder) {
   return selected;
 }
 
-function* enumerate(variables, env, options) {
+function* enumerate(variables: any, env: any, options: any): any {
   variables = unresolvedLabelVariables(variables, env);
   if (variables.length === 0) {
     if (clpzStateConsistent(env)) yield env;
@@ -1003,13 +1009,13 @@ function* enumerate(variables, env, options) {
   }
 }
 
-function* labelingBuiltin({ goal, env }) {
+function* labelingBuiltin({ goal, env }: any): any {
   const options = parseLabelingOptions(goal.args[0], env);
   const variables = listArgument(goal.args[1], env);
   yield* enumerate(variables, env.clone(), options);
 }
 
-function domainInfo(term, env) {
+function domainInfo(term: any, env: any): any {
   const resolved = deref(term, env);
   if (resolved.type === NUMBER) {
     const value = integerValue(resolved, env);
@@ -1019,13 +1025,13 @@ function domainInfo(term, env) {
   return { resolved, values: domainForRoot(resolved.name, env) };
 }
 
-function* fdVarBuiltin({ goal, env }) {
+function* fdVarBuiltin({ goal, env }: any): any {
   const info = domainInfo(goal.args[0], env);
   if (info.resolved.type === VAR && info.values != null) yield env;
 }
 
-function fdBoundBuiltin(which) {
-  return function* ({ goal, env }) {
+function fdBoundBuiltin(which: any): any {
+  return function* ({ goal, env }: any) {
     const info = domainInfo(goal.args[0], env);
     if (info.values == null) return;
     const value = which === 'inf' ? info.values[0] : info.values[info.values.length - 1];
@@ -1034,27 +1040,27 @@ function fdBoundBuiltin(which) {
   };
 }
 
-function* fdSizeBuiltin({ goal, env }) {
+function* fdSizeBuiltin({ goal, env }: any): any {
   const info = domainInfo(goal.args[0], env);
   if (info.values == null) return;
   const next = env.clone();
   if (unify(goal.args[1], numberTerm(String(info.values.length)), next)) yield next;
 }
 
-function valuesToDomain(values) {
+function valuesToDomain(values: any): any {
   const runs = [];
   for (const value of values) {
     const last = runs[runs.length - 1];
     if (last && value === last[1] + 1n) last[1] = value;
     else runs.push([value, value]);
   }
-  const terms = runs.map(([lower, upper]) => lower === upper
+  const terms = runs.map(([lower, upper]: any) => lower === upper
     ? numberTerm(lower.toString())
     : compound('..', [numberTerm(lower.toString()), numberTerm(upper.toString())]));
-  return terms.reduce((left, right) => compound('\\/', [left, right]));
+  return terms.reduce((left: any, right: any) => compound('\\/', [left, right]));
 }
 
-function* fdDomBuiltin({ goal, env }) {
+function* fdDomBuiltin({ goal, env }: any): any {
   const info = domainInfo(goal.args[0], env);
   if (info.values == null || info.values.length === 0) return;
   const next = env.clone();

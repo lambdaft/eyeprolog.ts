@@ -12,7 +12,7 @@ import { Solver } from './solver.js';
 import { getEyePrologRegistry } from './standard-library.js';
 import { formatTermForWrite } from './write.js';
 
-export function runQuads(source, options = {}) {
+export function runQuads(source: any, options: any = {}): any {
   const program = source instanceof Program
     ? source
     : Program.parse(source, { ...options, sourceMetadata: true });
@@ -37,13 +37,13 @@ export function runQuads(source, options = {}) {
     results.push(result);
     if (!result.ok) lines.push(formatFailure(program, quad, result));
   }
-  const passed = results.filter((result) => result.ok).length;
+  const passed = results.filter((result: any) => result.ok).length;
   const failed = results.length - passed;
   lines.push(`quads: ${results.length} run, ${passed} passed, ${failed} failed.\n`);
   return { stdout: lines.join(''), total: results.length, passed, failed, results };
 }
 
-function checkQuad(program, quad, options) {
+function checkQuad(program: any, quad: any, options: any): any {
   if (quad.id != null && !termIsGround(quad.id, new Env())) {
     return { ok: false, kind: 'bad_identifier', expected: quad.id };
   }
@@ -54,11 +54,11 @@ function checkQuad(program, quad, options) {
   return { ok: true };
 }
 
-function checkDescription(program, quad, description, options) {
+function checkDescription(program: any, quad: any, description: any, options: any): any {
   const alternatives = splitOperator(description, '|');
   // Probe an explicitly accepted nontermination outcome before alternatives
   // that would run the same query without a bound.
-  const ordered = [...alternatives].sort((left, right) =>
+  const ordered = [...alternatives].sort((left: any, right: any) =>
     Number(alternativeDescribesLoop(right)) - Number(alternativeDescribesLoop(left)));
   for (const alternative of ordered) {
     const malformed = malformedAlternative(quad.query, alternative);
@@ -73,30 +73,31 @@ function checkDescription(program, quad, description, options) {
   return unsupported ?? { ok: false, kind: 'failed', expected: description };
 }
 
-function checkAlternative(program, quad, alternative, options) {
+function checkAlternative(program: any, quad: any, alternative: any, options: any): any {
   const leaves = splitOperator(alternative, ';').map(describeLeaf);
-  if (leaves.some((leaf) => leaf.sto)) return { ok: true };
-  const unsupported = leaves.find((leaf) => leaf.unsupported != null)?.unsupported;
+  if (leaves.some((leaf: any) => leaf.sto)) return { ok: true };
+  const unsupported = leaves.find((leaf: any) => leaf.unsupported != null)?.unsupported;
   if (unsupported != null) {
     return { ok: false, kind: 'unsupported', expected: unsupported };
   }
 
-  const inputSpecs = [...new Set(leaves.filter((leaf) => leaf.input != null).map((leaf) => leaf.input))];
+  const inputSpecs = [...new Set(leaves.filter((leaf: any) => leaf.input != null).map((leaf: any) => leaf.input))];
   if (inputSpecs.length > 1) return { ok: false, kind: 'malformed', expected: alternative };
   const input = inputSpecs[0] ?? '';
   if (inputSpecs.length > 0 && leaves.length !== 1) return { ok: false };
-  const moreAt = leaves.findIndex((leaf) => leaf.more);
+  const moreAt = leaves.findIndex((leaf: any) => leaf.more);
   const describedCount = moreAt < 0 ? leaves.length : moreAt + (leaves[moreAt].hasExpectation ? 1 : 0);
   const maxSolutions = inputSpecs.length > 0
     ? 1
     : moreAt < 0 ? describedCount + 1 : Math.max(describedCount, 1);
   const actual = executeQuery(program, quad.query, input, maxSolutions, {
     ...options,
-    detectLoops: leaves.some((leaf) => leaf.loops),
+    detectLoops: leaves.some((leaf: any) => leaf.loops),
   });
 
   if (inputSpecs.length > 0) {
     const leaf = leaves[0];
+    // @ts-expect-error TS2339: auto-suppressed
     const matches = actual.inputPosition === input.length && matchLeaf(quad.query, leaf, actual, 0);
     return { ok: leaf.unexpected ? !matches : matches };
   }
@@ -122,8 +123,8 @@ function checkAlternative(program, quad, alternative, options) {
   return { ok: ended };
 }
 
-function malformedAlternative(query, alternative) {
-  const queryNames = new Set(namedVariables(query).map((variable) => variable.name));
+function malformedAlternative(query: any, alternative: any): any {
+  const queryNames = new Set(namedVariables(query).map((variable: any) => variable.name));
   for (const leaf of splitOperator(alternative, ';').map(describeLeaf)) {
     if (leaf.malformed != null) return leaf.malformed;
     const names = new Set();
@@ -134,14 +135,14 @@ function malformedAlternative(query, alternative) {
     }
     if (!leaf.sto) {
       for (const binding of leaf.bindings) {
-        if (namedVariables(binding.args[1]).some((variable) => names.has(variable.name))) return binding;
+        if (namedVariables(binding.args[1]).some((variable: any) => names.has(variable.name))) return binding;
       }
     }
   }
   return null;
 }
 
-function describeLeaf(term) {
+function describeLeaf(term: any): any {
   const leaf = {
     bindings: [],
     unexpected: false,
@@ -173,6 +174,7 @@ function describeLeaf(term) {
     }
     if (item.type === COMPOUND && item.name === '=' && item.arity === 2) {
       if (item.args[0].type !== VAR) leaf.malformed ??= item;
+      // @ts-expect-error TS2345: auto-suppressed
       else leaf.bindings.push(item);
       continue;
     }
@@ -201,7 +203,7 @@ function describeLeaf(term) {
   return leaf;
 }
 
-function executeQuery(program, query, input, maxSolutions, options) {
+function executeQuery(program: any, query: any, input: any, maxSolutions: any, options: any): any {
   let pendingOutput = '';
   const solver = new Solver(program, {
     ...options,
@@ -215,12 +217,12 @@ function executeQuery(program, query, input, maxSolutions, options) {
     solutionLimit: Math.max(maxSolutions, options.solutionLimit ?? 10000000),
     ioOptions: {
       input,
-      write: (text) => { pendingOutput += String(text); },
+      write: (text: any) => { pendingOutput += String(text); },
     },
   });
   // Undefined predicates are test failures rather than silent negative
   // answers unless the source explicitly selected another unknown policy.
-  if (!(program.prologFlagDirectives ?? []).some(([flag]) => flag.type === ATOM && flag.name === 'unknown')) {
+  if (!(program.prologFlagDirectives ?? []).some(([flag]: any) => flag.type === ATOM && flag.name === 'unknown')) {
     solver.prologFlags.get('unknown').value = atom('error');
   }
   const solutions = [];
@@ -250,7 +252,7 @@ function executeQuery(program, query, input, maxSolutions, options) {
   };
 }
 
-function matchLeaf(query, leaf, actual, position) {
+function matchLeaf(query: any, leaf: any, actual: any, position: any): any {
   if (leaf.loops) return actual.loops;
   if (leaf.false) {
     return position >= actual.solutions.length && actual.error == null && outputMatches(leaf.output, actual.tailOutput);
@@ -264,13 +266,13 @@ function matchLeaf(query, leaf, actual, position) {
   return substitutionMatches(query, leaf.bindings, solution.env);
 }
 
-function alternativeDescribesLoop(alternative) {
-  return splitOperator(alternative, ';').some((term) => describeLeaf(term).loops);
+function alternativeDescribesLoop(alternative: any): any {
+  return splitOperator(alternative, ';').some((term: any) => describeLeaf(term).loops);
 }
 
-function substitutionMatches(query, bindings, actualEnv) {
+function substitutionMatches(query: any, bindings: any, actualEnv: any): any {
   const queryVariables = namedVariables(query);
-  const queryNames = new Set(queryVariables.map((variable) => variable.name));
+  const queryNames = new Set(queryVariables.map((variable: any) => variable.name));
   const expectedEnv = new Env();
   const rebound = new Set();
   for (const binding of bindings) {
@@ -279,12 +281,12 @@ function substitutionMatches(query, bindings, actualEnv) {
     rebound.add(variable.name);
     if (!unify(variable, binding.args[1], expectedEnv)) return false;
   }
-  const expected = compound('$quad_answer', queryVariables.map((variable) => copyResolved(variable, expectedEnv)));
-  const actual = compound('$quad_answer', queryVariables.map((variable) => copyResolved(variable, actualEnv)));
+  const expected = compound('$quad_answer', queryVariables.map((variable: any) => copyResolved(variable, expectedEnv)));
+  const actual = compound('$quad_answer', queryVariables.map((variable: any) => copyResolved(variable, actualEnv)));
   return patternVariant(expected, new Env(), actual, new Env());
 }
 
-function namedVariables(term) {
+function namedVariables(term: any): any {
   const found = [];
   const seen = new Set();
   const stack = [term];
@@ -303,8 +305,8 @@ function namedVariables(term) {
 }
 
 function patternVariant(
-  pattern, patternEnv, actual, actualEnv, pairs = new Map(), reverse = new Map(), fixedPatternNames = null,
-) {
+  pattern: any, patternEnv: any, actual: any, actualEnv: any, pairs: any = new Map(), reverse: any = new Map(), fixedPatternNames: any = null,
+): any {
   pattern = deref(pattern, patternEnv);
   actual = deref(actual, actualEnv);
   if (pattern.type === ATOM && pattern.name === '...') return true;
@@ -327,7 +329,7 @@ function patternVariant(
   return true;
 }
 
-function errorTerm(error) {
+function errorTerm(error: any): any {
   if (error?.name === 'ThrownTerm' && error.term) return compound('$quad_thrown', [error.term]);
   if (error?.name === 'PrologError') {
     let formal;
@@ -344,15 +346,15 @@ function errorTerm(error) {
   return compound('error', [atom('system_error'), variable('$quad_context')]);
 }
 
-function errorMatches(query, expected, actual) {
+function errorMatches(query: any, expected: any, actual: any): any {
   // Variables named in the query keep their identity in answer descriptions.
   // Seed both directions so a query variable can match only that same query
   // variable, while variables introduced by the description (for example _X)
   // remain fresh pattern variables.  This is especially important for throw/1:
   // ISO requires the thrown ball to be a renamed copy, so throw(g(_X)) may
   // describe throw(g(X)), but throw(g(X)) must not.
-  const queryNames = new Set(namedVariables(query).map((item) => item.name));
-  const matches = (pattern, term) => patternVariant(
+  const queryNames = new Set(namedVariables(query).map((item: any) => item.name));
+  const matches = (pattern: any, term: any) => patternVariant(
     pattern, new Env(), term, new Env(), new Map(), new Map(), queryNames);
 
   if (expected.type === COMPOUND && expected.name === 'throw' && expected.arity === 1 &&
@@ -366,7 +368,7 @@ function errorMatches(query, expected, actual) {
   return matches(expected, actual.args[0]);
 }
 
-function isErrorDescription(term) {
+function isErrorDescription(term: any): any {
   if (term.type === ATOM) return ['instantiation_error', 'system_error'].includes(term.name);
   return term.type === COMPOUND && [
     'error', 'throw', 'type_error', 'domain_error', 'existence_error',
@@ -375,7 +377,7 @@ function isErrorDescription(term) {
   ].includes(term.name);
 }
 
-function characterText(term) {
+function characterText(term: any): any {
   const items = properListItems(term, new Env());
   if (items == null) return null;
   let text = '';
@@ -387,18 +389,18 @@ function characterText(term) {
   return text;
 }
 
-function outputMatches(expected, actual) {
+function outputMatches(expected: any, actual: any): any {
   return expected == null || expected === actual;
 }
 
-function splitOperator(term, name) {
+function splitOperator(term: any, name: any): any {
   if (term.type === COMPOUND && term.name === name && term.arity === 2) {
     return [term.args[0], ...splitOperator(term.args[1], name)];
   }
   return [term];
 }
 
-function formatFailure(program, quad, result) {
+function formatFailure(program: any, quad: any, result: any): any {
   const source = quad.source ?? { filename: '<input>', line: 1 };
   const label = quad.id == null ? '' : `${formatQuadTerm(program, quad.id)}, `;
   const reason = result.kind === 'malformed' ? 'MALFORMED'
@@ -411,7 +413,7 @@ function formatFailure(program, quad, result) {
     `   expected: ${formatQuadTerm(program, expected)}.\n`;
 }
 
-function formatQuadTerm(program, term) {
+function formatQuadTerm(program: any, term: any): any {
   return formatTermForWrite(term, new Env(), {
     quoted: true,
     operators: [...program.operators.values()],

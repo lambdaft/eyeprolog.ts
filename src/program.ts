@@ -1,5 +1,6 @@
 // Program representation and clause indexing.
 // Indexes are deliberately conservative: they speed up common scalar arguments but never replace unification as the final check.
+// @ts-expect-error TS6133: auto-suppressed
 import { ATOM, COMPOUND, VAR, Env, atom, compound, deref, flattenConjunction, isScalar, numberTerm, properListItems, termToString, variable } from './term.js';
 import { formatTermForWrite } from './write.js';
 import {
@@ -11,6 +12,7 @@ import {
   tryParseClausesFastInto,
 } from './parser.js';
 import { PrologError, getStrictIsoRegistry } from './iso.js';
+// @ts-expect-error TS7034: auto-suppressed
 import { currentWorkingDirectory, fs, path } from './platform.js';
 import { standardLibrarySources } from './standard-library.js';
 import { expandDcgRuleClause } from './dcg.js';
@@ -20,13 +22,13 @@ const FAST_PARSE_ABORT = Symbol('fastParseAbort');
 const PROGRAM_BUILD_BATCH_SIZE = 16384;
 const EMPTY_CLAUSE_BODY = Object.freeze([]);
 
-function modulePredicateKey(module, name, arity) {
+function modulePredicateKey(module: any, name: any, arity: any): any {
   return module === 'user' ? `${name}/${arity}` : `${module}:${name}/${arity}`;
 }
 
 class CompactBinaryClause {
-  constructor(headName, head0Type, head0Name, head1Type, head1Name,
-      bodyName, body0Type, body0Name, body1Type, body1Name) {
+  constructor(headName: any, head0Type: any, head0Name: any, head1Type: any, head1Name: any,
+      bodyName: any, body0Type: any, body0Name: any, body1Type: any, body1Name: any) {
     this.compactBinary = true;
     this.headName = headName;
     this.head0Type = head0Type;
@@ -41,60 +43,72 @@ class CompactBinaryClause {
   }
 
   get head() {
+    // @ts-expect-error TS2551: auto-suppressed
     if (!this._head) {
+      // @ts-expect-error TS2551: auto-suppressed
       this._head = compound(this.headName, [
         compactTerm(this.head0Type, this.head0Name),
         compactTerm(this.head1Type, this.head1Name),
       ]);
     }
+    // @ts-expect-error TS2551: auto-suppressed
     return this._head;
   }
 
   get body() {
     if (this.bodyName == null) return EMPTY_CLAUSE_BODY;
+    // @ts-expect-error TS2551: auto-suppressed
     if (!this._body) {
+      // @ts-expect-error TS2551: auto-suppressed
       this._body = [compound(this.bodyName, [
         compactTerm(this.body0Type, this.body0Name),
         compactTerm(this.body1Type, this.body1Name),
       ])];
     }
+    // @ts-expect-error TS2551: auto-suppressed
     return this._body;
   }
+
+    compactBinary: any;
+    headName: any;
+    head0Type: any;
+    head0Name: any;
+    head1Type: any;
+    head1Name: any;
+    bodyName: any;
+    body0Type: any;
+    body0Name: any;
+    body1Type: any;
+    body1Name: any;
 }
 
-function compactTerm(type, name) {
+function compactTerm(type: any, name: any): any {
   if (type === VAR) return variable(name);
   if (type === 'number') return numberTerm(name);
   return atom(name);
 }
 
-function isCompactBinaryClause(clause) {
+function isCompactBinaryClause(clause: any): any {
   return clause?.compactBinary === true;
 }
 
-function compactHeadArgType(clause, index) {
+function compactHeadArgType(clause: any, index: any): any {
   return index === 0 ? clause.head0Type : clause.head1Type;
 }
 
-function compactHeadArgName(clause, index) {
+function compactHeadArgName(clause: any, index: any): any {
   return index === 0 ? clause.head0Name : clause.head1Name;
 }
 
-function compactBodyArgType(clause, index) {
-  return index === 0 ? clause.body0Type : clause.body1Type;
-}
 
-function compactBodyArgName(clause, index) {
-  return index === 0 ? clause.body0Name : clause.body1Name;
-}
 
-function clauseBodyLength(clause) {
+function clauseBodyLength(clause: any): any {
   return isCompactBinaryClause(clause) ? (clause.bodyName == null ? 0 : 1) : clause.body.length;
 }
 
 
 export class Program {
-  constructor(clauses = [], options = {}) {
+  constructor(clauses: any = [], options: any = {}) {
     this.clauses = [];
     this.groups = new Map();
     this.modules = new Map([['user', { name: 'user', exports: new Map(), filename: '<input>' }]]);
@@ -124,7 +138,7 @@ export class Program {
     builder.addClauses(clauses);
     builder.finish();
   }
-  defineOperator(priority, specifier, name) {
+  defineOperator(priority: any, specifier: any, name: any): any {
     const operatorClass = ['fx', 'fy'].includes(specifier) ? ['fx', 'fy']
       : ['xf', 'yf'].includes(specifier) ? ['xf', 'yf']
         : ['xfx', 'xfy', 'yfx'];
@@ -132,13 +146,13 @@ export class Program {
     const key = `${specifier}\u0000${name}`;
     if (priority !== 0) this.operators.set(key, { priority, specifier, name });
   }
-  static parse(source, options = {}) {
+  static parse(source: any, options: any = {}): any {
     return buildProgramFromSources([source], options);
   }
-  static parseSources(sources = [], options = {}) {
+  static parseSources(sources: any = [], options: any = {}): any {
     return buildProgramFromSources(sources, options);
   }
-  makeGroup(name, arity, module = 'user') {
+  makeGroup(name: any, arity: any, module: any = 'user'): any {
     // A group corresponds to one predicate indicator, for example edge/3.
     // Compact single-argument indexes are built eagerly. Wider combinations
     // are constructed on first use, avoiding eager O(arity^2) pair tables while
@@ -161,10 +175,10 @@ export class Program {
     };
     return group;
   }
-  indexClause(clause) {
+  indexClause(clause: any): any {
     this._indexClause(clause, false);
   }
-  _indexClause(clause, initialBuild) {
+  _indexClause(clause: any, initialBuild: any): any {
     const head = clause.head;
     if (!initialBuild) assertHeadIsDefinable(head, this.strictIso);
     if (head.type !== ATOM && head.type !== COMPOUND) return;
@@ -188,7 +202,7 @@ export class Program {
     const clausePosition = group.clauses.length - 1;
     for (let i = 0; i < head.arity; i++) indexOne(group.argIndexes[i], head.args[i], clause, group.clauses, clausePosition);
   }
-  findGroup(name, arity, module = 'user') {
+  findGroup(name: any, arity: any, module: any = 'user'): any {
     const direct = this.groups.get(modulePredicateKey(module, name, arity));
     if (direct) return direct;
     const importedModule = this.moduleImports.get(module)?.get(`${name}/${arity}`);
@@ -196,11 +210,11 @@ export class Program {
       ? null
       : this.groups.get(modulePredicateKey(importedModule, name, arity)) ?? null;
   }
-  defineModule(name, exports, filename = '<input>') {
-    const indicators = new Map(exports.map((indicator) => [`${indicator.name}/${indicator.arity}`, indicator]));
+  defineModule(name: any, exports: any, filename: any = '<input>'): any {
+    const indicators = new Map(exports.map((indicator: any) => [`${indicator.name}/${indicator.arity}`, indicator]));
     this.modules.set(name, { name, exports: indicators, filename });
   }
-  importModule(target, source, requested = null) {
+  importModule(target: any, source: any, requested: any = null): any {
     const definition = this.modules.get(source);
     if (!definition) throw new PrologError('existence_error(module)', atom(source));
     const imports = this.moduleImports.get(target) ?? new Map();
@@ -218,7 +232,7 @@ export class Program {
     }
     this.moduleImports.set(target, imports);
   }
-  defineMetaPredicate(module, template) {
+  defineMetaPredicate(module: any, template: any): any {
     if (template.type !== COMPOUND) return;
     const positions = [];
     for (let index = 0; index < template.args.length; index++) {
@@ -232,7 +246,7 @@ export class Program {
     const group = this.groups.get(modulePredicateKey(module, template.name, template.arity));
     if (group) group.metaArgumentPositions = positions;
   }
-  ensureDynamicGroup(name, arity, module = 'user') {
+  ensureDynamicGroup(name: any, arity: any, module: any = 'user'): any {
     assertPredicateIsDefinable(name, arity, this.strictIso);
     const key = modulePredicateKey(module, name, arity);
     let group = this.groups.get(key);
@@ -245,7 +259,7 @@ export class Program {
     }
     return group;
   }
-  insertDynamicClause(clause, atStart = false) {
+  insertDynamicClause(clause: any, atStart: any = false): any {
     clause.module ??= clause.head.module ?? 'user';
     const group = this.ensureDynamicGroup(clause.head.name, clause.head.arity, clause.module);
     clause.index = this.clauses.length;
@@ -257,7 +271,7 @@ export class Program {
     rebuildGroupIndexes(group);
     this.noteMutation(clause.body.length > 0);
   }
-  removeDynamicClause(group, clause) {
+  removeDynamicClause(group: any, clause: any): any {
     const index = group.clauses.indexOf(clause);
     if (index < 0) return false;
     group.clauses.splice(index, 1);
@@ -267,13 +281,13 @@ export class Program {
     this.noteMutation(clause.body.length > 0);
     return true;
   }
-  abolishDynamicGroup(name, arity, module = 'user') {
+  abolishDynamicGroup(name: any, arity: any, module: any = 'user'): any {
     const key = modulePredicateKey(module, name, arity);
     const group = this.groups.get(key);
     if (!group) return;
     const removed = new Set(group.clauses);
-    const reanalyze = group.clauses.some((clause) => clause.body.length > 0);
-    this.clauses = this.clauses.filter((clause) => !removed.has(clause));
+    const reanalyze = group.clauses.some((clause: any) => clause.body.length > 0);
+    this.clauses = this.clauses.filter((clause: any) => !removed.has(clause));
     this.groups.delete(key);
     this.dynamicPredicates.delete(key);
     this.noteMutation(reanalyze);
@@ -281,15 +295,15 @@ export class Program {
   get revision() {
     return this._revisionState.value;
   }
-  noteMutation(reanalyze = false) {
+  noteMutation(reanalyze: any = false): any {
     this._revisionState.value++;
     this._negationAnalysis = null;
     if (reanalyze && !this.strictIso) this.markRecursivePredicates();
   }
-  markRecursivePredicates() {
+  markRecursivePredicates(): any {
     // Recursion analysis drives automatic tabling and is always part of program setup.
     const groups = [...this.groups.values()];
-    const indexByGroup = new Map(groups.map((group, i) => [group, i]));
+    const indexByGroup = new Map(groups.map((group: any, i: any) => [group, i]));
     const deps = groups.map(() => new Set());
     const negativeEdges = [];
     for (const group of groups) {
@@ -298,6 +312,7 @@ export class Program {
         if (isCompactBinaryClause(clause)) {
           if (clause.bodyName != null) {
             const dep = this.findGroup(clause.bodyName, 2, group.module);
+            // @ts-expect-error TS2532: auto-suppressed
             if (dep) deps[groupIndex].add(indexByGroup.get(dep));
           }
           continue;
@@ -306,6 +321,7 @@ export class Program {
           const directKey = directGoalDependencyKey(goal);
           if (directKey) {
             const dep = this.findGroup(goal.name, goal.arity, goal.module ?? group.module);
+            // @ts-expect-error TS2532: auto-suppressed
             if (dep) deps[groupIndex].add(indexByGroup.get(dep));
             continue;
           }
@@ -313,6 +329,7 @@ export class Program {
             const dep = this.findGroup(dependency.name, dependency.arity, dependency.module ?? group.module);
             if (dep) {
               const dependencyIndex = indexByGroup.get(dep);
+              // @ts-expect-error TS2532: auto-suppressed
               deps[groupIndex].add(dependencyIndex);
               if (dependency.negative) negativeEdges.push([groupIndex, dependencyIndex]);
             }
@@ -331,6 +348,7 @@ export class Program {
         const current = stack.pop();
         if (seen.has(current)) continue;
         seen.add(current);
+        // @ts-expect-error TS2532: auto-suppressed
         for (const next of deps[current]) {
           if (next === start) { recursive = true; break; }
           if (!seen.has(next)) stack.push(next);
@@ -359,13 +377,14 @@ export class Program {
     }
   }
 
-  analyzeNegationStratification() {
+  analyzeNegationStratification(): any {
     // Stratified negation is a portability diagnostic. A program is stratified
     // when no predicate depends negatively on itself, directly or indirectly.
     const groups = [...this.groups.values()];
-    const groupKeys = new Map(groups.map((group) => [group, modulePredicateKey(group.module, group.name, group.arity)]));
-    const groupByKey = new Map(groups.map((group) => [modulePredicateKey(group.module, group.name, group.arity), group]));
-    const indexByKey = new Map(groups.map((group, i) => [modulePredicateKey(group.module, group.name, group.arity), i]));
+    const groupKeys = new Map(groups.map((group: any) => [group, modulePredicateKey(group.module, group.name, group.arity)]));
+    // @ts-expect-error TS6133: auto-suppressed
+    const groupByKey = new Map(groups.map((group: any) => [modulePredicateKey(group.module, group.name, group.arity), group]));
+    const indexByKey = new Map(groups.map((group: any, i: any) => [modulePredicateKey(group.module, group.name, group.arity), i]));
     const edges = [];
 
     for (const group of groups) {
@@ -386,6 +405,7 @@ export class Program {
       const from = indexByKey.get(edge.from);
       const to = indexByKey.get(edge.to);
       if (from == null || to == null) continue;
+      // @ts-expect-error TS2532: auto-suppressed
       adjacency[from].push(to);
     }
 
@@ -419,7 +439,7 @@ export class Program {
     };
     return violations;
   }
-  ensureNegationStratification() {
+  ensureNegationStratification(): any {
     if (!this._negationAnalysis) this.analyzeNegationStratification();
     return this._negationAnalysis;
   }
@@ -432,20 +452,20 @@ export class Program {
   get stratifiedNegation() {
     return this.ensureNegationStratification().stratified;
   }
-  assertStratifiedNegation() {
+  assertStratifiedNegation(): any {
     const violations = this.ensureNegationStratification().errors;
     if (violations.length === 0) return true;
-    const details = violations.map((edge) => `${edge.from} depends negatively on ${edge.to}`).join('; ');
+    const details = violations.map((edge: any) => `${edge.from} depends negatively on ${edge.to}`).join('; ');
     throw new Error(`unstratified negation: ${details}`);
   }
-  isStratifiedNegation() {
+  isStratifiedNegation(): any {
     return this.ensureNegationStratification().stratified;
   }
 
-  groupHasRule(group) {
-    return group.clauses.some((clause) => clauseBodyLength(clause) > 0);
+  groupHasRule(group: any): any {
+    return group.clauses.some((clause: any) => clauseBodyLength(clause) > 0);
   }
-  sourceFactLines(predicateKeys = null, options = {}) {
+  sourceFactLines(predicateKeys: any = null, options: any = {}): any {
     const lines = new Set();
     const env = new Env();
     const writeOptions = {
@@ -466,10 +486,27 @@ export class Program {
     }
     return lines;
   }
+
+    operators: any;
+    moduleMetaPredicates: any;
+    dynamicPredicates: any;
+    strictIso: any;
+    groups: any;
+    moduleImports: any;
+    modules: any;
+    mutable: any;
+    clauses: any;
+    _revisionState: any;
+    _negationAnalysis: any;
+    initializations: any;
+    quads: any;
+    prologFlagDirectives: any;
+    charConversionDirectives: any;
+    doubleQuotes: any;
 }
 
 class ProgramBuilder {
-  constructor(options = {}, program = null) {
+  constructor(options: any = {}, program: any = null) {
     this.options = options;
     this.program = program ?? new Program([], { ...options, [DEFER_PROGRAM_BUILD]: true });
     this.declaredDynamicIndicators = new Map();
@@ -478,7 +515,7 @@ class ProgramBuilder {
     this.finished = false;
   }
 
-  addClauses(clauses) {
+  addClauses(clauses: any): any {
     if (this.finished) throw new Error('program builder is already finalized');
     const program = this.program;
     let lastGroupKey = this.lastGroupKey;
@@ -546,7 +583,7 @@ class ProgramBuilder {
     this.lastGroup = lastGroup;
   }
 
-  addDirectiveClause(clause) {
+  addDirectiveClause(clause: any): any {
     const program = this.program;
     const module = clause.module ?? 'user';
     for (const indicator of dynamicDirectiveIndicators(clause)) {
@@ -584,7 +621,7 @@ class ProgramBuilder {
     }
   }
 
-  finish() {
+  finish(): any {
     if (this.finished) return this.program;
     this.finished = true;
     const program = this.program;
@@ -612,15 +649,22 @@ class ProgramBuilder {
     if (this.options.strictNegation === true) program.assertStratifiedNegation();
     return program;
   }
+
+    finished: any;
+    program: any;
+    lastGroupKey: any;
+    lastGroup: any;
+    declaredDynamicIndicators: any;
+    options: any;
 }
 
-function buildProgramFromSources(sources, options) {
+function buildProgramFromSources(sources: any, options: any): any {
   // The source-metadata-free path is common for CLI and conformance runs.  It
   // attempts the compact line parser directly into a fresh builder.  Should a
   // source require the full parser (for example because it defines custom
   // operators), the partial builder is simply discarded and the source set is
   // rebuilt once with the general streaming parser.
-  const hasModuleDirectives = sources.some((source) => {
+  const hasModuleDirectives = sources.some((source: any) => {
     const text = typeof source === 'string' ? source : source?.text ?? source?.source ?? '';
     return /:-\s*(?:module|use_module)\s*\(/.test(text);
   });
@@ -634,12 +678,12 @@ function buildProgramFromSources(sources, options) {
   return builder.finish();
 }
 
-function loadSourcesIntoBuilder(builder, sources, options, fast) {
+function loadSourcesIntoBuilder(builder: any, sources: any, options: any, fast: any): any {
   const ensured = new Set();
   const loadedModules = new Set();
   const operatorState = createParserOperatorState([], true, { isoStrict: options.isoStrict === true });
   const parserFlagState = { doubleQuotes: options.doubleQuotes ?? 'chars' };
-  const prepared = sources.map((source) => ({
+  const prepared = sources.map((source: any) => ({
     source,
     options: { ...sourceOptionsFor(source, options), operatorState, parserFlagState },
   }));
@@ -663,7 +707,7 @@ function loadSourcesIntoBuilder(builder, sources, options, fast) {
   }
 }
 
-function sourceOptionsFor(source, options) {
+function sourceOptionsFor(source: any, options: any): any {
   if (typeof source === 'string') return options;
   return {
     ...options,
@@ -672,7 +716,8 @@ function sourceOptionsFor(source, options) {
   };
 }
 
-function sourcePath(options) {
+function sourcePath(options: any): any {
+  // @ts-expect-error TS7005: auto-suppressed
   if (!path) return null;
   const filename = String(options.filename ?? '');
   if (!filename || filename.startsWith('<') || /^https?:\/\//.test(filename)) return null;
@@ -680,14 +725,16 @@ function sourcePath(options) {
   return path.resolve(base, filename);
 }
 
-function loadSourceIntoBuilder(builder, source, options, ensured, loadedModules, fast, context) {
+function loadSourceIntoBuilder(builder: any, source: any, options: any, ensured: any, loadedModules: any, fast: any, context: any): any {
+  // @ts-expect-error TS7034: auto-suppressed
   const batch = [];
   const flush = () => {
     if (batch.length === 0) return;
+    // @ts-expect-error TS7005: auto-suppressed
     builder.addClauses(batch);
     batch.length = 0;
   };
-  const accept = (clause) => {
+  const accept = (clause: any) => {
     if (clause?.kind === 'quad') {
       flush();
       clause.module = context.module;
@@ -743,12 +790,13 @@ function loadSourceIntoBuilder(builder, source, options, ensured, loadedModules,
   };
 
   if (fast) {
-    const acceptBinary = (headName, head0Type, head0Name, head1Type, head1Name,
-        bodyName, body0Type, body0Name, body1Type, body1Name) => {
+    const acceptBinary = (headName: any, head0Type: any, head0Name: any, head1Type: any, head1Name: any,
+        bodyName: any, body0Type: any, body0Name: any, body1Type: any, body1Name: any) => {
       batch.push(new CompactBinaryClause(
         headName, head0Type, head0Name, head1Type, head1Name,
         bodyName, body0Type, body0Name, body1Type, body1Name,
       ));
+      // @ts-expect-error TS7005: auto-suppressed
       batch[batch.length - 1].module = context.module;
       if (batch.length >= PROGRAM_BUILD_BATCH_SIZE) flush();
     };
@@ -761,7 +809,7 @@ function loadSourceIntoBuilder(builder, source, options, ensured, loadedModules,
   return true;
 }
 
-function includeDirective(clause) {
+function includeDirective(clause: any): any {
   if (isCompactBinaryClause(clause) || !isDirectiveClause(clause)) return null;
   const directive = clause.head.args[0];
   return directive?.type === COMPOUND && directive.arity === 1 &&
@@ -770,7 +818,7 @@ function includeDirective(clause) {
     : null;
 }
 
-function moduleDirective(clause) {
+function moduleDirective(clause: any): any {
   if (isCompactBinaryClause(clause) || !isDirectiveClause(clause)) return null;
   const directive = clause.head.args[0];
   if (directive?.type !== COMPOUND || directive.name !== 'module' || directive.arity !== 2) return null;
@@ -781,7 +829,7 @@ function moduleDirective(clause) {
   return { name: directive.args[0].name };
 }
 
-function useModuleDirective(clause) {
+function useModuleDirective(clause: any): any {
   if (isCompactBinaryClause(clause) || !isDirectiveClause(clause)) return null;
   const directive = clause.head.args[0];
   if (directive?.type !== COMPOUND || directive.name !== 'use_module' || ![1, 2].includes(directive.arity)) return null;
@@ -790,7 +838,7 @@ function useModuleDirective(clause) {
   return { designation: directive.args[0], imports };
 }
 
-function moduleExportIndicators(term) {
+function moduleExportIndicators(term: any): any {
   const items = properListItems(term, new Env());
   if (items == null) return null;
   const indicators = [];
@@ -808,7 +856,7 @@ function moduleExportIndicators(term) {
   return indicators;
 }
 
-function readModuleSource(designation, options) {
+function readModuleSource(designation: any, options: any): any {
   if (designation.type === COMPOUND && designation.name === 'library' && designation.arity === 1 &&
       designation.args[0].type === ATOM) {
     const name = designation.args[0].name;
@@ -821,6 +869,7 @@ function readModuleSource(designation, options) {
     };
   }
   if (designation.type !== ATOM) throw new PrologError('type_error(source_sink)', designation);
+  // @ts-expect-error TS7005: auto-suppressed
   if (!fs || !path) throw new PrologError('permission_error(access, source_sink)', designation);
   const base = options.baseDir ?? currentWorkingDirectory();
   const filename = path.resolve(base, designation.name);
@@ -835,7 +884,7 @@ function readModuleSource(designation, options) {
   return { name: declaration.name, text, options: { ...options, filename, baseDir: path.dirname(filename) } };
 }
 
-function annotateGoalModule(term, module) {
+function annotateGoalModule(term: any, module: any): any {
   if (!term || (term.type !== ATOM && term.type !== COMPOUND)) return term;
   term.module = module;
   const callableArguments = (term.name === ',' || term.name === ';' || term.name === '->') ? term.args
@@ -847,9 +896,10 @@ function annotateGoalModule(term, module) {
   return term;
 }
 
-function readIncludedSource(directive, options, ensured) {
+function readIncludedSource(directive: any, options: any, ensured: any): any {
   const designation = directive.args[0];
   if (designation.type !== ATOM) throw new PrologError('type_error(atom)', designation);
+  // @ts-expect-error TS7005: auto-suppressed
   if (!fs || !path) {
     throw new PrologError('permission_error(access, source_sink)', atom(designation.name));
   }
@@ -874,24 +924,24 @@ function readIncludedSource(directive, options, ensured) {
   };
 }
 
-function isDirectiveClause(clause) {
+function isDirectiveClause(clause: any): any {
   return clause.body.length === 0 && clause.head.type === COMPOUND &&
     clause.head.name === ':-' && clause.head.arity === 1;
 }
 
-function dynamicDirectiveIndicators(clause) {
+function dynamicDirectiveIndicators(clause: any): any {
   if (!isDirectiveClause(clause)) return [];
   const directive = clause.head.args[0];
   if (directive.type !== COMPOUND || directive.name !== 'dynamic' || directive.arity !== 1) return [];
   const terms = properListItems(directive.args[0], new Env()) ?? flattenDirectiveSequence(directive.args[0]);
-  return terms.map((indicator) =>
+  return terms.map((indicator: any) =>
     indicator.type === COMPOUND && ['/', '//'].includes(indicator.name) && indicator.arity === 2
       ? nonterminalOrPredicateIndicator(indicator)
       : null
   ).filter(Boolean);
 }
 
-function nonterminalOrPredicateIndicator(term) {
+function nonterminalOrPredicateIndicator(term: any): any {
   const indicator = predicateIndicator(term.args[0], term.args[1]);
   if (!indicator || term.name !== '//') return indicator;
   indicator.arity += 2;
@@ -900,39 +950,39 @@ function nonterminalOrPredicateIndicator(term) {
   return indicator;
 }
 
-function flattenDirectiveSequence(term) {
+function flattenDirectiveSequence(term: any): any {
   if (term.type === COMPOUND && term.name === ',' && term.arity === 2) {
     return [...flattenDirectiveSequence(term.args[0]), ...flattenDirectiveSequence(term.args[1])];
   }
   return [term];
 }
 
-function operatorDirective(clause) {
+function operatorDirective(clause: any): any {
   if (!isDirectiveClause(clause)) return null;
   const directive = clause.head.args[0];
   if (directive.type !== COMPOUND || directive.name !== 'op' || directive.arity !== 3) return null;
   const [priority, specifier, names] = directive.args;
   if (priority.type !== 'number' || specifier.type !== ATOM) return null;
   const items = names.type === ATOM ? [names] : properListItems(names, new Env());
-  if (!items || items.some((item) => item.type !== ATOM)) return null;
+  if (!items || items.some((item: any) => item.type !== ATOM)) return null;
   return {
     priority: Number(priority.name),
     specifier: specifier.name,
-    names: items.map((item) => item.name),
+    names: items.map((item: any) => item.name),
   };
 }
 
-function assertHeadIsDefinable(head, strictIso = false) {
+function assertHeadIsDefinable(head: any, strictIso: any = false): any {
   if (head.type === ATOM || head.type === COMPOUND) {
     assertPredicateIsDefinable(head.name, head.arity, strictIso);
   }
 }
 
-function assertDynamicIndicatorIsDefinable(indicator, strictIso = false) {
+function assertDynamicIndicatorIsDefinable(indicator: any, strictIso: any = false): any {
   assertPredicateIsDefinable(indicator.name, indicator.arity, strictIso);
 }
 
-function assertPredicateIsDefinable(name, arity, strictIso = false) {
+function assertPredicateIsDefinable(name: any, arity: any, strictIso: any = false): any {
   // false/0 is standardized as a static built-in by Corrigendum 2 and cannot
   // be redefined in either profile.  Strict core mode extends the same ISO
   // rule to every Part-1 built-in/control construct; the normal EyeProlog
@@ -943,51 +993,51 @@ function assertPredicateIsDefinable(name, arity, strictIso = false) {
   }
 }
 
-function staticProcedureModificationError(name, arity) {
+function staticProcedureModificationError(name: any, arity: any): any {
   return new PrologError(
     'permission_error(modify, static_procedure)',
     compound('/', [atom(name), numberTerm(arity)]),
   );
 }
 
-function componentHasNegativeEdge(start, deps, negativeEdges) {
+function componentHasNegativeEdge(start: any, deps: any, negativeEdges: any): any {
   const forward = reachableIndexes(start, deps);
-  const component = new Set([...forward].filter((index) => reachableIndexes(index, deps).has(start)));
-  return negativeEdges.some(([from, to]) => component.has(from) && component.has(to));
+  const component = new Set([...forward].filter((index: any) => reachableIndexes(index, deps).has(start)));
+  return negativeEdges.some(([from, to]: any) => component.has(from) && component.has(to));
 }
 
-function compactClauseIsDirectRecursive(clause, group) {
+function compactClauseIsDirectRecursive(clause: any, group: any): any {
   return isCompactBinaryClause(clause) && clause.bodyName === group.name && group.arity === 2;
 }
 
-function clauseHasCut(clause) {
+function clauseHasCut(clause: any): any {
   return !isCompactBinaryClause(clause) && clause.body.some(termContainsCut);
 }
 
-function clauseIsDirectRecursive(clause, group) {
+function clauseIsDirectRecursive(clause: any, group: any): any {
   if (isCompactBinaryClause(clause)) return compactClauseIsDirectRecursive(clause, group);
-  return clause.body.some((goal) =>
+  return clause.body.some((goal: any) =>
     goal.type === COMPOUND && goal.name === group.name && goal.arity === group.arity
   );
 }
 
-function componentHasCut(start, deps, groups) {
+function componentHasCut(start: any, deps: any, groups: any): any {
   const forward = reachableIndexes(start, deps);
-  const component = [...forward].filter((index) => reachableIndexes(index, deps).has(start));
-  return component.some((index) => {
+  const component = [...forward].filter((index: any) => reachableIndexes(index, deps).has(start));
+  return component.some((index: any) => {
     const group = groups[index];
-    const directRecursive = group.clauses.some((clause) => clauseIsDirectRecursive(clause, group));
+    const directRecursive = group.clauses.some((clause: any) => clauseIsDirectRecursive(clause, group));
     if (!directRecursive) return group.clauses.some(clauseHasCut);
-    return group.clauses.some((clause) => clauseIsDirectRecursive(clause, group) && clauseHasCut(clause));
+    return group.clauses.some((clause: any) => clauseIsDirectRecursive(clause, group) && clauseHasCut(clause));
   });
 }
 
-function termContainsCut(term) {
+function termContainsCut(term: any): any {
   if (term.type === ATOM) return term.name === '!';
   return term.type === COMPOUND && term.args.some(termContainsCut);
 }
 
-function reachableIndexes(start, deps) {
+function reachableIndexes(start: any, deps: any): any {
   const seen = new Set();
   const stack = [start];
   while (stack.length) {
@@ -999,7 +1049,7 @@ function reachableIndexes(start, deps) {
   return seen;
 }
 
-function inferStructuralInputPositions(group) {
+function inferStructuralInputPositions(group: any): any {
   let firstPatternedPosition = -1;
   let firstLinkedInputPosition = -1;
   const changed = new Uint8Array(group.arity);
@@ -1043,10 +1093,10 @@ function inferStructuralInputPositions(group) {
   }
   if (firstLinkedInputPosition >= 0) return [[firstLinkedInputPosition]];
   if (firstPatternedPosition >= 0) return [[firstPatternedPosition]];
-  return Array.from({ length: group.arity }, (_, index) => index);
+  return Array.from({ length: group.arity }, (_: any, index: any) => index);
 }
 
-function hasLinearNumericRecursion(group) {
+function hasLinearNumericRecursion(group: any): any {
   let recursiveClause = null;
   for (const clause of group.clauses) {
     if (isCompactBinaryClause(clause)) {
@@ -1068,39 +1118,39 @@ function hasLinearNumericRecursion(group) {
     if (recursiveClause) return false;
     recursiveClause = clause;
   }
-  return recursiveClause != null && !isCompactBinaryClause(recursiveClause) && recursiveClause.body.some((goal) =>
+  return recursiveClause != null && !isCompactBinaryClause(recursiveClause) && recursiveClause.body.some((goal: any) =>
     goal.type === COMPOUND && goal.name === 'is' && goal.arity === 2
   );
 }
 
-function isPiAccumulator(group) {
-  return group.name === 'pi' && group.arity === 5 && group.clauses.some((clause) =>
-    !isCompactBinaryClause(clause) && clause.body.some((goal) => goal.type === COMPOUND && goal.name === 'is' && goal.arity === 2)
+function isPiAccumulator(group: any): any {
+  return group.name === 'pi' && group.arity === 5 && group.clauses.some((clause: any) =>
+    !isCompactBinaryClause(clause) && clause.body.some((goal: any) => goal.type === COMPOUND && goal.name === 'is' && goal.arity === 2)
   );
 }
 
-function isPortableBetweenGenerator(group) {
+function isPortableBetweenGenerator(group: any): any {
   return group.name === 'eyeprolog__between' && group.arity === 3 &&
     group.clauses.length > 0 &&
-    group.clauses.every((clause) => clause.eyePrologLibraryPortable === true);
+    group.clauses.every((clause: any) => clause.eyePrologLibraryPortable === true);
 }
 
-function termContainsVariable(term, name) {
+function termContainsVariable(term: any, name: any): any {
   if (term.type === 'var') return term.name === name;
-  return term.args.some((arg) => termContainsVariable(arg, name));
+  return term.args.some((arg: any) => termContainsVariable(arg, name));
 }
 
-function sameClauseTerm(left, right) {
+function sameClauseTerm(left: any, right: any): any {
   if (left.type !== right.type || left.name !== right.name || left.args.length !== right.args.length) return false;
-  return left.args.every((arg, index) => sameClauseTerm(arg, right.args[index]));
+  return left.args.every((arg: any, index: any) => sameClauseTerm(arg, right.args[index]));
 }
 
-function termHasNoVariables(term) {
+function termHasNoVariables(term: any): any {
   if (!term || term.type === 'var') return false;
-  return !term.args?.some((arg) => !termHasNoVariables(arg));
+  return !term.args?.some((arg: any) => !termHasNoVariables(arg));
 }
 
-function directGoalDependencyKey(goal) {
+function directGoalDependencyKey(goal: any): any {
   if (goal.type === ATOM) return `${goal.name}/0`;
   if (goal.type !== COMPOUND) return null;
   if (goal.name === ',' && goal.arity === 2) return null;
@@ -1113,7 +1163,7 @@ function directGoalDependencyKey(goal) {
   return `${goal.name}/${goal.arity}`;
 }
 
-function collectGoalDependencies(goal, negated) {
+function collectGoalDependencies(goal: any, negated: any): any {
   if (goal.type === ATOM) return [{ key: `${goal.name}/0`, name: goal.name, arity: 0, module: goal.module, negative: negated }];
   if (goal.type !== COMPOUND) return [];
   if (goal.name === ',' && goal.arity === 2) {
@@ -1144,15 +1194,17 @@ function collectGoalDependencies(goal, negated) {
   return [{ key: `${goal.name}/${goal.arity}`, name: goal.name, arity: goal.arity, module: goal.module, negative: negated }];
 }
 
-function stronglyConnectedComponents(adjacency) {
+function stronglyConnectedComponents(adjacency: any): any {
   let index = 0;
+  // @ts-expect-error TS7034: auto-suppressed
   const stack = [];
   const onStack = new Set();
   const indexes = new Map();
   const lowlinks = new Map();
+  // @ts-expect-error TS7034: auto-suppressed
   const components = [];
 
-  function visit(v) {
+  function visit(v: any) {
     indexes.set(v, index);
     lowlinks.set(v, index);
     index++;
@@ -1171,6 +1223,7 @@ function stronglyConnectedComponents(adjacency) {
     if (lowlinks.get(v) === indexes.get(v)) {
       const component = [];
       while (true) {
+        // @ts-expect-error TS7005: auto-suppressed
         const w = stack.pop();
         onStack.delete(w);
         component.push(w);
@@ -1183,11 +1236,12 @@ function stronglyConnectedComponents(adjacency) {
   for (let v = 0; v < adjacency.length; v++) {
     if (!indexes.has(v)) visit(v);
   }
+  // @ts-expect-error TS7005: auto-suppressed
   return components;
 }
 
-function computeNegationStrata(groups, edges, indexByKey) {
-  const strata = new Map(groups.map((group) => [`${group.name}/${group.arity}`, 0]));
+function computeNegationStrata(groups: any, edges: any, indexByKey: any): any {
+  const strata = new Map(groups.map((group: any) => [`${group.name}/${group.arity}`, 0]));
   if (groups.length === 0) return strata;
 
   for (let pass = 0; pass < groups.length; pass++) {
@@ -1195,6 +1249,7 @@ function computeNegationStrata(groups, edges, indexByKey) {
     for (const edge of edges) {
       if (!indexByKey.has(edge.from) || !indexByKey.has(edge.to)) continue;
       const fromStratum = strata.get(edge.from) ?? 0;
+      // @ts-expect-error TS2365: auto-suppressed
       const required = (strata.get(edge.to) ?? 0) + (edge.negative ? 1 : 0);
       if (fromStratum < required) {
         strata.set(edge.from, required);
@@ -1203,10 +1258,10 @@ function computeNegationStrata(groups, edges, indexByKey) {
     }
     if (!changed) return strata;
   }
-  return new Map(groups.map((group) => [`${group.name}/${group.arity}`, null]));
+  return new Map(groups.map((group: any) => [`${group.name}/${group.arity}`, null]));
 }
 
-function predicateIndicator(name, arity) {
+function predicateIndicator(name: any, arity: any): any {
   if (name?.type !== ATOM || arity?.type !== 'number') return null;
   if (!/^\d+$/.test(arity.name)) return null;
   const arityNumber = Number(arity.name);
@@ -1221,7 +1276,7 @@ const INDEX_MIN_SPEEDUP = 1.5;
 const INDEX_MAX_VAR_FRACTION = 0.1;
 const MULTI_INDEX_MIN_SPEEDUP_RATIO = 3;
 
-function makeArgumentIndex() {
+function makeArgumentIndex(): any {
   return {
     atomBuckets: new Map(),
     stringBuckets: new Map(),
@@ -1231,46 +1286,46 @@ function makeArgumentIndex() {
   };
 }
 
-function scalarBuckets(index, term) {
+function scalarBuckets(index: any, term: any): any {
   if (term.type === ATOM) return index.atomBuckets;
   if (term.type === 'string') return index.stringBuckets;
   return index.numberBuckets;
 }
 
-function argumentBucket(index, term) {
+function argumentBucket(index: any, term: any): any {
   return scalarBuckets(index, term).get(term.name) ?? null;
 }
 
-function addArgumentBucket(index, term, clause) {
+function addArgumentBucket(index: any, term: any, clause: any): any {
   addClauseBucket(scalarBuckets(index, term), term.name, clause);
 }
 
-function scalarIndexKey(term) {
+function scalarIndexKey(term: any): any {
   return `${term.type}\u0000${term.name}`;
 }
 
-function addClauseBucket(buckets, key, clause) {
+function addClauseBucket(buckets: any, key: any, clause: any): any {
   const existing = buckets.get(key);
   if (existing == null) buckets.set(key, clause);
   else if (Array.isArray(existing)) existing.push(clause);
   else buckets.set(key, [existing, clause]);
 }
 
-function clauseCollectionLength(clauses) {
+function clauseCollectionLength(clauses: any): any {
   return clauses == null ? 0 : Array.isArray(clauses) ? clauses.length : 1;
 }
 
-function clauseCollectionAt(clauses, index) {
+function clauseCollectionAt(clauses: any, index: any): any {
   return Array.isArray(clauses) ? clauses[index] : index === 0 ? clauses : undefined;
 }
 
-function compactScalarBuckets(index, type) {
+function compactScalarBuckets(index: any, type: any): any {
   if (type === ATOM) return index.atomBuckets;
   if (type === 'number') return index.numberBuckets;
   return index.stringBuckets;
 }
 
-function indexCompactOne(index, type, name, clause, clauses = null, clausePosition = -1) {
+function indexCompactOne(index: any, type: any, name: any, clause: any, clauses: any = null, clausePosition: any = -1): any {
   if (type !== VAR) {
     if (!index.sawScalar) {
       index.sawScalar = true;
@@ -1282,7 +1337,7 @@ function indexCompactOne(index, type, name, clause, clauses = null, clausePositi
   }
 }
 
-function indexOne(index, arg, clause, clauses = null, clausePosition = -1) {
+function indexOne(index: any, arg: any, clause: any, clauses: any = null, clausePosition: any = -1): any {
   if (isScalar(arg)) {
     if (!index.sawScalar) {
       index.sawScalar = true;
@@ -1294,11 +1349,11 @@ function indexOne(index, arg, clause, clauses = null, clausePosition = -1) {
   }
 }
 
-function indexFallback(index, group) {
+function indexFallback(index: any, group: any): any {
   return index.sawScalar ? index.fallback : group.clauses;
 }
 
-function rebuildGroupIndexes(group) {
+function rebuildGroupIndexes(group: any): any {
   group.argIndexes = Array.from({ length: group.arity }, makeArgumentIndex);
   group.demandIndexes.clear();
   group.rejectedDemandIndexes.clear();
@@ -1320,36 +1375,38 @@ function rebuildGroupIndexes(group) {
   }
 }
 
-function demandIndexKey(positions) {
+function demandIndexKey(positions: any): any {
   return positions.join(',');
 }
 
-function demandValueKey(values) {
+function demandValueKey(values: any): any {
   // Unification distinguishes atoms, strings, and numbers even when their
   // lexical spellings are identical. Include the scalar type in every key so
   // indexes never merge semantically distinct candidates.
   if (values.length === 1) return scalarIndexKey(values[0]);
-  return values.map((value) => {
+  return values.map((value: any) => {
     const key = scalarIndexKey(value);
     return `${key.length}:${key}`;
   }).join('');
 }
 
-function buildDemandIndex(group, positions) {
+function buildDemandIndex(group: any, positions: any): any {
   const index = { positions, buckets: new Map(), fallback: [] };
   for (const clause of group.clauses) {
     if (isCompactBinaryClause(clause)) {
-      const values = positions.map((position) => compactTerm(
+      const values = positions.map((position: any) => compactTerm(
         compactHeadArgType(clause, position), compactHeadArgName(clause, position)));
       if (!values.every(isScalar)) {
+        // @ts-expect-error TS2345: auto-suppressed
         index.fallback.push(clause);
         continue;
       }
       addClauseBucket(index.buckets, demandValueKey(values), clause);
       continue;
     }
-    const values = positions.map((position) => clause.head.args[position]);
+    const values = positions.map((position: any) => clause.head.args[position]);
     if (!values.every(isScalar)) {
+      // @ts-expect-error TS2345: auto-suppressed
       index.fallback.push(clause);
       continue;
     }
@@ -1359,7 +1416,7 @@ function buildDemandIndex(group, positions) {
   return index;
 }
 
-function mergeClausesInSourceOrder(primary, fallback) {
+function mergeClausesInSourceOrder(primary: any, fallback: any): any {
   const primaryLength = clauseCollectionLength(primary);
   if (fallback.length === 0) return primary;
   if (primaryLength === 0) return fallback;
@@ -1381,7 +1438,7 @@ function mergeClausesInSourceOrder(primary, fallback) {
 }
 
 
-export function selectGroundClauseCandidates(group, goal) {
+export function selectGroundClauseCandidates(group: any, goal: any): any {
   if (goal.type !== COMPOUND || group.clauses.length < DEMAND_INDEX_MIN_CLAUSES) return group.clauses;
   let bestPrimary = null;
   let bestFallback = null;
@@ -1407,7 +1464,7 @@ export function selectGroundClauseCandidates(group, goal) {
   return mergeClausesInSourceOrder(bestPrimary, bestFallback);
 }
 
-export function selectClauseCandidates(group, goal, env) {
+export function selectClauseCandidates(group: any, goal: any, env: any): any {
   if (goal.type !== COMPOUND || group.clauses.length < DEMAND_INDEX_MIN_CLAUSES) {
     return { primary: group.clauses, fallback: [] };
   }
@@ -1427,7 +1484,7 @@ export function selectClauseCandidates(group, goal, env) {
 // The scalar-fact join already has dereferenced local values. Keeping this
 // entry point separate avoids manufacturing an Env facade and dereferencing
 // every argument again in its inner loop.
-export function selectClauseCandidatesForValues(group, positions, values) {
+export function selectClauseCandidatesForValues(group: any, positions: any, values: any): any {
   if (group.clauses.length < DEMAND_INDEX_MIN_CLAUSES || positions.length === 0) {
     return { primary: group.clauses, fallback: [] };
   }
@@ -1478,7 +1535,7 @@ export function selectClauseCandidatesForValues(group, positions, values) {
   return { primary: best, fallback: [] };
 }
 
-function demandCandidateParts(group, positions, values) {
+function demandCandidateParts(group: any, positions: any, values: any): any {
   const indexKey = demandIndexKey(positions);
   let index = group.demandIndexes.get(indexKey);
   if (!index) {
@@ -1489,10 +1546,10 @@ function demandCandidateParts(group, positions, values) {
   return { primary: bucket, fallback: index.fallback };
 }
 
-export function makeProgram(source, options = {}) {
+export function makeProgram(source: any, options: any = {}): any {
   return Program.parse(source, options);
 }
 
-export function parseSourceClauses(source, options = {}) {
+export function parseSourceClauses(source: any, options: any = {}): any {
   return parseClauses(source, options);
 }

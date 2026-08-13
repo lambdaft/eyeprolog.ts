@@ -7,7 +7,7 @@ import { selectClauseCandidates } from './program.js';
 import { getEyePrologRegistry } from './standard-library.js';
 import { Solver, nextFreshId } from './solver.js';
 
-export function whyProof(program, goal, options = {}) {
+export function whyProof(program: any, goal: any, options: any = {}): any {
   const maxDepth = options.maxDepth ?? 256;
   const registry = options.registry ?? getEyePrologRegistry();
   const env = options.env ?? new Env();
@@ -17,16 +17,16 @@ export function whyProof(program, goal, options = {}) {
   return { ok: false, text: '' };
 }
 
-export function whyNoProof(goal) {
+export function whyNoProof(goal: any): any {
   return renderWhyNoProof(goal);
 }
 
 // Kept for embedders that already import explainProof.  The CLI exposes machine-readable output through whyProof.
-export function explainProof(program, goal, options = {}) {
+export function explainProof(program: any, goal: any, options: any = {}): any {
   return whyProof(program, goal, options);
 }
 
-function* proveGoalAll(program, goal, env, depth, maxDepth, registry, active) {
+function* proveGoalAll(program: any, goal: any, env: any, depth: any, maxDepth: any, registry: any, active: any): any {
   if (depth > maxDepth) return;
 
   if (goal.type === COMPOUND && goal.name === ',' && goal.arity === 2) {
@@ -102,7 +102,7 @@ function* proveGoalAll(program, goal, env, depth, maxDepth, registry, active) {
       const clause = clauseCandidateAt(pass, candidateIndex);
       const id = nextFreshId();
       const freshHead = freshTerm(clause.head, id);
-      const freshBody = clause.body.map((term) => freshTerm(term, id));
+      const freshBody = clause.body.map((term: any) => freshTerm(term, id));
       const next = env.clone();
       if (!unify(goal, freshHead, next)) continue;
 
@@ -151,15 +151,15 @@ function* proveGoalAll(program, goal, env, depth, maxDepth, registry, active) {
   }
 }
 
-function clauseCandidateLength(candidate) {
+function clauseCandidateLength(candidate: any): any {
   return candidate == null ? 0 : Array.isArray(candidate) ? candidate.length : 1;
 }
 
-function clauseCandidateAt(candidate, index) {
+function clauseCandidateAt(candidate: any, index: any): any {
   return Array.isArray(candidate) ? candidate[index] : index === 0 ? candidate : undefined;
 }
 
-function* proveGoalsAll(program, goals, env, depth, maxDepth, registry, active) {
+function* proveGoalsAll(program: any, goals: any, env: any, depth: any, maxDepth: any, registry: any, active: any): any {
   if (goals.length === 0) {
     yield { env: env.clone(), children: [] };
     return;
@@ -178,7 +178,7 @@ function* proveGoalsAll(program, goals, env, depth, maxDepth, registry, active) 
   }
 }
 
-function builtinDefinition(program, goal, env, registry) {
+function builtinDefinition(program: any, goal: any, env: any, registry: any): any {
   if (goal.type !== ATOM && goal.type !== COMPOUND) return { handled: false, def: null, solver: null };
   const def = registry.get(goal.name, goal.arity);
   if (!def) return { handled: false, def: null, solver: null };
@@ -188,18 +188,18 @@ function builtinDefinition(program, goal, env, registry) {
   return { handled: true, def, solver };
 }
 
-function* builtinEnvs(def, solver, goal, env) {
+function* builtinEnvs(def: any, solver: any, goal: any, env: any): any {
   for (const next of def.handler({ solver, goal, env })) yield next;
 }
 
-function builtinIsUsedForGoal(def, solver, goal, env) {
+function builtinIsUsedForGoal(def: any, solver: any, goal: any, env: any): any {
   if (typeof def.shouldUse === 'function' && !def.shouldUse({ solver, goal, env })) return false;
   if (typeof def.ready !== 'function') return true;
   if (def.ready(goal, env)) return true;
   return !def.fallbackWhenNotReady;
 }
 
-function selectReadyDeterministicBuiltin(goals, env, registry) {
+function selectReadyDeterministicBuiltin(goals: any, env: any, registry: any): any {
   for (let i = 0; i < goals.length; i++) {
     const goal = goals[i];
     if (goal.type !== COMPOUND) continue;
@@ -211,7 +211,7 @@ function selectReadyDeterministicBuiltin(goals, env, registry) {
   return 0;
 }
 
-function builtinChildren(program, goal, env, depth, maxDepth, registry, active) {
+function builtinChildren(program: any, goal: any, env: any, depth: any, maxDepth: any, registry: any, active: any): any {
   if (goal.type !== COMPOUND) return [];
   if (goal.name === 'once' && goal.arity === 1) {
     for (const proved of proveGoalAll(program, goal.args[0], env.clone(), depth, maxDepth, registry, active)) return [proved.node];
@@ -219,11 +219,11 @@ function builtinChildren(program, goal, env, depth, maxDepth, registry, active) 
   return [];
 }
 
-function activeVariant(goal, env, active) {
-  return active.some((entry) => variantTerms(goal, env, entry.goal, entry.env));
+function activeVariant(goal: any, env: any, active: any): any {
+  return active.some((entry: any) => variantTerms(goal, env, entry.goal, entry.env));
 }
 
-function sourceMethod(clause, kind) {
+function sourceMethod(clause: any, kind: any): any {
   const source = clause.source ?? {};
   return {
     type: 'source',
@@ -233,7 +233,7 @@ function sourceMethod(clause, kind) {
   };
 }
 
-function builtinMethod(goal) {
+function builtinMethod(goal: any): any {
   return {
     type: 'builtin',
     name: goal.type === COMPOUND ? goal.name : 'goal',
@@ -241,7 +241,7 @@ function builtinMethod(goal) {
   };
 }
 
-function libraryMethod(goal) {
+function libraryMethod(goal: any): any {
   return {
     type: 'library',
     name: goal.type === COMPOUND ? goal.name : 'goal',
@@ -249,28 +249,28 @@ function libraryMethod(goal) {
   };
 }
 
-function renderMethodTerm(method) {
+function renderMethodTerm(method: any): any {
   if (method && method.type === 'source') return `${method.kind}(${quoteString(method.filename)}, clause(${method.clause}))`;
   if (method && method.type === 'builtin') return `builtin(${quoteAtomText(method.name)}, ${method.arity})`;
   if (method && method.type === 'library') return `library(${quoteAtomText(method.name)}, ${method.arity})`;
   return String(method);
 }
 
-function renderWhyFacts(answerGoal, rootNode, env) {
+function renderWhyFacts(answerGoal: any, rootNode: any, env: any): any {
   const answer = termToString(resolveForProof(answerGoal, env), new Env(), true);
   return renderWhyTerm(answer, renderAbstractProofTerm(rootNode, 1));
 }
 
-function renderWhyNoProof(goal) {
+function renderWhyNoProof(goal: any): any {
   const answer = termToString(resolveForProof(goal, new Env()), new Env(), true);
   return renderWhyTerm(answer, `${indent(1)}no_proof`);
 }
 
-function renderWhyTerm(answer, proofTerm) {
+function renderWhyTerm(answer: any, proofTerm: any): any {
   return ['why(', `${indent(1)}${answer},`, proofTerm, ').', '', ''].join('\n');
 }
 
-function renderAbstractProofTerm(node, level) {
+function renderAbstractProofTerm(node: any, level: any): any {
   const goal = termToString(node.goal, new Env(), true);
   const hasTail = node.bindings.length || node.children.length;
   const lines = [
@@ -286,7 +286,7 @@ function renderAbstractProofTerm(node, level) {
   return lines.join('\n');
 }
 
-function renderUsesTerm(children, level) {
+function renderUsesTerm(children: any, level: any): any {
   const lines = [`${indent(level)}uses([`];
   for (let i = 0; i < children.length; i++) {
     const item = renderAbstractProofTerm(children[i], level + 1);
@@ -296,53 +296,57 @@ function renderUsesTerm(children, level) {
   return lines.join('\n');
 }
 
-function renderBindingsTerm(bindings) {
-  return `bindings(${renderProofListInline(bindings, binding => `binding(${quoteString(binding.name)}, ${termToString(binding.value, new Env(), true)})`)})`;
+function renderBindingsTerm(bindings: any): any {
+  return `bindings(${renderProofListInline(bindings, (binding: any) => `binding(${quoteString(binding.name)}, ${termToString(binding.value, new Env(), true)})`)})`;
 }
 
-function renderProofListInline(items, renderItem) {
-  return `[${items.map(item => renderItem(item)).join(', ')}]`;
+function renderProofListInline(items: any, renderItem: any): any {
+  return `[${items.map((item: any) => renderItem(item)).join(', ')}]`;
 }
 
-function withTrailingComma(text) {
+function withTrailingComma(text: any): any {
   const lines = String(text).split('\n');
   lines[lines.length - 1] += ',';
   return lines.join('\n');
 }
 
-function indent(level) {
+function indent(level: any): any {
   return '  '.repeat(level);
 }
 
-function quoteAtomText(text) {
+function quoteAtomText(text: any): any {
   return termToString({ type: 'atom', name: String(text), args: [] }, new Env(), true);
 }
 
-function quoteString(value) {
+function quoteString(value: any): any {
   return JSON.stringify(String(value));
 }
 
-function originalVariableName(name) {
+function originalVariableName(name: any): any {
   return String(name).replace(/#\d+$/, '');
 }
 
-function resolveForProof(term, env) {
+function resolveForProof(term: any, env: any): any {
   const resolved = deref(term, env);
   if (resolved.type === VAR) return new Term(VAR, originalVariableName(resolved.name), []);
-  return new Term(resolved.type, resolved.name, resolved.args.map((arg) => resolveForProof(arg, env)));
+  return new Term(resolved.type, resolved.name, resolved.args.map((arg: any) => resolveForProof(arg, env)));
 }
 
-function collectClauseSubstitutions(clause, freshHead, freshBody) {
+function collectClauseSubstitutions(clause: any, freshHead: any, freshBody: any): any {
+  // @ts-expect-error TS7034: auto-suppressed
   const substitutions = [];
   const seen = new Set();
+  // @ts-expect-error TS7005: auto-suppressed
   collectSubstitutions(clause.head, freshHead, substitutions, seen);
   for (let i = 0; i < clause.body.length && i < freshBody.length; i++) {
+    // @ts-expect-error TS7005: auto-suppressed
     collectSubstitutions(clause.body[i], freshBody[i], substitutions, seen);
   }
+  // @ts-expect-error TS7005: auto-suppressed
   return substitutions;
 }
 
-function collectSubstitutions(original, fresh, substitutions, seen) {
+function collectSubstitutions(original: any, fresh: any, substitutions: any, seen: any): any {
   if (!original || !fresh) return;
   if (original.type === VAR) {
     if (!seen.has(original.name)) {
@@ -356,7 +360,7 @@ function collectSubstitutions(original, fresh, substitutions, seen) {
   for (let i = 0; i < arity; i++) collectSubstitutions(original.args[i], fresh.args[i], substitutions, seen);
 }
 
-function resolvedSubstitutions(substitutions, env) {
+function resolvedSubstitutions(substitutions: any, env: any): any {
   const out = [];
   for (const substitution of substitutions) {
     const resolved = deref(substitution.fresh, env);

@@ -1,11 +1,12 @@
 // Browser worker entry used by playground.html.
 // Keep this module free of Node-only imports: it is fetched directly by the
 // browser and is also exercised by test/run-playground.mjs.
+// @ts-expect-error TS2307: auto-suppressed
 import { createEyePrologRegistry, run } from './index.js?playground=20260811c';
 
 const registry = createEyePrologRegistry();
 
-export function executePlaygroundRequest(data, now = defaultNow) {
+export function executePlaygroundRequest(data: any, now: any = defaultNow): any {
   const started = now();
   try {
     const result = run(data?.source ?? '', {
@@ -22,20 +23,23 @@ export function executePlaygroundRequest(data, now = defaultNow) {
   } catch (error) {
     return {
       ok: false,
+      // @ts-expect-error TS2339: auto-suppressed
       code: error?.code,
+      // @ts-expect-error TS2339: auto-suppressed
       stdout: error?.stdout,
+      // @ts-expect-error TS2339: auto-suppressed
       error: error?.stack || error?.message || String(error),
     };
   }
 }
 
-export function installPlaygroundWorker(scope) {
-  scope.onmessage = (event) => {
+export function installPlaygroundWorker(scope: any): any {
+  scope.onmessage = (event: any) => {
     scope.postMessage(executePlaygroundRequest(event.data));
   };
 }
 
-function defaultNow() {
+function defaultNow(): any {
   return globalThis.performance?.now?.() ?? Date.now();
 }
 

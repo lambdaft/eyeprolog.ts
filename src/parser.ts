@@ -8,28 +8,28 @@ const TOK = {
   COMMA: ',', BAR: '|', DOT: '.', IF: ':-'
 };
 
-function isWhitespaceCode(code) {
+function isWhitespaceCode(code: any): any {
   return code === 32 || code === 9 || code === 10 || code === 13 || code === 12 || code === 11;
 }
 
-function isDigitCode(code) {
+function isDigitCode(code: any): any {
   return code >= 48 && code <= 57;
 }
 
-function isAsciiLetterCode(code) {
+function isAsciiLetterCode(code: any): any {
   return (code >= 65 && code <= 90) || (code >= 97 && code <= 122);
 }
 
-function isNameContinueCode(code) {
+function isNameContinueCode(code: any): any {
   return code === 95 || isAsciiLetterCode(code) || isDigitCode(code);
 }
 
 
-function isVariableStartCode(code) {
+function isVariableStartCode(code: any): any {
   return code === 95 || (code >= 65 && code <= 90);
 }
 
-function isPlainAtomStartCode(code) {
+function isPlainAtomStartCode(code: any): any {
   return code >= 97 && code <= 122;
 }
 
@@ -91,10 +91,10 @@ export const ISO_OPERATOR_DEFINITIONS = [
   [1100, 'xfy', ';'], [1050, 'xfy', '->'], [1000, 'xfy', ','],
   [900, 'fy', '\\+'],
   ...['=', '=..', '\\=', '==', '\\==', '@<', '@=<', '@>', '@>=', 'is',
-    '=:=', '=\\=', '<', '=<', '>', '>='].map((name) => [700, 'xfx', name]),
+    '=:=', '=\\=', '<', '=<', '>', '>='].map((name: any) => [700, 'xfx', name]),
   [600, 'xfy', ':'],
-  ...['+', '-', '/\\', '\\/'].map((name) => [500, 'yfx', name]),
-  ...['*', '/', '//', 'div', 'mod', 'rem', '<<', '>>'].map((name) => [400, 'yfx', name]),
+  ...['+', '-', '/\\', '\\/'].map((name: any) => [500, 'yfx', name]),
+  ...['*', '/', '//', 'div', 'mod', 'rem', '<<', '>>'].map((name: any) => [400, 'yfx', name]),
   [200, 'xfx', '**'], [200, 'xfy', '^'],
   [200, 'fy', '+'], [200, 'fy', '-'], [200, 'fy', '\\'],
 ];
@@ -110,19 +110,19 @@ const CLPZ_OPERATOR_DEFINITIONS = [
   [760, 'yfx', '#<==>'], [750, 'xfy', '#==>'], [750, 'yfx', '#<=='],
   [740, 'yfx', '#\\/'], [730, 'yfx', '#\\'], [720, 'yfx', '#/\\'],
   [710, 'fy', '#\\'],
-  ...['#>', '#<', '#>=', '#=<', '#=', '#\\=', 'in', 'ins'].map((name) => [700, 'xfx', name]),
+  ...['#>', '#<', '#>=', '#=<', '#=', '#\\=', 'in', 'ins'].map((name: any) => [700, 'xfx', name]),
   [450, 'xfx', '..'],
 ];
 
-function operatorStrength(priority) {
+function operatorStrength(priority: any): any {
   return 1201 - priority;
 }
 
-function isGraphicAtomCode(code) {
+function isGraphicAtomCode(code: any): any {
   return graphicAtomChars.includes(String.fromCharCode(code));
 }
 
-function defineParserOperator(state, priority, specifier, name) {
+function defineParserOperator(state: any, priority: any, specifier: any, name: any): any {
   const strength = operatorStrength(priority);
   if (['xfx', 'xfy', 'yfx'].includes(specifier)) {
     if (priority === 0) state.infixOperators.delete(name);
@@ -139,7 +139,7 @@ function defineParserOperator(state, priority, specifier, name) {
   }
 }
 
-export function createParserOperatorState(definitions = [], includeDefaults = true, options = {}) {
+export function createParserOperatorState(definitions: any = [], includeDefaults: any = true, options: any = {}): any {
   const state = {
     infixOperators: includeDefaults ? new Map(INFIX_OPERATORS) : new Map(),
     prefixOperators: includeDefaults ? new Map(PREFIX_OPERATORS) : new Map(),
@@ -159,7 +159,7 @@ export function createParserOperatorState(definitions = [], includeDefaults = tr
 }
 
 class Parser {
-  constructor(source, options = {}) {
+  constructor(source: any, options: any = {}) {
     this.source = String(source ?? '');
     this.filename = options.filename ?? '<input>';
     this.pos = 0;
@@ -184,10 +184,10 @@ class Parser {
     this.previousToken = null;
     this.token = this.nextToken();
   }
-  defineOperator(priority, specifier, name) {
+  defineOperator(priority: any, specifier: any, name: any): any {
     defineParserOperator(this, priority, specifier, name);
   }
-  applyOperatorDirective(directive, line) {
+  applyOperatorDirective(directive: any, line: any): any {
     if (directive.type !== 'compound' || directive.name !== 'op' || directive.arity !== 3) return false;
     const [priorityTerm, specifierTerm, nameTerm] = directive.args;
     if (priorityTerm.type !== 'number' || !/^\d+$/.test(priorityTerm.name)) {
@@ -219,7 +219,7 @@ class Parser {
     for (const name of names) this.defineOperator(priority, specifierTerm.name, name);
     return true;
   }
-  applyParserFlagDirective(directive) {
+  applyParserFlagDirective(directive: any): any {
     if (directive.type !== 'compound' || directive.name !== 'set_prolog_flag' || directive.arity !== 2) return;
     const [flag, value] = directive.args;
     if (flag.type === 'atom' && flag.name === 'double_quotes' &&
@@ -227,7 +227,7 @@ class Parser {
       this.parserFlagState.doubleQuotes = value.name;
     }
   }
-  applyImportedLibraryOperators(directive) {
+  applyImportedLibraryOperators(directive: any): any {
     if (directive.type !== COMPOUND || directive.name !== 'use_module' || ![1, 2].includes(directive.arity)) return;
     const designation = directive.args[0];
     if (designation?.type !== COMPOUND || designation.name !== 'library' || designation.arity !== 1 ||
@@ -236,7 +236,7 @@ class Parser {
       this.defineOperator(priority, specifier, name);
     }
   }
-  operatorTokenName(token = this.token) {
+  operatorTokenName(token: any = this.token): any {
     if (token.type === TOK.ATOM) return token.text;
     // `:-` has its own token because it also introduces clauses/directives,
     // but ISO 6.3.3.1 still permits an operator atom as an argument. Treat the
@@ -246,10 +246,10 @@ class Parser {
     if (token.type === TOK.STRING && this.parserFlagState.doubleQuotes === 'atom') return token.text;
     return null;
   }
-  peek(offset = 0) {
+  peek(offset: any = 0): any {
     return this.source[this.pos + offset] ?? '';
   }
-  take() {
+  take(): any {
     const ch = this.peek();
     if (ch) {
       this.pos++;
@@ -257,7 +257,7 @@ class Parser {
     }
     return ch;
   }
-  skipWhitespaceAndComments() {
+  skipWhitespaceAndComments(): any {
     const source = this.source;
     const len = source.length;
     while (true) {
@@ -285,11 +285,12 @@ class Parser {
       break;
     }
   }
-  readEscape(line) {
+  readEscape(line: any): any {
     const escaped = this.take();
     if (!escaped) throw new Error(`parse line ${line}: unterminated escape sequence`);
     if (escaped === '\n') return '';
     const controls = { a: '\x07', b: '\b', r: '\r', f: '\f', t: '\t', n: '\n', v: '\v' };
+    // @ts-expect-error TS7053: auto-suppressed
     if (controls[escaped] != null) return controls[escaped];
     if (escaped === 'x') {
       let digits = '';
@@ -309,7 +310,7 @@ class Parser {
     if (/^[0-9]$/.test(escaped)) throw new Error(`parse line ${line}: bad octal escape`);
     return escaped;
   }
-  nextToken() {
+  nextToken(): any {
     // The tokenizer keeps just enough state for useful parse-line errors and
     // treats quoted atoms and quoted strings differently, as Prolog syntax does.
     this.skipWhitespaceAndComments();
@@ -345,8 +346,10 @@ class Parser {
       '(': TOK.LPAREN, ')': TOK.RPAREN, '[': TOK.LBRACKET, ']': TOK.RBRACKET,
       '{': TOK.LBRACE, '}': TOK.RBRACE, ',': TOK.COMMA, '|': TOK.BAR, '.': TOK.DOT,
     };
+    // @ts-expect-error TS7053: auto-suppressed
     if (punct[ch]) {
       this.take();
+      // @ts-expect-error TS7053: auto-suppressed
       return { type: punct[ch], text: ch, line };
     }
     if (ch === ':' && this.peek(1) === '-') {
@@ -457,14 +460,14 @@ class Parser {
 
     throw new Error(`parse line ${line}: bad character ${JSON.stringify(ch)}`);
   }
-  advance() {
+  advance(): any {
     this.previousToken = this.token;
     this.token = this.nextToken();
   }
-  expect(type, desc = type) {
+  expect(type: any, desc: any = type): any {
     if (this.token.type !== type) throw new Error(`parse line ${this.token.line}: expected ${desc}, got ${this.token.text}`);
   }
-  parseParenthesizedTerm() {
+  parseParenthesizedTerm(): any {
     this.expect(TOK.LPAREN, '(');
     this.advance();
     const term = this.parseTerm(0, true);
@@ -472,7 +475,7 @@ class Parser {
     this.advance();
     return term;
   }
-  parseList() {
+  parseList(): any {
     // Lists are lowered to './2' cons cells and [] so list predicates can work
     // on a single canonical representation.
     this.expect(TOK.LBRACKET, '[');
@@ -504,7 +507,7 @@ class Parser {
     for (let i = items.length - 1; i >= 0; i--) tail = cons(items[i], tail);
     return tail;
   }
-  parseCurly() {
+  parseCurly(): any {
     this.expect(TOK.LBRACE, '{');
     this.advance();
     if (this.token.type === TOK.RBRACE) {
@@ -516,7 +519,7 @@ class Parser {
     this.advance();
     return compound('{}', [term]);
   }
-  parseTerm(minPrecedence = 0, allowComma = false, allowBar = true) {
+  parseTerm(minPrecedence: any = 0, allowComma: any = false, allowBar: any = true): any {
     let left = this.parsePrefixTerm(minPrecedence, allowBar);
     let strictPostfixPrecedence = null;
     while (true) {
@@ -554,7 +557,7 @@ class Parser {
     }
     return left;
   }
-  parsePrefixTerm(minPrecedence = 0, allowBar = true) {
+  parsePrefixTerm(minPrecedence: any = 0, allowBar: any = true): any {
     // `:-` is tokenized specially so the program grammar can recognize clause
     // and directive markers. In term argument position, however, ISO 6.3.3.1
     // permits an operator atom directly as an `arg`; a leading `:-` cannot be
@@ -620,11 +623,12 @@ class Parser {
         }
         return atom(value);
       }
-      const items = Array.from(value, (character) =>
+      const items = Array.from(value, (character: any) =>
         this.parserFlagState.doubleQuotes === 'chars'
           ? atom(character)
           : numberTerm(character.codePointAt(0)));
       let list = emptyList();
+      // @ts-expect-error TS2345: auto-suppressed
       for (let i = items.length - 1; i >= 0; i--) list = cons(items[i], list);
       return list;
     }
@@ -658,7 +662,7 @@ class Parser {
     }
     throw new Error(`parse line ${this.token.line}: bad term`);
   }
-  sourceLineIsIndented(line) {
+  sourceLineIsIndented(line: any): any {
     let start = 0;
     for (let current = 1; current < line; current++) {
       const newline = this.source.indexOf('\n', start);
@@ -667,7 +671,7 @@ class Parser {
     }
     return this.source[start] === ' ' || this.source[start] === '\t';
   }
-  parseQuadAnswers(id, query, line, accept) {
+  parseQuadAnswers(id: any, query: any, line: any, accept: any): any {
     this.expect(TOK.DOT, '.');
     this.advance();
 
@@ -687,21 +691,22 @@ class Parser {
       source: { filename: this.filename, line },
     });
   }
-  parseQuad(id, line, accept) {
+  parseQuad(id: any, line: any, accept: any): any {
     const query = this.parseTerm(0, true);
     this.parseQuadAnswers(id, query, line, accept);
   }
-  parseQuadTerm(term, line, accept) {
+  parseQuadTerm(term: any, line: any, accept: any): any {
     if (term.type !== COMPOUND || term.name !== '?-' || ![1, 2].includes(term.arity)) return false;
     const id = term.arity === 2 ? term.args[0] : null;
     const query = term.args[term.arity - 1];
     this.parseQuadAnswers(id, query, line, accept);
     return true;
   }
-  parseProgram(emit = null) {
+  parseProgram(emit: any = null): any {
     const clauses = emit ? null : [];
     let clauseNumber = 0;
-    const accept = emit ?? ((clause) => clauses.push(clause));
+    // @ts-expect-error TS18047: auto-suppressed
+    const accept = emit ?? ((clause: any) => clauses.push(clause));
     while (this.token.type !== TOK.EOF) {
       const line = this.token.line;
       // In the normal EyeProlog profile, canonical functional ?-/1 and
@@ -748,6 +753,7 @@ class Parser {
         // than an executable source clause, so they do not shift proof clause
         // numbers in the importing file.
         if (!['module', 'use_module', 'meta_predicate'].includes(directive.name)) clauseNumber++;
+        // @ts-expect-error TS2339: auto-suppressed
         if (this.sourceMetadata) clause.source = { filename: this.filename, line, clause: clauseNumber };
         accept(clause);
         continue;
@@ -773,6 +779,7 @@ class Parser {
           this.expect(TOK.DOT, '.');
           this.advance();
           clauseNumber++;
+          // @ts-expect-error TS2339: auto-suppressed
           if (this.sourceMetadata) clause.source = { filename: this.filename, line, clause: clauseNumber };
           accept(clause);
           continue;
@@ -788,6 +795,7 @@ class Parser {
         this.advance();
         const clause = { head: compound('-->', [head, grammarBody]), body: [] };
         clauseNumber++;
+        // @ts-expect-error TS2339: auto-suppressed
         if (this.sourceMetadata) clause.source = { filename: this.filename, line, clause: clauseNumber };
         accept(clause);
         continue;
@@ -808,14 +816,29 @@ class Parser {
       this.advance();
       const clause = { head, body };
       clauseNumber++;
+      // @ts-expect-error TS2339: auto-suppressed
       if (this.sourceMetadata) clause.source = { filename: this.filename, line, clause: clauseNumber };
       accept(clause);
     }
     return clauses;
   }
+
+    postfixOperators: any;
+    infixOperators: any;
+    parserFlagState: any;
+    token: any;
+    source: any;
+    pos: any;
+    line: any;
+    previousToken: any;
+    prefixOperators: any;
+    anonymous: any;
+    filename: any;
+    strictIso: any;
+    sourceMetadata: any;
 }
 
-function listAtomNames(term) {
+function listAtomNames(term: any): any {
   const names = [];
   let cursor = term;
   while (cursor.type === 'compound' && cursor.name === '.' && cursor.arity === 2) {
@@ -827,7 +850,7 @@ function listAtomNames(term) {
 }
 
 
-export function parseClauses(source, options = {}) {
+export function parseClauses(source: any, options: any = {}): any {
   const ownsParserFlagState = options.parserFlagState == null;
   const initialDoubleQuotes = options.doubleQuotes ?? 'chars';
   const parserOptions = ownsParserFlagState
@@ -844,15 +867,15 @@ export function parseClauses(source, options = {}) {
 // Streaming parser entry points used by ProgramBuilder.  The ordinary public
 // parseClauses API still returns an array; these avoid a second, temporary
 // clause array when a Program is being built directly from source text.
-export function parseClausesInto(source, options = {}, emit) {
+export function parseClausesInto(source: any, options: any = {}, emit: any): any {
   new Parser(source, options).parseProgram(emit);
 }
 
-export function tryParseClausesFastInto(source, emit, emitBinary = null, options = {}) {
+export function tryParseClausesFastInto(source: any, emit: any, emitBinary: any = null, options: any = {}): any {
   return parseClausesFastNoSource(source, emit, emitBinary, options) !== null;
 }
 
-function isSimpleName(text) {
+function isSimpleName(text: any): any {
   if (!text) return false;
   const first = text.charCodeAt(0);
   if (!(first >= 97 && first <= 122)) return false;
@@ -864,23 +887,27 @@ function isSimpleName(text) {
 }
 
 const SIMPLE_NUMBER = /^-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?$/;
+// @ts-expect-error TS6133: auto-suppressed
 const FAST_BINARY_FACT = /^([a-z][A-Za-z0-9_]*)\(\s*([^,\s()[\]|"']+)\s*,\s*([^,\s()[\]|"']+)\s*\)\.$/;
+// @ts-expect-error TS6133: auto-suppressed
 const FAST_BINARY_RULE = /^([a-z][A-Za-z0-9_]*)\(\s*([^,\s()[\]|"']+)\s*,\s*([^,\s()[\]|"']+)\s*\)\s*:-\s*([a-z][A-Za-z0-9_]*)\(\s*([^,\s()[\]|"']+)\s*,\s*([^,\s()[\]|"']+)\s*\)\.$/;
 const SIMPLE_VARIABLE = /^(?:_|[A-Z_][A-Za-z0-9_]*)$/;
 const SIMPLE_ATOM = /^[a-z][A-Za-z0-9_]*$/;
 const GRAPHIC_ATOM = /^[#$&*+\-\/<=>@^~\\]+$/;
 
-function parseClausesFastNoSource(source, emit = null, emitBinary = null, options = {}) {
+function parseClausesFastNoSource(source: any, emit: any = null, emitBinary: any = null, options: any = {}): any {
   source = String(source ?? '');
   const numberCache = new Map();
+  // @ts-expect-error TS6133: auto-suppressed
   const stringCache = new Map();
   const variableCache = new Map();
   const clauses = emit ? null : [];
-  const accept = emit ?? ((clause) => clauses.push(clause));
+  // @ts-expect-error TS18047: auto-suppressed
+  const accept = emit ?? ((clause: any) => clauses.push(clause));
   let anonymous = 0;
   let chunk = '';
 
-  const cached = (cache, key, create) => {
+  const cached = (cache: any, key: any, create: any) => {
     const existing = cache.get(key);
     if (existing) return existing;
     const value = create(key);
@@ -888,8 +915,8 @@ function parseClausesFastNoSource(source, emit = null, emitBinary = null, option
     return value;
   };
 
-  const isFastScalarToken = (text) => SIMPLE_VARIABLE.test(text) || SIMPLE_ATOM.test(text) || GRAPHIC_ATOM.test(text) || SIMPLE_NUMBER.test(text);
-  const scalarOrVariableFast = (text) => {
+  const isFastScalarToken = (text: any) => SIMPLE_VARIABLE.test(text) || SIMPLE_ATOM.test(text) || GRAPHIC_ATOM.test(text) || SIMPLE_NUMBER.test(text);
+  const scalarOrVariableFast = (text: any) => {
     if (!text || !isFastScalarToken(text)) throw new Error('bad simple term');
     const first = text.charCodeAt(0);
     if (text === '_') return variable(`__anon${anonymous++}`);
@@ -904,13 +931,13 @@ function parseClausesFastNoSource(source, emit = null, emitBinary = null, option
     return atom(text);
   };
 
-  const trimRange = (text, start, end) => {
+  const trimRange = (text: any, start: any, end: any) => {
     while (start < end && isWhitespaceCode(text.charCodeAt(start))) start++;
     while (end > start && isWhitespaceCode(text.charCodeAt(end - 1))) end--;
     return [start, end];
   };
 
-  const tokenKindInRange = (text, start, end) => {
+  const tokenKindInRange = (text: any, start: any, end: any) => {
     if (start >= end) return null;
     const first = text.charCodeAt(start);
     if (first === 95 || (first >= 65 && first <= 90)) {
@@ -929,7 +956,7 @@ function parseClausesFastNoSource(source, emit = null, emitBinary = null, option
     return null;
   };
 
-  const simpleNumberInRange = (text, start, end) => {
+  const simpleNumberInRange = (text: any, start: any, end: any) => {
     let i = start;
     if (text.charCodeAt(i) === 45) i++;
     if (i >= end || !isDigitCode(text.charCodeAt(i))) return false;
@@ -948,7 +975,7 @@ function parseClausesFastNoSource(source, emit = null, emitBinary = null, option
     return i === end;
   };
 
-  const scalarOrVariableRange = (text, start, end) => {
+  const scalarOrVariableRange = (text: any, start: any, end: any) => {
     [start, end] = trimRange(text, start, end);
     const kind = tokenKindInRange(text, start, end);
     const value = text.slice(start, end);
@@ -968,7 +995,7 @@ function parseClausesFastNoSource(source, emit = null, emitBinary = null, option
   const rawHead = {};
   const rawBody = {};
 
-  const scalarTokenRange = (text, start, end, out, slot) => {
+  const scalarTokenRange = (text: any, start: any, end: any, out: any, slot: any) => {
     [start, end] = trimRange(text, start, end);
     const kind = tokenKindInRange(text, start, end);
     let type = kind;
@@ -981,7 +1008,7 @@ function parseClausesFastNoSource(source, emit = null, emitBinary = null, option
     return true;
   };
 
-  const parseBinaryRawRange = (text, start, end, out) => {
+  const parseBinaryRawRange = (text: any, start: any, end: any, out: any) => {
     [start, end] = trimRange(text, start, end);
     let i = start;
     const first = text.charCodeAt(i);
@@ -1008,7 +1035,7 @@ function parseClausesFastNoSource(source, emit = null, emitBinary = null, option
     return true;
   };
 
-  const parseBinaryCompoundRange = (text, start = 0, end = text.length) => {
+  const parseBinaryCompoundRange = (text: any, start: any = 0, end: any = text.length) => {
     [start, end] = trimRange(text, start, end);
     let i = start;
     const first = text.charCodeAt(i);
@@ -1038,7 +1065,7 @@ function parseClausesFastNoSource(source, emit = null, emitBinary = null, option
     return compound(text.slice(start, nameEnd), [left, right]);
   };
 
-  const parseFastLine = (text) => {
+  const parseFastLine = (text: any) => {
     if (!text.endsWith('.')) return null;
     const end = text.length - 1;
     const rule = text.indexOf(':-');
@@ -1053,7 +1080,7 @@ function parseClausesFastNoSource(source, emit = null, emitBinary = null, option
     return bodyGoal ? { head, body: [bodyGoal] } : null;
   };
 
-  const findRuleInRange = (text, start, end) => {
+  const findRuleInRange = (text: any, start: any, end: any) => {
     // String#indexOf has no end bound. Using it here used to scan the rest of
     // the complete source for every fact line, making large fact files
     // quadratic when their rules appeared before the facts.
@@ -1063,13 +1090,15 @@ function parseClausesFastNoSource(source, emit = null, emitBinary = null, option
     return -1;
   };
 
-  const emitFastBinaryRange = (text, start, end) => {
+  const emitFastBinaryRange = (text: any, start: any, end: any) => {
     if (!emitBinary || start >= end || text.charCodeAt(end - 1) !== 46) return false;
     const termEnd = end - 1;
     const rule = findRuleInRange(text, start, termEnd);
     if (rule < 0) {
       if (!parseBinaryRawRange(text, start, termEnd, rawHead)) return false;
+      // @ts-expect-error TS2339: auto-suppressed
       emitBinary(rawHead.name,
+        // @ts-expect-error TS2339: auto-suppressed
         rawHead.arg0Type, rawHead.arg0Name, rawHead.arg1Type, rawHead.arg1Name,
         null, null, null, null, null);
       return true;
@@ -1077,13 +1106,16 @@ function parseClausesFastNoSource(source, emit = null, emitBinary = null, option
     if (findRuleInRange(text, rule + 2, termEnd) >= 0 ||
         !parseBinaryRawRange(text, start, rule, rawHead) ||
         !parseBinaryRawRange(text, rule + 2, termEnd, rawBody)) return false;
+    // @ts-expect-error TS2339: auto-suppressed
     emitBinary(rawHead.name,
+      // @ts-expect-error TS2339: auto-suppressed
       rawHead.arg0Type, rawHead.arg0Name, rawHead.arg1Type, rawHead.arg1Name,
+      // @ts-expect-error TS2339: auto-suppressed
       rawBody.name, rawBody.arg0Type, rawBody.arg0Name, rawBody.arg1Type, rawBody.arg1Name);
     return true;
   };
 
-  const parseFastRange = (text, start, end) => {
+  const parseFastRange = (text: any, start: any, end: any) => {
     if (start >= end || text.charCodeAt(end - 1) !== 46) return null;
     const termEnd = end - 1;
     const rule = findRuleInRange(text, start, termEnd);
@@ -1098,8 +1130,8 @@ function parseClausesFastNoSource(source, emit = null, emitBinary = null, option
     return bodyGoal ? { head, body: [bodyGoal] } : null;
   };
 
-  const scalarOrVariable = (text) => scalarOrVariableFast(text.trim());
-  const parseBinaryCompound = (text) => {
+  const scalarOrVariable = (text: any) => scalarOrVariableFast(text.trim());
+  const parseBinaryCompound = (text: any) => {
     const parsed = parseBinaryCompoundRange(text, 0, text.length);
     if (parsed) return parsed;
     text = text.trim();
@@ -1117,7 +1149,7 @@ function parseClausesFastNoSource(source, emit = null, emitBinary = null, option
     return compound(name, [scalarOrVariable(left), scalarOrVariable(right)]);
   };
 
-  const parseSimple = (text) => {
+  const parseSimple = (text: any) => {
     const fast = parseFastLine(text);
     if (fast) return fast;
     if (!text.endsWith('.') || text.includes('\n')) return null;
@@ -1184,11 +1216,11 @@ function parseClausesFastNoSource(source, emit = null, emitBinary = null, option
   return clauses ?? true;
 }
 
-export function parseProgramText(source, options = {}) {
+export function parseProgramText(source: any, options: any = {}): any {
   return parseClauses(source, options);
 }
 
-export function parseGoalText(text, options = {}) {
+export function parseGoalText(text: any, options: any = {}): any {
   const clauses = parseClauses(`zz_goal((${text})).`, options);
   const head = clauses[0]?.head;
   if (clauses.length !== 1 || head?.type !== 'compound' ||

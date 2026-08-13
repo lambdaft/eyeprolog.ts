@@ -2,6 +2,7 @@
 // Grammar rules are lowered to ordinary clauses during program preparation;
 // phrase/2-3 use the same body expansion for dynamically supplied grammars.
 import {
+  // @ts-expect-error TS6133: auto-suppressed
   ATOM, COMPOUND, VAR, Env, atom, compound, deref, emptyList,
   flattenConjunction, variable,
 } from './term.js';
@@ -9,21 +10,21 @@ import { PrologError } from './iso.js';
 
 let dcgFresh = 0;
 
-function freshDcgVariable(label = 'S') {
+function freshDcgVariable(label: any = 'S'): any {
   // NUL cannot occur in a source variable name, so generated difference-list
   // variables cannot capture a variable written by the program.
   return variable(`\u0000dcg${++dcgFresh}:${label}`);
 }
 
-function conjunction(first, second) {
+function conjunction(first: any, second: any): any {
   return compound(',', [first, second]);
 }
 
-function equality(left, right) {
+function equality(left: any, right: any): any {
   return compound('=', [left, right]);
 }
 
-function listWithTail(items, tail) {
+function listWithTail(items: any, tail: any): any {
   let list = tail;
   for (let index = items.length - 1; index >= 0; index--) {
     list = compound('.', [items[index], list]);
@@ -31,7 +32,7 @@ function listWithTail(items, tail) {
   return list;
 }
 
-function terminalItems(term, env = new Env()) {
+function terminalItems(term: any, env: any = new Env()): any {
   const items = [];
   const original = term;
   const seen = new Set();
@@ -47,11 +48,11 @@ function terminalItems(term, env = new Env()) {
   throw new PrologError('type_error(list)', original);
 }
 
-function terminalsGoal(terminals, input, output, env) {
+function terminalsGoal(terminals: any, input: any, output: any, env: any): any {
   return equality(input, listWithTail(terminalItems(terminals, env), output));
 }
 
-function appendStateArguments(nonterminal, input, output, module) {
+function appendStateArguments(nonterminal: any, input: any, output: any, module: any): any {
   nonterminal = deref(nonterminal, new Env());
   if (nonterminal.type === ATOM) {
     const goal = compound(nonterminal.name, [input, output]);
@@ -70,7 +71,7 @@ function appendStateArguments(nonterminal, input, output, module) {
   return goal;
 }
 
-function markGoalModule(term, module) {
+function markGoalModule(term: any, module: any): any {
   if (!term || (term.type !== ATOM && term.type !== COMPOUND)) return term;
   term.module ??= module;
   if (term.type === COMPOUND &&
@@ -80,12 +81,12 @@ function markGoalModule(term, module) {
   return term;
 }
 
-function isTerminalSequence(term) {
+function isTerminalSequence(term: any): any {
   return (term.type === ATOM && term.name === '[]') ||
     (term.type === COMPOUND && term.name === '.' && term.arity === 2);
 }
 
-export function expandDcgBody(body, input, output, options = {}) {
+export function expandDcgBody(body: any, input: any, output: any, options: any = {}): any {
   const env = options.env ?? new Env();
   const module = options.module ?? 'user';
   body = deref(body, env);
@@ -182,11 +183,11 @@ export function expandDcgBody(body, input, output, options = {}) {
 // Embedded goals are validated before the translated grammar is executed.
 // This keeps a non-callable goal visible even when an earlier terminal or
 // branch would otherwise prevent the host goal from being reached.
-export function validateDcgEmbeddedGoals(body, input, output) {
+export function validateDcgEmbeddedGoals(body: any, input: any, output: any): any {
   const invalidBody = invalidDcgControl(body);
   if (invalidBody != null) throw new PrologError('type_error(callable)', invalidBody);
 
-  const visit = (term) => {
+  const visit = (term: any) => {
     if (term.type !== COMPOUND) return;
     if (term.name === '{}' && term.arity === 1) {
       if (invalidControlGoal(term.args[0])) {
@@ -203,7 +204,7 @@ export function validateDcgEmbeddedGoals(body, input, output) {
   visit(body);
 }
 
-function invalidDcgControl(term) {
+function invalidDcgControl(term: any): any {
   if (term.type !== ATOM && term.type !== COMPOUND && term.type !== VAR) return term;
   if (term.type !== COMPOUND || ![',', ';', '|', '->'].includes(term.name)) return null;
   for (const argument of term.args) {
@@ -214,7 +215,7 @@ function invalidDcgControl(term) {
   return null;
 }
 
-function invalidControlGoal(goal) {
+function invalidControlGoal(goal: any): any {
   if (goal.type === VAR) return false;
   if (goal.type !== ATOM && goal.type !== COMPOUND) return true;
   if (goal.type === COMPOUND && [',', ';', '->'].includes(goal.name) && goal.arity === 2) {
@@ -223,7 +224,7 @@ function invalidControlGoal(goal) {
   return false;
 }
 
-function splitGrammarHead(head) {
+function splitGrammarHead(head: any): any {
   let terminals = null;
   if (head.type === COMPOUND && head.name === ',' && head.arity === 2) {
     terminals = head.args[1];
@@ -246,7 +247,7 @@ function splitGrammarHead(head) {
   return { head, terminals, module };
 }
 
-export function expandDcgRuleClause(clause, defaultModule = 'user') {
+export function expandDcgRuleClause(clause: any, defaultModule: any = 'user'): any {
   if (clause?.body?.length !== 0 || clause?.head?.type !== COMPOUND ||
       clause.head.name !== '-->' || clause.head.arity !== 2) return null;
 
@@ -273,11 +274,12 @@ export function expandDcgRuleClause(clause, defaultModule = 'user') {
     module,
     grammarRule: clause.head,
   };
+  // @ts-expect-error TS2339: auto-suppressed
   if (clause.source) expanded.source = clause.source;
   return expanded;
 }
 
-export function isListOrPartialList(term, env) {
+export function isListOrPartialList(term: any, env: any): any {
   const seen = new Set();
   let cursor = deref(term, env);
   while (cursor.type === COMPOUND && cursor.name === '.' && cursor.arity === 2) {
@@ -288,6 +290,6 @@ export function isListOrPartialList(term, env) {
   return cursor.type === VAR || (cursor.type === ATOM && cursor.name === '[]');
 }
 
-export function emptyTerminalSequence() {
+export function emptyTerminalSequence(): any {
   return emptyList();
 }

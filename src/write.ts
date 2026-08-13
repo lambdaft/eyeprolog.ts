@@ -7,7 +7,7 @@ import {
 const graphicAtomCharacters = new Set('!#$&*+-/<=>@^~\\'.split(''));
 const compactInfixOperators = new Set([':', '..']);
 
-function atomNeedsQuotes(name) {
+function atomNeedsQuotes(name: any): any {
   if (!name) return true;
   if (name === '[]' || name === '{}') return false;
   if (name === '...') return false;
@@ -17,7 +17,7 @@ function atomNeedsQuotes(name) {
   return false;
 }
 
-function quoteAtom(name) {
+function quoteAtom(name: any): any {
   let out = "'";
   for (const ch of name) {
     if (ch === "'") out += "''";
@@ -35,11 +35,11 @@ function quoteAtom(name) {
   return out + "'";
 }
 
-function writeAtom(name) {
+function writeAtom(name: any): any {
   return atomNeedsQuotes(name) ? quoteAtom(name) : name;
 }
 
-function legacyVariableToIso(name) {
+function legacyVariableToIso(name: any): any {
   if (name === '?') return '_';
   const tail = name.slice(1);
   if (!tail) return '_';
@@ -47,7 +47,7 @@ function legacyVariableToIso(name) {
   return tail[0].toUpperCase() + tail.slice(1);
 }
 
-function writeVariable(name) {
+function writeVariable(name: any): any {
   name = String(name ?? '');
   if (/^\?(?:[A-Za-z_][A-Za-z0-9_]*)?$/.test(name)) return legacyVariableToIso(name);
   if (/^(?:_|[A-Z_][A-Za-z0-9_]*)$/.test(name)) return name;
@@ -56,7 +56,7 @@ function writeVariable(name) {
   return /^[A-Z_]/.test(sanitized) ? sanitized : `_${sanitized}`;
 }
 
-function writeString(value) {
+function writeString(value: any): any {
   let out = '"';
   for (const ch of value) {
     if (ch === '"' || ch === '\\') out += `\\${ch}`;
@@ -73,7 +73,7 @@ function writeString(value) {
   return out + '"';
 }
 
-function quotedListText(term, env, doubleQuotes) {
+function quotedListText(term: any, env: any, doubleQuotes: any): any {
   if (doubleQuotes !== 'chars' && doubleQuotes !== 'codes') return null;
   const characters = [];
   let cursor = term;
@@ -95,20 +95,20 @@ function quotedListText(term, env, doubleQuotes) {
   }
 }
 
-function writeNumberedVariable(index) {
+function writeNumberedVariable(index: any): any {
   if (!Number.isSafeInteger(index) || index < 0) return null;
   const letter = String.fromCharCode(65 + (index % 26));
   const suffix = Math.floor(index / 26);
   return suffix === 0 ? letter : `${letter}${suffix}`;
 }
 
-function operatorName(name) {
+function operatorName(name: any): any {
   if (/^[a-z][A-Za-z0-9_]*$/.test(name)) return name;
   if (/^[!#$&*+\-./<=>@^~\\;:]+$/.test(name)) return name;
   return quoteAtom(name);
 }
 
-function operatorTable(definitions) {
+function operatorTable(definitions: any): any {
   const table = new Map();
   for (const definition of definitions ?? []) {
     if (!definition || definition.priority === 0) continue;
@@ -119,19 +119,19 @@ function operatorTable(definitions) {
   return table;
 }
 
-function chooseOperator(term, table) {
+function chooseOperator(term: any, table: any): any {
   const definitions = table.get(term.name) ?? [];
   if (term.arity === 1) {
-    return definitions.find((definition) => definition.specifier === 'fx' || definition.specifier === 'fy') ??
-      definitions.find((definition) => definition.specifier === 'xf' || definition.specifier === 'yf') ?? null;
+    return definitions.find((definition: any) => definition.specifier === 'fx' || definition.specifier === 'fy') ??
+      definitions.find((definition: any) => definition.specifier === 'xf' || definition.specifier === 'yf') ?? null;
   }
   if (term.arity === 2) {
-    return definitions.find((definition) => ['xfx', 'xfy', 'yfx'].includes(definition.specifier)) ?? null;
+    return definitions.find((definition: any) => ['xfx', 'xfy', 'yfx'].includes(definition.specifier)) ?? null;
   }
   return null;
 }
 
-function format(term, env, options, table, maxPriority = 1200, context = 'term') {
+function format(term: any, env: any, options: any, table: any, maxPriority: any = 1200, context: any = 'term'): any {
   const resolved = deref(term, env);
   if (resolved.type === VAR) return options.variableNames.get(resolved.name) ?? writeVariable(resolved.name);
   if (resolved.type === STRING) return writeString(resolved.name);
@@ -201,11 +201,11 @@ function format(term, env, options, table, maxPriority = 1200, context = 'term')
   }
 
   const name = options.quoted ? writeAtom(resolved.name) : resolved.name;
-  const args = resolved.args.map((arg) => format(arg, env, options, table, 999, 'argument'));
+  const args = resolved.args.map((arg: any) => format(arg, env, options, table, 999, 'argument'));
   return `${name}(${args.join(options.compact ? ',' : ', ')})`;
 }
 
-export function formatTermForWrite(term, env = new Env(), options = {}) {
+export function formatTermForWrite(term: any, env: any = new Env(), options: any = {}): any {
   const normalized = {
     quoted: options.quoted === true,
     ignoreOps: options.ignoreOps === true,

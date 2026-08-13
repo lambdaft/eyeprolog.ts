@@ -33,7 +33,7 @@ import { getEyePrologRegistry } from './standard-library.js';
 import { parseGoalText } from './parser.js';
 import { formatTermForWrite } from './write.js';
 
-export function run(source, options = {}) {
+export function run(source: any, options: any = {}): any {
   const includeWhy = options.proof === true || options.why === true || options.explain === true;
   const requestedStrictIso = options.isoStrict === true;
   if (source instanceof Program && requestedStrictIso && source.strictIso !== true) {
@@ -50,7 +50,7 @@ export function run(source, options = {}) {
     ...runOptions,
     ioOptions: {
       ...(options.ioOptions ?? {}),
-      write: (text) => {
+      write: (text: any) => {
         const rendered = String(text);
         output.push(rendered);
         options.ioOptions?.write?.(rendered);
@@ -64,7 +64,7 @@ export function run(source, options = {}) {
     operators: [...program.operators.values()],
     quoted: true,
   };
-  const queriedKeys = new Set(goals.map((goal) => `${goal.name}/${goal.arity}`));
+  const queriedKeys = new Set(goals.map((goal: any) => `${goal.name}/${goal.arity}`));
   const facts = program.sourceFactLines(queriedKeys, writeOptions);
   const seen = new Set();
   let haltCode = null;
@@ -94,9 +94,9 @@ export function run(source, options = {}) {
   return { stdout: output.join(''), stats: solver.stats, haltCode };
 }
 
-function normalizeGoals(options, solver) {
+function normalizeGoals(options: any, solver: any): any {
   const requested = options.goals ?? (options.goal == null ? [] : [options.goal]);
-  return requested.map((requestedGoal) => {
+  return requested.map((requestedGoal: any) => {
     const goal = typeof requestedGoal === 'string'
       ? parseGoalText(requestedGoal, {
           doubleQuotes: solver.prologFlags.get('double_quotes')?.value?.name ?? 'chars',
@@ -110,7 +110,7 @@ function normalizeGoals(options, solver) {
   });
 }
 
-function appendExplanation(output, program, resolved, registry) {
+function appendExplanation(output: any, program: any, resolved: any, registry: any): any {
   const proof = whyProof(program, resolved, { registry });
   output.push(proof.text);
   if (!proof.ok) output.push(whyNoProof(resolved));

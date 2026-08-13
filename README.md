@@ -1,42 +1,29 @@
-# EyeProlog
+# EyeProlog.ts
 
-[![npm version](https://img.shields.io/npm/v/eyeprolog.svg)](https://www.npmjs.com/package/eyeprolog)
-[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.21446308-blue.svg)](https://doi.org/10.5281/zenodo.21446308)
+EyeProlog.ts is a strict TypeScript port of the amazing original [EyeProlog](https://github.com/eyereasoner/eyeprolog) engine. All credit for the original architecture, design, and ISO Prolog compliance goes to the original authors. The primary purpose of this port is to bring EyeProlog into modern, generic TypeScript projects with strict typing, enabling developers to ergonomically embed this powerful inference engine and Definite Clause Grammar (DCG) capabilities directly into their TypeScript stacks without battling dynamic JavaScript boundaries or missing type definitions.
 
-EyeProlog turns portable ISO Prolog programs into answers and inspectable proofs.
+EyeProlog.ts turns portable ISO Prolog programs into answers and inspectable proofs natively within a strict TypeScript runtime.
 
 <p>
   <a href="https://eyereasoner.github.io/eyeprolog/the-art-of-eyeprolog">
     <img src="book-assets/title-page.svg" alt="Read The Art of EyeProlog" title="Click to read The Art of EyeProlog" width="320">
   </a><br>
-  <strong>Click the cover to read <em>The Art of EyeProlog</em>.</strong>
+  <strong>Click the cover to read <em>The Art of EyeProlog</em> (the original comprehensive manual).</strong>
 </p>
 
-**[Why EyeProlog?](https://eyereasoner.github.io/eyeprolog/why-eyeprolog)** — Discover its purpose and design.
+**[Why EyeProlog?](https://eyereasoner.github.io/eyeprolog/why-eyeprolog)** — Discover the original purpose and design.
 
-**[Playground](https://eyereasoner.github.io/eyeprolog/playground)** — Run EyeProlog in your browser.
-
-The book is the reference for the language, command line, JavaScript API,
-examples, proofs, conformance, and implementation.
+The book is the reference for the language, command line, API,
+examples, proofs, conformance, and implementation boundaries for both `eyeprolog` and `eyeprolog.ts`.
 
 ## Quick start
 
-EyeProlog requires Node.js 18 or newer. Check the active runtime before
-installing:
+EyeProlog.ts requires Node.js 18 or newer and native TypeScript execution tools like `tsx` or standard `tsc`.
+
+Run EyeProlog.ts from the command line:
 
 ```sh
-node --version
-```
-
-If it reports an older release, upgrade through a Node version manager or the
-[official Node.js download](https://nodejs.org/en/download) and check again.
-Distribution packages can provide an older Node.js even on a current operating
-system.
-
-Run EyeProlog without a global installation:
-
-```sh
-npx --yes eyeprolog
+npx --yes eyeprolog.ts
 ?- use_module(library(lists)).
    true.
 ?- member(X, [prolog, logic]).
@@ -45,33 +32,24 @@ npx --yes eyeprolog
 ?- halt.
 ```
 
-For a persistent `eyeprolog` command without administrator access, install it
-under a user-owned prefix and put that prefix's `bin` directory on `PATH`:
+For a persistent `eyeprolog` command without administrator access, install it globally:
 
 ```sh
-npm install --global --prefix "$HOME/.local" eyeprolog
+npm install --global --prefix "$HOME/.local" eyeprolog.ts
 export PATH="$HOME/.local/bin:$PATH"
 eyeprolog
 ```
-
-Add the `PATH` export to your shell startup file to keep it across sessions.
-Do not use `sudo npm install`; npm's
-[EACCES guidance](https://docs.npmjs.com/resolving-eacces-permissions-errors-when-installing-packages-globally/)
-also recommends a Node version manager or a user-owned npm prefix.
 
 For a non-interactive run:
 
 ```sh
 printf 'human(socrates).\nmortal(X) :- human(X).\n' |
-  npx --yes eyeprolog --proof --goal 'mortal(socrates)' -
+  npx --yes eyeprolog.ts --proof --goal 'mortal(socrates)' -
 ```
 
 Programs may declare their default queries with `%% goal:` comments.
-Double-quoted text follows the ISO `double_quotes` flag and defaults to a
-proper list of one-character atoms (`chars`), matching Trealla and Scryer.
 
-Portable unit tests can be embedded as quads—a query followed by its expected
-top-level answer—and run with `eyeprolog --quads program.pl`:
+Portable unit tests can be embedded as quads—a query followed by its expected top-level answer—and run with `eyeprolog --quads program.pl`:
 
 ```prolog
 member_test ?- member(X, [prolog, logic]).
@@ -81,29 +59,18 @@ member_test ?- member(X, [prolog, logic]).
 
 ## Strict ISO/IEC 13211-1 core
 
-For portability and conformance work, run the Part 1 core with Technical
-Corrigenda 1–3 in strict mode:
+For portability and conformance work, run the Part 1 core with Technical Corrigenda 1–3 in strict mode:
 
 ```sh
 eyeprolog --iso-strict
 eyeprolog --iso-strict --goal 'p(X)' program.pl
 ```
 
-The equivalent JavaScript option is `isoStrict: true`. Strict mode rejects
-EyeProlog language extensions, Part 2 module directives, and Part 3 grammar-rule
-expansion/`phrase/2-3`; it also removes the EyeProlog `occurs_check` flag and
-disables automatic tabling. Normal mode is unchanged and continues to support
-modules, DCGs, quads, libraries, proofs, and the other documented extensions.
-
-The auditable processor-requirement checklist lives in
-[`test/conformance/ISO-COMPLIANCE.md`](test/conformance/ISO-COMPLIANCE.md).
-EyeProlog does not yet claim independent certification or closure of every
-normative Part 1 requirement.
+The equivalent TypeScript option is `isoStrict: true`. Strict mode rejects language extensions, Part 2 module directives, and Part 3 grammar-rule expansion/`phrase/2-3`; it also removes the `occurs_check` flag and disables automatic tabling. Normal mode supports modules, DCGs, quads, libraries, proofs, and other documented extensions natively.
 
 ## ISO modules and definite clause grammars
 
-EyeProlog implements ISO/IEC 13211-2 modules and the grammar rules and
-`phrase/2-3` predicates of ISO/IEC TS 13211-3:2025. For example:
+EyeProlog.ts natively implements ISO/IEC 13211-2 modules and the grammar rules and `phrase/2-3` predicates of ISO/IEC TS 13211-3:2025. For example:
 
 ```prolog
 sentence --> [hello], noun.
@@ -112,23 +79,15 @@ noun --> [world] | [prolog].
 %% goal: phrase(sentence, Words)
 ```
 
-EyeProlog also adds 99 public library predicate indicators to its 129-entry ISO
-profile. **60 are implemented entirely as ordinary Prolog clauses** in focused
-modules under `src/lib/`; the control predicates and finite-domain
-`library(clpz)` kernel use backtrackable host support.
-They are ISO/IEC 13211-2 modules loaded explicitly by purpose, such as
-`library(lists)`, `library(strings)`, `library(aggregate)`, or `library(clpz)`.
-Portable text
-predicates use ISO atoms or character lists. The old catch-all
-`library(eyeprolog)` module is no longer needed.
+**EyeProlog.ts features special ongoing ergonomic improvements for `dcg.ts` to allow easy, type-safe embedding of these grammars natively in TypeScript.**
 
 ## Development
 
 ```sh
-git clone https://github.com/eyereasoner/eyeprolog.git
-cd eyeprolog
+git clone https://github.com/lambdaft/eyeprolog.ts.git
+cd eyeprolog.ts
 npm install
 npm test
 ```
 
-EyeProlog is released under the [MIT License](LICENSE.md).
+EyeProlog.ts (like the original EyeProlog) is released under the [MIT License](LICENSE.md).

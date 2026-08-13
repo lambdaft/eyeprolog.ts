@@ -14,12 +14,14 @@ RETURN or ".": stop enumeration
 "p": print terms with depth limit
 `;
 
-export async function runRepl(engine, options = {}) {
+export async function runRepl(engine: any, options: any = {}): Promise<any> {
   const input = options.input ?? process.stdin;
   const output = options.output ?? process.stdout;
   const errorOutput = options.errorOutput ?? process.stderr;
   const reader = new LineReader(input, output);
+  // @ts-expect-error TS7034: auto-suppressed
   const sources = [];
+  // @ts-expect-error TS7005: auto-suppressed
   let state = makeState(engine, sources, output, options);
   let exitCode = 0;
 
@@ -60,7 +62,9 @@ export async function runRepl(engine, options = {}) {
           rememberFlagOverrides(state, flagsBefore);
         }
       } catch (error) {
+        // @ts-expect-error TS2339: auto-suppressed
         if (error?.name === 'HaltSignal') {
+          // @ts-expect-error TS2339: auto-suppressed
           exitCode = error.code;
           break;
         }
@@ -68,6 +72,7 @@ export async function runRepl(engine, options = {}) {
       }
     }
   } catch (error) {
+    // @ts-expect-error TS2339: auto-suppressed
     errorOutput.write(`eyeprolog: ${error?.message ?? String(error)}\n`);
     exitCode = 1;
   } finally {
@@ -78,7 +83,7 @@ export async function runRepl(engine, options = {}) {
 }
 
 class LineReader {
-  constructor(input, output) {
+  constructor(input: any, output: any) {
     this.input = input;
     this.output = output;
     this.terminal = Boolean(input.isTTY && output.isTTY && typeof input.setRawMode === 'function');
@@ -87,7 +92,7 @@ class LineReader {
     this.open();
   }
 
-  open() {
+  open(): any {
     this.readline = createInterface({
       input: this.input,
       output: this.output,
@@ -100,7 +105,7 @@ class LineReader {
     this.lines = this.readline[Symbol.asyncIterator]();
   }
 
-  async read(prompt) {
+  async read(prompt: any): Promise<any> {
     this.currentPrompt = prompt;
     this.readline.setPrompt(prompt);
     this.output.write(prompt);
@@ -108,7 +113,7 @@ class LineReader {
     return result.done ? null : result.value;
   }
 
-  async readControl(prompt) {
+  async readControl(prompt: any): Promise<any> {
     if (!this.terminal) return this.read(prompt);
     this.output.write(prompt);
     this.history = [...this.readline.history];
@@ -119,17 +124,17 @@ class LineReader {
     this.input.setRawMode(true);
     this.input.resume();
 
-    const control = await new Promise((resolve, reject) => {
+    const control = await new Promise((resolve: any, reject: any) => {
       const cleanup = () => {
         this.input.off('data', onData);
         this.input.off('error', onError);
       };
-      const onData = (data) => {
+      const onData = (data: any) => {
         cleanup();
         const text = String(data);
         resolve(text === '\x04' ? null : text[0] ?? null);
       };
-      const onError = (error) => {
+      const onError = (error: any) => {
         cleanup();
         reject(error);
       };
@@ -142,19 +147,27 @@ class LineReader {
     return control;
   }
 
-  close() {
+  close(): any {
     if (this.input.isRaw) this.input.setRawMode(false);
     this.readline?.close();
   }
+
+    readline: any;
+    input: any;
+    output: any;
+    currentPrompt: any;
+    terminal: any;
+    history: any;
+    lines: any;
 }
 
-function makeState(engine, sources, output, options = {}, previousState = null) {
+function makeState(engine: any, sources: any, output: any, options: any = {}, previousState: any = null): any {
   const strictIso = options.isoStrict === true;
   const program = engine.Program.parseSources(sources, { strictIso, sourceMetadata: strictIso });
   const solver = new engine.Solver(program, {
     registry: strictIso ? engine.getStrictIsoRegistry() : engine.getEyePrologRegistry(),
     isoStrict: strictIso,
-    ioOptions: { write: (text) => output.write(String(text)) },
+    ioOptions: { write: (text: any) => output.write(String(text)) },
   });
   const flagOverrides = new Map(previousState?.flagOverrides ?? []);
   for (const [name, value] of flagOverrides) {
@@ -166,18 +179,18 @@ function makeState(engine, sources, output, options = {}, previousState = null) 
   return { program: solver.program, solver, strictIso, flagOverrides };
 }
 
-function snapshotFlagValues(solver) {
-  return new Map([...solver.prologFlags].map(([name, definition]) => [name, definition.value?.name]));
+function snapshotFlagValues(solver: any): any {
+  return new Map([...solver.prologFlags].map(([name, definition]: any) => [name, definition.value?.name]));
 }
 
-function rememberFlagOverrides(state, before) {
+function rememberFlagOverrides(state: any, before: any): any {
   for (const [name, definition] of state.solver.prologFlags) {
     const value = definition.value?.name;
     if (before.get(name) !== value) state.flagOverrides.set(name, value);
   }
 }
 
-async function readQuery(reader) {
+async function readQuery(reader: any): Promise<any> {
   let source = '';
   let prompt = '?- ';
   while (true) {
@@ -190,7 +203,7 @@ async function readQuery(reader) {
   }
 }
 
-async function prepareInteractiveTermInput(state, goal, reader) {
+async function prepareInteractiveTermInput(state: any, goal: any, reader: any): Promise<any> {
   const stream = interactiveTermInputStream(state, goal);
   if (stream == null || terminalFullStop(String(stream.content).slice(stream.position)) >= 0) return;
 
@@ -200,7 +213,7 @@ async function prepareInteractiveTermInput(state, goal, reader) {
   stream.pastEnd = false;
 }
 
-function interactiveTermInputStream(state, goal) {
+function interactiveTermInputStream(state: any, goal: any): any {
   if (goal.type !== 'compound') return null;
   let reference = null;
   if (goal.name === 'read' && goal.arity === 1) {
@@ -219,7 +232,7 @@ function interactiveTermInputStream(state, goal) {
   return stream?.standard && stream.alias === 'user_input' && stream.mode === 'read' ? stream : null;
 }
 
-function explicitInputReference(term) {
+function explicitInputReference(term: any): any {
   if (term.type === 'atom') return term.name;
   if (term.type === 'compound' && term.name === '$stream' && term.arity === 1 &&
       term.args[0].type === 'number' && /^\d+$/.test(term.args[0].name)) {
@@ -228,7 +241,7 @@ function explicitInputReference(term) {
   return null;
 }
 
-async function readInteractiveTerm(reader) {
+async function readInteractiveTerm(reader: any): Promise<any> {
   let source = '';
   let prompt = '|: ';
   while (true) {
@@ -241,7 +254,7 @@ async function readInteractiveTerm(reader) {
   }
 }
 
-function quotedEscapeEnd(source, index) {
+function quotedEscapeEnd(source: any, index: any): any {
   const escaped = source[index + 1] ?? '';
   if (!escaped) return index;
 
@@ -267,7 +280,7 @@ function quotedEscapeEnd(source, index) {
   return index + 1;
 }
 
-function terminalFullStop(source) {
+function terminalFullStop(source: any): any {
   let quote = null;
   let lineComment = false;
   let blockComment = false;
@@ -316,11 +329,11 @@ function terminalFullStop(source) {
   return -1;
 }
 
-function onlyLayoutAndComments(source) {
+function onlyLayoutAndComments(source: any): any {
   return source.replace(/\s|%[^\n]*(?:\n|$)|\/\*[\s\S]*?\*\//g, '').length === 0;
 }
 
-function parseGoal(engine, state, text) {
+function parseGoal(engine: any, state: any, text: any): any {
   const goal = engine.parseGoalText(text, {
     doubleQuotes: state.solver.prologFlags.get('double_quotes')?.value?.name ?? 'chars',
     operatorDefinitions: [...state.program.operators.values()],
@@ -333,23 +346,23 @@ function parseGoal(engine, state, text) {
   return goal;
 }
 
-function isUseModuleGoal(goal) {
+function isUseModuleGoal(goal: any): any {
   return goal.type === 'compound' && goal.name === 'use_module' && [1, 2].includes(goal.arity);
 }
 
-function consultDesignations(engine, goal) {
+function consultDesignations(engine: any, goal: any): any {
   if (goal.type === 'atom' && goal.name === '[]') return [];
   if (goal.type !== 'compound' || goal.name !== '.' || goal.arity !== 2) return null;
   const items = engine.properListItems(goal, new engine.Env());
   if (items == null) return null;
-  return items.map((item) => {
+  return items.map((item: any) => {
     if (item.type === 'var') throw new engine.PrologError('instantiation_error');
     if (item.type !== 'atom') throw new engine.PrologError('type_error(atom)', item);
     return item.name;
   });
 }
 
-async function readSource(designation) {
+async function readSource(designation: any): Promise<any> {
   let filename = path.resolve(designation);
   try {
     await fs.access(filename);
@@ -364,7 +377,7 @@ async function readSource(designation) {
   };
 }
 
-async function solveQuery(engine, state, goal, reader, output) {
+async function solveQuery(engine: any, state: any, goal: any, reader: any, output: any): Promise<any> {
   const variables = queryVariables(goal);
   const solver = state.solver;
   solver.solutionsSeen = 0;
@@ -436,11 +449,11 @@ async function solveQuery(engine, state, goal, reader, output) {
   return null;
 }
 
-function pullSolution(solver, solutions) {
+function pullSolution(solver: any, solutions: any): any {
   const stream = solver.io.resolve('user_output');
   const originalWrite = stream?.write;
   let captured = '';
-  if (stream) stream.write = (text) => { captured += String(text); };
+  if (stream) stream.write = (text: any) => { captured += String(text); };
   try {
     return { result: solutions.next(), output: captured };
   } catch (error) {
@@ -450,7 +463,7 @@ function pullSolution(solver, solutions) {
   }
 }
 
-function queryVariables(goal) {
+function queryVariables(goal: any): any {
   const variables = [];
   const seen = new Set();
   const stack = [goal];
@@ -468,17 +481,17 @@ function queryVariables(goal) {
   return variables;
 }
 
-function formatAnswer(engine, state, variables, env) {
+function formatAnswer(engine: any, state: any, variables: any, env: any): any {
   const bindings = [];
-  const queryVariableNames = new Set(variables.map((variable) => variable.name));
-  const names = new Map(variables.map((variable) => [variable.name, variable.name]));
+  const queryVariableNames = new Set(variables.map((variable: any) => variable.name));
+  const names = new Map(variables.map((variable: any) => [variable.name, variable.name]));
   const operators = [...state.program.operators.values()];
   // Answer substitutions are displayed as `Variable = Value`.  Format Value
   // in the right-operand context of the active infix `=/2` definition so an
   // operator term such as `a = b` is parenthesized rather than producing the
   // invalid `T = a = b`.  ISO does not standardize a top level, but the term
   // syntax used by the display must still respect the current operator table.
-  const equality = operators.find((definition) =>
+  const equality = operators.find((definition: any) =>
     definition.name === '=' && ['xfx', 'xfy', 'yfx'].includes(definition.specifier));
   const valueMaxPriority = equality == null
     ? 699
@@ -500,7 +513,7 @@ function formatAnswer(engine, state, variables, env) {
   return bindings.length === 0 ? 'true' : bindings.join(', ');
 }
 
-function collectUnboundVariables(engine, term, env, names, nextName) {
+function collectUnboundVariables(engine: any, term: any, env: any, names: any, nextName: any): any {
   const stack = [term];
   const seen = new Set();
   while (stack.length) {
@@ -516,13 +529,13 @@ function collectUnboundVariables(engine, term, env, names, nextName) {
   }
 }
 
-function letterName(index) {
+function letterName(index: any): any {
   const letter = String.fromCharCode(65 + (index % 26));
   const suffix = Math.floor(index / 26);
   return suffix === 0 ? letter : `${letter}${suffix}`;
 }
 
-function formatError(engine, state, error) {
+function formatError(engine: any, state: any, error: any): any {
   if (error?.name === 'PrologError') {
     const env = new engine.Env();
     const variableNames = new Map();

@@ -12,36 +12,46 @@ import { emptyTerminalSequence, expandDcgBody, isListOrPartialList, validateDcgE
 let isoFresh = 0;
 
 export class PrologError extends Error {
-  constructor(formal, culprit = null) {
+  constructor(formal: any, culprit: any = null) {
     const detail = culprit == null ? formal : `${formal}, ${termToString(culprit)}`;
     super(`error(${detail})`);
     this.name = 'PrologError';
     this.formal = formal;
     this.culprit = culprit;
   }
+
+    override name: any;
+    formal: any;
+    culprit: any;
 }
 
 export class HaltSignal extends Error {
-  constructor(code = 0) {
+  constructor(code: any = 0) {
     super(`halt(${code})`);
     this.name = 'HaltSignal';
     this.code = code;
   }
+
+    override name: any;
+    code: any;
 }
 
 class ThrownTerm extends Error {
-  constructor(term) {
+  constructor(term: any) {
     super(`uncaught exception: ${termToString(term)}`);
     this.name = 'ThrownTerm';
     this.term = term;
   }
+
+    override name: any;
+    term: any;
 }
 
-const succeed = function* ({ env }) { yield env; };
-const fail = function* () {};
+const succeed = function* ({ env }: any): any { yield env; };
+const fail = function* (): any {};
 
 export const isoBuiltins = {
-  register(registry) {
+  register(registry: any) {
     registry.add('true', 0, succeed, { deterministic: true });
     registry.add('fail', 0, fail, { deterministic: true });
     registry.add('false', 0, fail, { deterministic: true });
@@ -58,10 +68,10 @@ export const isoBuiltins = {
       registry.add(name, 1, test, { deterministic: true });
     }
     registry.add('compare', 3, compareBuiltin, { deterministic: true });
-    registry.add('@<', 2, orderBuiltin((n) => n < 0), { deterministic: true });
-    registry.add('@=<', 2, orderBuiltin((n) => n <= 0), { deterministic: true });
-    registry.add('@>', 2, orderBuiltin((n) => n > 0), { deterministic: true });
-    registry.add('@>=', 2, orderBuiltin((n) => n >= 0), { deterministic: true });
+    registry.add('@<', 2, orderBuiltin((n: any) => n < 0), { deterministic: true });
+    registry.add('@=<', 2, orderBuiltin((n: any) => n <= 0), { deterministic: true });
+    registry.add('@>', 2, orderBuiltin((n: any) => n > 0), { deterministic: true });
+    registry.add('@>=', 2, orderBuiltin((n: any) => n >= 0), { deterministic: true });
     registry.add('sort', 2, sortBuiltin, { deterministic: true });
     registry.add('keysort', 2, keysortBuiltin, { deterministic: true });
 
@@ -74,7 +84,7 @@ export const isoBuiltins = {
     registry.add('bagof', 3, bagofBuiltin);
     registry.add('setof', 3, setofBuiltin);
     registry.add('clause', 2, clauseBuiltin, {
-      shouldUse: ({ solver }) => solver.program.findGroup('clause', 2) == null,
+      shouldUse: ({ solver }: any) => solver.program.findGroup('clause', 2) == null,
     });
     registry.add('asserta', 1, assertBuiltin(true), { deterministic: true });
     registry.add('assertz', 1, assertBuiltin(false), { deterministic: true });
@@ -86,7 +96,7 @@ export const isoBuiltins = {
     registry.add('set_prolog_flag', 2, setPrologFlagBuiltin, { deterministic: true });
     registry.add('op', 3, opBuiltin, {
       deterministic: true,
-      shouldUse: ({ solver }) => solver.program.findGroup('op', 3) == null,
+      shouldUse: ({ solver }: any) => solver.program.findGroup('op', 3) == null,
     });
     registry.add('current_op', 3, currentOpBuiltin);
     registry.add('char_conversion', 2, charConversionBuiltin, { deterministic: true });
@@ -155,12 +165,12 @@ export const isoBuiltins = {
     registry.add('phrase', 3, phraseBuiltin);
 
     registry.add('is', 2, isBuiltin, { deterministic: true });
-    registry.add('=:=', 2, arithmeticComparison((n) => n === 0), { deterministic: true });
-    registry.add('=\\=', 2, arithmeticComparison((n) => n !== 0), { deterministic: true });
-    registry.add('<', 2, arithmeticComparison((n) => n < 0), { deterministic: true });
-    registry.add('=<', 2, arithmeticComparison((n) => n <= 0), { deterministic: true });
-    registry.add('>', 2, arithmeticComparison((n) => n > 0), { deterministic: true });
-    registry.add('>=', 2, arithmeticComparison((n) => n >= 0), { deterministic: true });
+    registry.add('=:=', 2, arithmeticComparison((n: any) => n === 0), { deterministic: true });
+    registry.add('=\\=', 2, arithmeticComparison((n: any) => n !== 0), { deterministic: true });
+    registry.add('<', 2, arithmeticComparison((n: any) => n < 0), { deterministic: true });
+    registry.add('=<', 2, arithmeticComparison((n: any) => n <= 0), { deterministic: true });
+    registry.add('>', 2, arithmeticComparison((n: any) => n > 0), { deterministic: true });
+    registry.add('>=', 2, arithmeticComparison((n: any) => n >= 0), { deterministic: true });
   }
 };
 
@@ -168,17 +178,17 @@ export const isoBuiltins = {
 // expressed portably as ordinary Prolog clauses. Keep their public wrappers in
 // library(prologue) and expose only private adapters to the host registry.
 export const eyePrologLibraryBuiltins = {
-  register(registry) {
+  register(registry: any) {
     registry.add('eyeprolog__call_nth', 2, callNthBuiltin, { eyePrologLibrary: true });
     registry.add('eyeprolog__freeze', 2, freezeBuiltin, { eyePrologLibrary: true });
   },
 };
 
-function* unification({ goal, env }) {
+function* unification({ goal, env }: any): any {
   const next = env.clone();
   if (unify(goal.args[0], goal.args[1], next)) yield next;
 }
-function* unificationWithOccursCheck({ goal, env }) {
+function* unificationWithOccursCheck({ goal, env }: any): any {
   const next = env.clone();
   // ISO unify_with_occurs_check/2 always performs finite-tree unification.
   // The implementation-specific occurs_check=error mode applies to normal
@@ -186,11 +196,11 @@ function* unificationWithOccursCheck({ goal, env }) {
   // an exception.
   if (unify(goal.args[0], goal.args[1], next, { occursCheck: 'fail' })) yield next;
 }
-function* nonUnification({ goal, env }) {
+function* nonUnification({ goal, env }: any): any {
   if (!unify(goal.args[0], goal.args[1], env.clone())) yield env;
 }
 
-function termVariableNames(term, env, names = new Set(), seen = new Set()) {
+function termVariableNames(term: any, env: any, names: any = new Set(), seen: any = new Set()): any {
   term = deref(term, env);
   if (term.type === VAR) {
     names.add(term.name);
@@ -201,13 +211,14 @@ function termVariableNames(term, env, names = new Set(), seen = new Set()) {
   return names;
 }
 
-function subsumesTerm(general, specific, env) {
+function subsumesTerm(general: any, specific: any, env: any): any {
   general = copyResolved(general, env);
   specific = copyResolved(specific, env);
   const protectedVariables = termVariableNames(specific, new Env());
   const substitutions = new Map();
   const pending = [[general, specific]];
   while (pending.length) {
+    // @ts-expect-error TS2488: auto-suppressed
     let [left, right] = pending.pop();
     if (left.type === VAR && substitutions.has(left.name)) left = substitutions.get(left.name);
     if (left.type === VAR) {
@@ -226,17 +237,17 @@ function subsumesTerm(general, specific, env) {
   return true;
 }
 
-function* subsumesTermBuiltin({ goal, env }) {
+function* subsumesTermBuiltin({ goal, env }: any): any {
   if (subsumesTerm(goal.args[0], goal.args[1], env)) yield env;
 }
-function* identity({ goal, env }) {
+function* identity({ goal, env }: any): any {
   if (identical(goal.args[0], goal.args[1], env)) yield env;
 }
-function* nonIdentity({ goal, env }) {
+function* nonIdentity({ goal, env }: any): any {
   if (!identical(goal.args[0], goal.args[1], env)) yield env;
 }
 
-function identical(left, right, env) {
+function identical(left: any, right: any, env: any): any {
   left = deref(left, env);
   right = deref(right, env);
   if (left.type !== right.type || left.name !== right.name || left.arity !== right.arity) return false;
@@ -245,28 +256,29 @@ function identical(left, right, env) {
   return true;
 }
 
-const unaryTest = (predicate) => function* ({ goal, env }) {
+const unaryTest = (predicate: any): any => function* ({ goal, env }: any) {
   if (predicate(deref(goal.args[0], env), env)) yield env;
 };
 const typeTests = {
-  var: unaryTest((t) => t.type === VAR),
-  nonvar: unaryTest((t) => t.type !== VAR),
-  atom: unaryTest((t) => t.type === ATOM),
-  integer: unaryTest((t) => t.type === NUMBER && isDecimalInteger(t.name)),
-  float: unaryTest((t) => t.type === NUMBER && !isDecimalInteger(t.name)),
-  number: unaryTest((t) => t.type === NUMBER),
-  atomic: unaryTest((t) => t.type === ATOM || t.type === NUMBER || t.type === STRING),
-  compound: unaryTest((t) => t.type === COMPOUND),
-  callable: unaryTest((t) => t.type === ATOM || t.type === COMPOUND),
-  ground: unaryTest((t, env) => termIsGround(t, env)),
-  acyclic_term: unaryTest((t, env) => termIsAcyclic(t, env)),
+  var: unaryTest((t: any) => t.type === VAR),
+  nonvar: unaryTest((t: any) => t.type !== VAR),
+  atom: unaryTest((t: any) => t.type === ATOM),
+  integer: unaryTest((t: any) => t.type === NUMBER && isDecimalInteger(t.name)),
+  float: unaryTest((t: any) => t.type === NUMBER && !isDecimalInteger(t.name)),
+  number: unaryTest((t: any) => t.type === NUMBER),
+  atomic: unaryTest((t: any) => t.type === ATOM || t.type === NUMBER || t.type === STRING),
+  compound: unaryTest((t: any) => t.type === COMPOUND),
+  callable: unaryTest((t: any) => t.type === ATOM || t.type === COMPOUND),
+  ground: unaryTest((t: any, env: any) => termIsGround(t, env)),
+  acyclic_term: unaryTest((t: any, env: any) => termIsAcyclic(t, env)),
 };
 
-function termIsAcyclic(term, env) {
+function termIsAcyclic(term: any, env: any): any {
   const active = new Set();
   const complete = new Set();
   const stack = [[term, false]];
   while (stack.length) {
+    // @ts-expect-error TS2488: auto-suppressed
     const [candidate, leaving] = stack.pop();
     const resolved = deref(candidate, env);
     if (resolved.type !== COMPOUND) continue;
@@ -284,10 +296,10 @@ function termIsAcyclic(term, env) {
   return true;
 }
 
-function resolvedOrder(left, right, env) {
+function resolvedOrder(left: any, right: any, env: any): any {
   return compareTerms(copyResolved(left, env), copyResolved(right, env));
 }
-function* compareBuiltin({ goal, env }) {
+function* compareBuiltin({ goal, env }: any): any {
   const order = deref(goal.args[0], env);
   if (order.type !== VAR) {
     if (order.type !== ATOM) throw new PrologError('type_error(atom)', order);
@@ -297,13 +309,13 @@ function* compareBuiltin({ goal, env }) {
   const next = env.clone();
   if (unify(goal.args[0], atom(cmp < 0 ? '<' : cmp > 0 ? '>' : '='), next)) yield next;
 }
-function orderBuiltin(test) {
-  return function* ({ goal, env }) {
+function orderBuiltin(test: any): any {
+  return function* ({ goal, env }: any) {
     if (test(resolvedOrder(goal.args[0], goal.args[1], env))) yield env;
   };
 }
 
-function listKind(term, env) {
+function listKind(term: any, env: any): any {
   let cursor = deref(term, env);
   const seen = new Set();
   while (cursor.type === COMPOUND && cursor.name === '.' && cursor.arity === 2) {
@@ -315,7 +327,7 @@ function listKind(term, env) {
   return cursor.type === ATOM && cursor.name === '[]' ? 'list' : 'nonlist';
 }
 
-function requireProperList(term, env) {
+function requireProperList(term: any, env: any): any {
   const value = deref(term, env);
   const kind = listKind(value, env);
   if (kind === 'partial') throw new PrologError('instantiation_error');
@@ -323,15 +335,15 @@ function requireProperList(term, env) {
   return properListItems(value, env);
 }
 
-function validateListOutput(term, env) {
+function validateListOutput(term: any, env: any): any {
   const value = deref(term, env);
   if (listKind(value, env) === 'nonlist') throw new PrologError('type_error(list)', value);
 }
 
-function* sortBuiltin({ goal, env }) {
+function* sortBuiltin({ goal, env }: any): any {
   const items = requireProperList(goal.args[0], env);
   validateListOutput(goal.args[1], env);
-  const sorted = [...items].sort((a, b) => resolvedOrder(a, b, env));
+  const sorted = [...items].sort((a: any, b: any) => resolvedOrder(a, b, env));
   const unique = [];
   for (const item of sorted) {
     if (unique.length === 0 || resolvedOrder(unique[unique.length - 1], item, env) !== 0) unique.push(item);
@@ -340,7 +352,7 @@ function* sortBuiltin({ goal, env }) {
   if (unify(goal.args[1], listFromItems(unique), next)) yield next;
 }
 
-function* keysortBuiltin({ goal, env }) {
+function* keysortBuiltin({ goal, env }: any): any {
   const items = requireProperList(goal.args[0], env);
   validateListOutput(goal.args[1], env);
   for (const item of items) {
@@ -350,25 +362,25 @@ function* keysortBuiltin({ goal, env }) {
     }
   }
   // Modern ECMAScript specifies a stable Array#sort, as required by keysort/2.
-  const sorted = [...items].sort((a, b) => resolvedOrder(deref(a, env).args[0], deref(b, env).args[0], env));
+  const sorted = [...items].sort((a: any, b: any) => resolvedOrder(deref(a, env).args[0], deref(b, env).args[0], env));
   const next = env.clone();
   if (unify(goal.args[1], listFromItems(sorted), next)) yield next;
 }
 
-function requireInteger(term, env) {
+function requireInteger(term: any, env: any): any {
   const value = deref(term, env);
   if (value.type === VAR) throw new PrologError('instantiation_error');
   if (value.type !== NUMBER || !isDecimalInteger(value.name)) throw new PrologError('type_error(integer)', value);
   return BigInt(value.name);
 }
-function requireAtom(term, env) {
+function requireAtom(term: any, env: any): any {
   const value = deref(term, env);
   if (value.type === VAR) throw new PrologError('instantiation_error');
   if (value.type !== ATOM) throw new PrologError('type_error(atom)', value);
   return value;
 }
 
-function* functorBuiltin({ goal, env }) {
+function* functorBuiltin({ goal, env }: any): any {
   const term = deref(goal.args[0], env);
   const next = env.clone();
   if (term.type !== VAR) {
@@ -389,10 +401,10 @@ function* functorBuiltin({ goal, env }) {
   if (name.type === VAR) throw new PrologError('instantiation_error');
   if (name.type !== ATOM) throw new PrologError('type_error(atom)', name);
   const id = ++isoFresh;
-  if (unify(goal.args[0], compound(name.name, Array.from({ length: Number(arity) }, (_, i) => variable(`__functor${id}_${i}`))), next)) yield next;
+  if (unify(goal.args[0], compound(name.name, Array.from({ length: Number(arity) }, (_: any, i: any) => variable(`__functor${id}_${i}`))), next)) yield next;
 }
 
-function* argBuiltin({ goal, env }) {
+function* argBuiltin({ goal, env }: any): any {
   const index = requireInteger(goal.args[0], env);
   const term = deref(goal.args[1], env);
   if (term.type === VAR) throw new PrologError('instantiation_error');
@@ -403,7 +415,7 @@ function* argBuiltin({ goal, env }) {
   if (unify(goal.args[2], term.args[Number(index) - 1], next)) yield next;
 }
 
-function* univBuiltin({ goal, env }) {
+function* univBuiltin({ goal, env }: any): any {
   const term = deref(goal.args[0], env);
   const next = env.clone();
   if (term.type !== VAR) {
@@ -428,7 +440,7 @@ function* univBuiltin({ goal, env }) {
   if (unify(goal.args[0], compound(name.name, items.slice(1)), next)) yield next;
 }
 
-function isPartialList(list, env) {
+function isPartialList(list: any, env: any): any {
   let cursor = deref(list, env);
   while (cursor.type === COMPOUND && cursor.name === '.' && cursor.arity === 2) {
     cursor = deref(cursor.args[1], env);
@@ -436,20 +448,20 @@ function isPartialList(list, env) {
   return cursor.type === VAR;
 }
 
-function freshCopy(term, env, variables = new Map(), id = ++isoFresh) {
+function freshCopy(term: any, env: any, variables: any = new Map(), id: any = ++isoFresh): any {
   term = deref(term, env);
   if (term.type === VAR) {
     if (!variables.has(term.name)) variables.set(term.name, variable(`__copy${id}_${variables.size}`));
     return variables.get(term.name);
   }
   if (term.type !== COMPOUND) return term;
-  return compound(term.name, term.args.map((arg) => freshCopy(arg, env, variables, id)));
+  return compound(term.name, term.args.map((arg: any) => freshCopy(arg, env, variables, id)));
 }
-function* copyTermBuiltin({ goal, env }) {
+function* copyTermBuiltin({ goal, env }: any): any {
   const next = env.clone();
   if (unify(goal.args[1], freshCopy(goal.args[0], env), next)) yield next;
 }
-function* termVariablesBuiltin({ goal, env }) {
+function* termVariablesBuiltin({ goal, env }: any): any {
   let list = deref(goal.args[1], env);
   while (list.type === COMPOUND && list.name === '.' && list.arity === 2) {
     list = deref(list.args[1], env);
@@ -457,9 +469,10 @@ function* termVariablesBuiltin({ goal, env }) {
   if (list.type !== VAR && !(list.type === ATOM && list.name === '[]')) {
     throw new PrologError('type_error(list)', deref(goal.args[1], env));
   }
+  // @ts-expect-error TS7034: auto-suppressed
   const found = [];
   const seen = new Set();
-  const visit = (term) => {
+  const visit = (term: any) => {
     term = deref(term, env);
     if (term.type === VAR) {
       if (!seen.has(term.name)) { seen.add(term.name); found.push(term); }
@@ -467,17 +480,18 @@ function* termVariablesBuiltin({ goal, env }) {
   };
   visit(goal.args[0]);
   const next = env.clone();
+  // @ts-expect-error TS7005: auto-suppressed
   if (unify(goal.args[1], listFromItems(found), next)) yield next;
 }
 
-function validPredicateIndicator(term) {
+function validPredicateIndicator(term: any): any {
   return term.type === COMPOUND && term.name === '/' && term.arity === 2 &&
     (term.args[0].type === VAR || term.args[0].type === ATOM) &&
     (term.args[1].type === VAR ||
       (term.args[1].type === NUMBER && isDecimalInteger(term.args[1].name) && BigInt(term.args[1].name) >= 0n));
 }
 
-function* currentPredicateBuiltin({ solver, goal, env }) {
+function* currentPredicateBuiltin({ solver, goal, env }: any): any {
   const indicator = copyResolved(goal.args[0], env);
   if (indicator.type !== VAR && !validPredicateIndicator(indicator)) {
     throw new PrologError('type_error(predicate_indicator)', indicator);
@@ -489,20 +503,20 @@ function* currentPredicateBuiltin({ solver, goal, env }) {
   }
 }
 
-function callableOrVariable(term, env) {
+function callableOrVariable(term: any, env: any): any {
   const value = deref(term, env);
   if (value.type === VAR || value.type === ATOM || value.type === COMPOUND) return value;
   throw new PrologError('type_error(callable)', value);
 }
 
-function clauseBodyTerm(body) {
+function clauseBodyTerm(body: any): any {
   if (body.length === 0) return atom('true');
   let result = body[body.length - 1];
   for (let i = body.length - 2; i >= 0; i--) result = compound(',', [body[i], result]);
   return result;
 }
 
-function* clauseBuiltin({ solver, goal, env }) {
+function* clauseBuiltin({ solver, goal, env }: any): any {
   const head = deref(goal.args[0], env);
   if (head.type === VAR) throw new PrologError('instantiation_error');
   if (head.type !== ATOM && head.type !== COMPOUND) throw new PrologError('type_error(callable)', head);
@@ -528,7 +542,7 @@ function* clauseBuiltin({ solver, goal, env }) {
   }
 }
 
-function clauseParts(term, env) {
+function clauseParts(term: any, env: any): any {
   const value = deref(term, env);
   if (value.type === COMPOUND && value.name === ':-' && value.arity === 2) {
     return { head: deref(value.args[0], env), body: deref(value.args[1], env), rule: true };
@@ -536,12 +550,12 @@ function clauseParts(term, env) {
   return { head: value, body: atom('true'), rule: false };
 }
 
-function requireClauseHead(head) {
+function requireClauseHead(head: any): any {
   if (head.type === VAR) throw new PrologError('instantiation_error');
   if (head.type !== ATOM && head.type !== COMPOUND) throw new PrologError('type_error(callable)', head);
 }
 
-function convertAssertedBody(term) {
+function convertAssertedBody(term: any): any {
   if (term.type === VAR) return compound('call', [term]);
   if (term.type === COMPOUND && term.name === ',' && term.arity === 2) {
     return compound(',', [convertAssertedBody(term.args[0]), convertAssertedBody(term.args[1])]);
@@ -550,23 +564,23 @@ function convertAssertedBody(term) {
   return term;
 }
 
-function procedureIndicator(head) {
+function procedureIndicator(head: any): any {
   return compound('/', [atom(head.name), numberTerm(head.arity)]);
 }
 
-function isGrammarRuleProcedure(solver, head) {
+function isGrammarRuleProcedure(solver: any, head: any): any {
   return !solver.isoStrict && head.name === '-->' && head.arity === 2;
 }
 
-function assertModifiable(solver, head, module = 'user') {
+function assertModifiable(solver: any, head: any, module: any = 'user'): any {
   const group = solver.program.findGroup(head.name, head.arity, head.module ?? module);
   if (solver.registry.get(head.name, head.arity) || isGrammarRuleProcedure(solver, head) || (group && !group.dynamic)) {
     throw new PrologError('permission_error(modify, static_procedure)', procedureIndicator(head));
   }
 }
 
-function assertBuiltin(atStart) {
-  return function* ({ solver, goal, env }) {
+function assertBuiltin(atStart: any): any {
+  return function* ({ solver, goal, env }: any) {
     const parts = clauseParts(goal.args[0], env);
     requireClauseHead(parts.head);
     const body = convertAssertedBody(parts.body);
@@ -583,7 +597,7 @@ function assertBuiltin(atStart) {
   };
 }
 
-function* retractBuiltin({ solver, goal, env }) {
+function* retractBuiltin({ solver, goal, env }: any): any {
   const parts = clauseParts(goal.args[0], env);
   requireClauseHead(parts.head);
   const group = solver.program.findGroup(parts.head.name, parts.head.arity, parts.head.module ?? goal.module ?? 'user');
@@ -606,7 +620,7 @@ function* retractBuiltin({ solver, goal, env }) {
   }
 }
 
-function* retractAllBuiltin({ solver, goal, env }) {
+function* retractAllBuiltin({ solver, goal, env }: any): any {
   const head = deref(goal.args[0], env);
   requireClauseHead(head);
   const group = solver.program.findGroup(head.name, head.arity, head.module ?? goal.module ?? 'user');
@@ -623,7 +637,7 @@ function* retractAllBuiltin({ solver, goal, env }) {
   yield env;
 }
 
-function predicateIndicatorParts(term, env) {
+function predicateIndicatorParts(term: any, env: any): any {
   const indicator = deref(term, env);
   if (indicator.type === VAR) throw new PrologError('instantiation_error');
   if (indicator.type !== COMPOUND || indicator.name !== '/' || indicator.arity !== 2) {
@@ -640,7 +654,7 @@ function predicateIndicatorParts(term, env) {
   return { name: name.name, arity: Number(integer), indicator };
 }
 
-function* abolishBuiltin({ solver, goal, env }) {
+function* abolishBuiltin({ solver, goal, env }: any): any {
   const target = predicateIndicatorParts(goal.args[0], env);
   const module = goal.module ?? 'user';
   const group = solver.program.findGroup(target.name, target.arity, module);
@@ -651,7 +665,7 @@ function* abolishBuiltin({ solver, goal, env }) {
   yield env;
 }
 
-function* currentPrologFlagBuiltin({ solver, goal, env }) {
+function* currentPrologFlagBuiltin({ solver, goal, env }: any): any {
   const flag = deref(goal.args[0], env);
   if (flag.type !== VAR && flag.type !== ATOM) throw new PrologError('type_error(atom)', flag);
   if (flag.type === ATOM && !solver.prologFlags.has(flag.name)) {
@@ -663,7 +677,7 @@ function* currentPrologFlagBuiltin({ solver, goal, env }) {
   }
 }
 
-function* setPrologFlagBuiltin({ solver, goal, env }) {
+function* setPrologFlagBuiltin({ solver, goal, env }: any): any {
   const flag = deref(goal.args[0], env);
   const value = deref(goal.args[1], env);
   if (flag.type === VAR || value.type === VAR) throw new PrologError('instantiation_error');
@@ -680,7 +694,7 @@ function* setPrologFlagBuiltin({ solver, goal, env }) {
 
 const operatorSpecifiers = new Set(['fx', 'fy', 'xf', 'yf', 'xfx', 'xfy', 'yfx']);
 
-function operatorPriority(term, env) {
+function operatorPriority(term: any, env: any): any {
   const value = deref(term, env);
   if (value.type === VAR) throw new PrologError('instantiation_error');
   if (value.type !== NUMBER || !isDecimalInteger(value.name)) throw new PrologError('type_error(integer)', value);
@@ -689,7 +703,7 @@ function operatorPriority(term, env) {
   return Number(priority);
 }
 
-function operatorSpecifier(term, env) {
+function operatorSpecifier(term: any, env: any): any {
   const value = deref(term, env);
   if (value.type === VAR) throw new PrologError('instantiation_error');
   if (value.type !== ATOM) throw new PrologError('type_error(atom)', value);
@@ -697,7 +711,7 @@ function operatorSpecifier(term, env) {
   return value.name;
 }
 
-function operatorNames(term, env) {
+function operatorNames(term: any, env: any): any {
   const value = deref(term, env);
   if (value.type === VAR) throw new PrologError('instantiation_error');
   if (value.type === ATOM) return [value];
@@ -711,10 +725,10 @@ function operatorNames(term, env) {
     if (resolved.type === VAR) throw new PrologError('instantiation_error');
     if (resolved.type !== ATOM) throw new PrologError('type_error(atom)', resolved);
   }
-  return items.map((item) => deref(item, env));
+  return items.map((item: any) => deref(item, env));
 }
 
-function* opBuiltin({ solver, goal, env }) {
+function* opBuiltin({ solver, goal, env }: any): any {
   const priority = operatorPriority(goal.args[0], env);
   const specifier = operatorSpecifier(goal.args[1], env);
   for (const name of operatorNames(goal.args[2], env)) {
@@ -730,7 +744,7 @@ function* opBuiltin({ solver, goal, env }) {
     }
     const infix = specifier === 'xfx' || specifier === 'xfy' || specifier === 'yfx';
     const postfix = specifier === 'xf' || specifier === 'yf';
-    if (priority !== 0 && [...solver.program.operators.values()].some((definition) =>
+    if (priority !== 0 && [...solver.program.operators.values()].some((definition: any) =>
       definition.name === name.name &&
       ((infix && (definition.specifier === 'xf' || definition.specifier === 'yf')) ||
        (postfix && (definition.specifier === 'xfx' || definition.specifier === 'xfy' || definition.specifier === 'yfx'))))) {
@@ -741,7 +755,7 @@ function* opBuiltin({ solver, goal, env }) {
   yield env;
 }
 
-function* currentOpBuiltin({ solver, goal, env }) {
+function* currentOpBuiltin({ solver, goal, env }: any): any {
   const priority = deref(goal.args[0], env);
   const specifier = deref(goal.args[1], env);
   const name = deref(goal.args[2], env);
@@ -768,7 +782,7 @@ function* currentOpBuiltin({ solver, goal, env }) {
   }
 }
 
-function conversionCharacter(term, env, current = false) {
+function conversionCharacter(term: any, env: any, current: any = false): any {
   const value = deref(term, env);
   if (value.type === VAR) {
     if (current) return value;
@@ -780,14 +794,14 @@ function conversionCharacter(term, env, current = false) {
   }
   return value;
 }
-function* charConversionBuiltin({ solver, goal, env }) {
+function* charConversionBuiltin({ solver, goal, env }: any): any {
   const input = conversionCharacter(goal.args[0], env);
   const output = conversionCharacter(goal.args[1], env);
   if (input.name === output.name) solver.charConversions.delete(input.name);
   else solver.charConversions.set(input.name, output.name);
   yield env;
 }
-function* currentCharConversionBuiltin({ solver, goal, env }) {
+function* currentCharConversionBuiltin({ solver, goal, env }: any): any {
   const input = conversionCharacter(goal.args[0], env, true);
   const output = conversionCharacter(goal.args[1], env, true);
   for (const [from, to] of [...solver.charConversions]) {
@@ -795,16 +809,16 @@ function* currentCharConversionBuiltin({ solver, goal, env }) {
     if (unify(input, atom(from), next) && unify(output, atom(to), next)) yield next;
   }
 }
-function* haltBuiltin({ goal, env }) {
+function* haltBuiltin({ goal, env }: any): any {
   const code = goal.arity === 0 ? 0n : requireInteger(goal.args[0], env);
   throw new HaltSignal(Number(code));
 }
 
-function streamHandle(id) {
+function streamHandle(id: any): any {
   return compound('$stream', [numberTerm(id)]);
 }
 
-function streamReference(term, env) {
+function streamReference(term: any, env: any): any {
   const value = deref(term, env);
   if (value.type === VAR) throw new PrologError('instantiation_error');
   if (value.type === ATOM) return value.name;
@@ -815,7 +829,7 @@ function streamReference(term, env) {
   throw new PrologError('domain_error(stream_or_alias)', value);
 }
 
-function requireStream(solver, term, env, mode = null) {
+function requireStream(solver: any, term: any, env: any, mode: any = null): any {
   const culprit = deref(term, env);
   const stream = solver.io.resolve(streamReference(term, env));
   if (!stream) throw new PrologError('existence_error(stream)', culprit);
@@ -825,7 +839,7 @@ function requireStream(solver, term, env, mode = null) {
   return stream;
 }
 
-function optionList(term, env) {
+function optionList(term: any, env: any): any {
   const value = deref(term, env);
   if (value.type === VAR) throw new PrologError('instantiation_error');
   const items = properListItems(value, env);
@@ -833,15 +847,15 @@ function optionList(term, env) {
     if (isPartialList(value, env)) throw new PrologError('instantiation_error');
     throw new PrologError('type_error(list)', value);
   }
-  return items.map((item) => deref(item, env));
+  return items.map((item: any) => deref(item, env));
 }
 
-function optionAtom(option, name) {
+function optionAtom(option: any, name: any): any {
   if (option.type !== COMPOUND || option.name !== name || option.arity !== 1) return null;
   return option.args[0];
 }
 
-function openOptions(term, env) {
+function openOptions(term: any, env: any): any {
   const result = {};
   for (const option of optionList(term, env)) {
     if (option.type === VAR) throw new PrologError('instantiation_error');
@@ -851,21 +865,25 @@ function openOptions(term, env) {
       if (value.type === VAR) throw new PrologError('instantiation_error');
       if (value.type !== ATOM) throw new PrologError('type_error(atom)', value);
       if (!['text', 'binary'].includes(value.name)) throw new PrologError('domain_error(stream_option)', option);
+      // @ts-expect-error TS2339: auto-suppressed
       result.type = value.name;
     } else if ((value = optionAtom(option, 'alias'))) {
       value = deref(value, env);
       if (value.type === VAR) throw new PrologError('instantiation_error');
       if (value.type !== ATOM) throw new PrologError('type_error(atom)', value);
+      // @ts-expect-error TS2339: auto-suppressed
       result.alias = value.name;
     } else if ((value = optionAtom(option, 'reposition'))) {
       value = deref(value, env);
       if (value.type === VAR) throw new PrologError('instantiation_error');
       if (value.type !== ATOM || !['true', 'false'].includes(value.name)) throw new PrologError('domain_error(stream_option)', option);
+      // @ts-expect-error TS2339: auto-suppressed
       result.reposition = value.name === 'true';
     } else if ((value = optionAtom(option, 'eof_action'))) {
       value = deref(value, env);
       if (value.type === VAR) throw new PrologError('instantiation_error');
       if (value.type !== ATOM || !['error', 'eof_code', 'reset'].includes(value.name)) throw new PrologError('domain_error(stream_option)', option);
+      // @ts-expect-error TS2339: auto-suppressed
       result.eof_action = value.name;
     } else {
       throw new PrologError('domain_error(stream_option)', option);
@@ -874,7 +892,7 @@ function openOptions(term, env) {
   return result;
 }
 
-function* openBuiltin({ solver, goal, env }) {
+function* openBuiltin({ solver, goal, env }: any): any {
   const path = requireAtom(goal.args[0], env);
   const mode = requireAtom(goal.args[1], env);
   if (!['read', 'write', 'append'].includes(mode.name)) throw new PrologError('domain_error(io_mode)', mode);
@@ -893,7 +911,7 @@ function* openBuiltin({ solver, goal, env }) {
   else solver.io.close(stream);
 }
 
-function* closeBuiltin({ solver, goal, env }) {
+function* closeBuiltin({ solver, goal, env }: any): any {
   if (goal.arity === 2) {
     for (const option of optionList(goal.args[1], env)) {
       if (option.type === VAR) throw new PrologError('instantiation_error');
@@ -914,7 +932,7 @@ function* closeBuiltin({ solver, goal, env }) {
   yield env;
 }
 
-function* currentInputBuiltin({ solver, goal, env }) {
+function* currentInputBuiltin({ solver, goal, env }: any): any {
   const value = deref(goal.args[0], env);
   if (value.type !== VAR) {
     const stream = solver.io.resolve(streamReference(goal.args[0], env));
@@ -925,7 +943,7 @@ function* currentInputBuiltin({ solver, goal, env }) {
   const next = env.clone();
   if (unify(goal.args[0], streamHandle(solver.io.currentInput), next)) yield next;
 }
-function* currentOutputBuiltin({ solver, goal, env }) {
+function* currentOutputBuiltin({ solver, goal, env }: any): any {
   const value = deref(goal.args[0], env);
   if (value.type !== VAR) {
     const stream = solver.io.resolve(streamReference(goal.args[0], env));
@@ -936,20 +954,20 @@ function* currentOutputBuiltin({ solver, goal, env }) {
   const next = env.clone();
   if (unify(goal.args[0], streamHandle(solver.io.currentOutput), next)) yield next;
 }
-function setCurrentStreamBuiltin(mode) {
-  return function* ({ solver, goal, env }) {
+function setCurrentStreamBuiltin(mode: any): any {
+  return function* ({ solver, goal, env }: any) {
     const stream = requireStream(solver, goal.args[0], env, mode);
     if (mode === 'read') solver.io.currentInput = stream.id;
     else solver.io.currentOutput = stream.id;
     yield env;
   };
 }
-function* flushOutputBuiltin({ solver, goal, env }) {
+function* flushOutputBuiltin({ solver, goal, env }: any): any {
   requireStream(solver, goal.args[0], env, 'write');
   yield env;
 }
 
-function streamProperties(stream) {
+function streamProperties(stream: any): any {
   const properties = [
     compound('mode', [atom(stream.mode)]),
     compound('type', [atom(stream.type)]),
@@ -965,7 +983,7 @@ function streamProperties(stream) {
   if (stream.path) properties.push(compound('file_name', [atom(stream.path)]));
   return properties;
 }
-function* setStreamPositionBuiltin({ solver, goal, env }) {
+function* setStreamPositionBuiltin({ solver, goal, env }: any): any {
   const stream = requireStream(solver, goal.args[0], env);
   if (!stream.reposition) throw new PrologError('permission_error(reposition, stream)', deref(goal.args[0], env));
   let position = deref(goal.args[1], env);
@@ -980,7 +998,7 @@ function* setStreamPositionBuiltin({ solver, goal, env }) {
   stream.pastEnd = false;
   yield env;
 }
-function* streamPropertyBuiltin({ solver, goal, env }) {
+function* streamPropertyBuiltin({ solver, goal, env }: any): any {
   const reference = deref(goal.args[0], env);
   const streams = reference.type === VAR ? [...solver.io.streams.values()] : [requireStream(solver, goal.args[0], env)];
   for (const stream of streams) {
@@ -991,18 +1009,18 @@ function* streamPropertyBuiltin({ solver, goal, env }) {
   }
 }
 
-function inputStreamFor(solver, goal, env) {
+function inputStreamFor(solver: any, goal: any, env: any): any {
   return goal.arity === 1 ? solver.io.resolve(solver.io.currentInput) : requireStream(solver, goal.args[0], env, 'read');
 }
-function outputStreamFor(solver, goal, env) {
+function outputStreamFor(solver: any, goal: any, env: any): any {
   return goal.arity === 1 ? solver.io.resolve(solver.io.currentOutput) : requireStream(solver, goal.args[0], env, 'write');
 }
-function* atEndBuiltin({ solver, goal, env }) {
+function* atEndBuiltin({ solver, goal, env }: any): any {
   const stream = goal.arity === 0 ? solver.io.resolve(solver.io.currentInput) : requireStream(solver, goal.args[0], env, 'read');
   if (stream.position >= stream.content.length) yield env;
 }
-function inputUnitBuiltin(name) {
-  return function* ({ solver, goal, env }) {
+function inputUnitBuiltin(name: any): any {
+  return function* ({ solver, goal, env }: any) {
     const stream = inputStreamFor(solver, goal, env);
     const binary = name.endsWith('byte');
     if (binary !== (stream.type === 'binary')) throw new PrologError('permission_error(input, stream)', streamHandle(stream.id));
@@ -1023,8 +1041,8 @@ function inputUnitBuiltin(name) {
     if (unify(target, result, next)) yield next;
   };
 }
-function outputUnitBuiltin(name) {
-  return function* ({ solver, goal, env }) {
+function outputUnitBuiltin(name: any): any {
+  return function* ({ solver, goal, env }: any) {
     const stream = outputStreamFor(solver, goal, env);
     const value = deref(goal.args[goal.arity - 1], env);
     if (value.type === VAR) throw new PrologError('instantiation_error');
@@ -1045,7 +1063,7 @@ function outputUnitBuiltin(name) {
     yield env;
   };
 }
-function* nlBuiltin({ solver, goal, env }) {
+function* nlBuiltin({ solver, goal, env }: any): any {
   const stream = goal.arity === 0
     ? solver.io.resolve(solver.io.currentOutput)
     : requireStream(solver, goal.args[0], env, 'write');
@@ -1054,7 +1072,7 @@ function* nlBuiltin({ solver, goal, env }) {
   yield env;
 }
 
-function isTerminatingFullStop(source, index) {
+function isTerminatingFullStop(source: any, index: any): any {
   const previous = source[index - 1] ?? '';
   const next = source[index + 1] ?? '';
   if (previous === '.' || next === '.') return false;
@@ -1063,7 +1081,7 @@ function isTerminatingFullStop(source, index) {
   return true;
 }
 
-function quotedEscapeEnd(source, index) {
+function quotedEscapeEnd(source: any, index: any): any {
   const escaped = source[index + 1] ?? '';
   if (!escaped) return index;
 
@@ -1087,7 +1105,7 @@ function quotedEscapeEnd(source, index) {
   return index + 1;
 }
 
-function* termTextCandidates(stream) {
+function* termTextCandidates(stream: any): any {
   const source = String(stream.content);
   let quote = null, lineComment = false, blockComment = false;
   for (let i = stream.position; i < source.length; i++) {
@@ -1108,7 +1126,7 @@ function* termTextCandidates(stream) {
     }
   }
 }
-function convertedTermText(text, solver) {
+function convertedTermText(text: any, solver: any): any {
   if (solver.prologFlags.get('char_conversion')?.value?.name !== 'on' || solver.charConversions.size === 0) return text;
   let result = '', quote = null;
   for (let i = 0; i < text.length; i++) {
@@ -1134,7 +1152,7 @@ function convertedTermText(text, solver) {
   }
   return result;
 }
-function readTermFromStream(stream, solver) {
+function readTermFromStream(stream: any, solver: any): any {
   let sawCandidate = false;
   for (const candidate of termTextCandidates(stream)) {
     sawCandidate = true;
@@ -1157,13 +1175,13 @@ function readTermFromStream(stream, solver) {
   if (!sawCandidate) return atom('end_of_file');
   throw new PrologError('syntax_error(read_term)');
 }
-function* readBuiltin({ solver, goal, env }) {
+function* readBuiltin({ solver, goal, env }: any): any {
   const stream = inputStreamFor(solver, goal, env);
   if (stream.type !== 'text') throw new PrologError('permission_error(input, binary_stream)', streamHandle(stream.id));
   const next = env.clone();
   if (unify(goal.args[goal.arity - 1], readTermFromStream(stream, solver), next)) yield next;
 }
-function* readTermBuiltin({ solver, goal, env }) {
+function* readTermBuiltin({ solver, goal, env }: any): any {
   const stream = goal.arity === 2 ? solver.io.resolve(solver.io.currentInput) : requireStream(solver, goal.args[0], env, 'read');
   if (stream.type !== 'text') throw new PrologError('permission_error(input, binary_stream)', streamHandle(stream.id));
   const options = optionList(goal.args[goal.arity - 1], env);
@@ -1171,12 +1189,14 @@ function* readTermBuiltin({ solver, goal, env }) {
   const term = readTermFromStream(stream, solver);
   const next = env.clone();
   if (!unify(target, term, next)) return;
+  // @ts-expect-error TS7034: auto-suppressed
   const variables = [];
   const counts = new Map();
-  const visit = (item) => {
+  const visit = (item: any) => {
     if (item.type === VAR) {
       counts.set(item.name, (counts.get(item.name) ?? 0) + 1);
-      if (!variables.some((entry) => entry.name === item.name)) variables.push(item);
+      // @ts-expect-error TS7005: auto-suppressed
+      if (!variables.some((entry: any) => entry.name === item.name)) variables.push(item);
     } else for (const arg of item.args) visit(arg);
   };
   visit(term);
@@ -1185,15 +1205,18 @@ function* readTermBuiltin({ solver, goal, env }) {
     if (option.type !== COMPOUND || option.arity !== 1) throw new PrologError('domain_error(read_option)', option);
     let value;
     if (option.name === 'variables') {
+      // @ts-expect-error TS7005: auto-suppressed
       value = listFromItems(variables);
     } else if (option.name === 'variable_names') {
+      // @ts-expect-error TS7005: auto-suppressed
       value = listFromItems(variables
-        .filter((item) => !item.name.startsWith('__anon'))
-        .map((item) => compound('=', [atom(item.name), item])));
+        .filter((item: any) => !item.name.startsWith('__anon'))
+        .map((item: any) => compound('=', [atom(item.name), item])));
     } else if (option.name === 'singletons') {
+      // @ts-expect-error TS7005: auto-suppressed
       value = listFromItems(variables
-        .filter((item) => !item.name.startsWith('__anon') && counts.get(item.name) === 1)
-        .map((item) => compound('=', [atom(item.name), item])));
+        .filter((item: any) => !item.name.startsWith('__anon') && counts.get(item.name) === 1)
+        .map((item: any) => compound('=', [atom(item.name), item])));
     } else {
       throw new PrologError('domain_error(read_option)', option);
     }
@@ -1201,13 +1224,13 @@ function* readTermBuiltin({ solver, goal, env }) {
   }
   yield next;
 }
-function defaultTermWriteOptions(mode) {
+function defaultTermWriteOptions(mode: any): any {
   if (mode === 'writeq') return { quoted: true, ignoreOps: false, numbervars: true, variableNames: new Map(), compact: true, operatorAtomsAsArgs: true };
   if (mode === 'canonical') return { quoted: true, ignoreOps: true, numbervars: false, variableNames: new Map(), compact: true, operatorAtomsAsArgs: true };
   return { quoted: false, ignoreOps: false, numbervars: true, variableNames: new Map(), compact: true, operatorAtomsAsArgs: true };
 }
 
-function writeOptionBoolean(value, env, option) {
+function writeOptionBoolean(value: any, env: any, option: any): any {
   value = deref(value, env);
   if (value.type === VAR) throw new PrologError('instantiation_error');
   if (value.type !== ATOM || !['true', 'false'].includes(value.name)) {
@@ -1216,7 +1239,7 @@ function writeOptionBoolean(value, env, option) {
   return value.name === 'true';
 }
 
-function writeVariableNames(value, env, option) {
+function writeVariableNames(value: any, env: any, option: any): any {
   value = deref(value, env);
   if (value.type === VAR) throw new PrologError('instantiation_error');
   const items = properListItems(value, env);
@@ -1243,7 +1266,7 @@ function writeVariableNames(value, env, option) {
   return names;
 }
 
-function termWriteOptions(term, env, mode = 'write') {
+function termWriteOptions(term: any, env: any, mode: any = 'write'): any {
   const result = defaultTermWriteOptions(mode);
   for (const option of optionList(term, env)) {
     if (option.type === VAR) throw new PrologError('instantiation_error');
@@ -1259,8 +1282,8 @@ function termWriteOptions(term, env, mode = 'write') {
   return result;
 }
 
-function writeBuiltin(mode) {
-  return function* ({ solver, goal, env }) {
+function writeBuiltin(mode: any): any {
+  return function* ({ solver, goal, env }: any) {
     const stream = outputStreamFor(solver, goal, env);
     if (stream.type !== 'text') throw new PrologError('permission_error(output, binary_stream)', streamHandle(stream.id));
     const options = defaultTermWriteOptions(mode);
@@ -1271,7 +1294,7 @@ function writeBuiltin(mode) {
     yield env;
   };
 }
-function* writeTermBuiltin({ solver, goal, env }) {
+function* writeTermBuiltin({ solver, goal, env }: any): any {
   const stream = goal.arity === 2 ? solver.io.resolve(solver.io.currentOutput) : requireStream(solver, goal.args[0], env, 'write');
   if (stream.type !== 'text') throw new PrologError('permission_error(output, binary_stream)', streamHandle(stream.id));
   const options = termWriteOptions(goal.args[goal.arity - 1], env);
@@ -1282,7 +1305,7 @@ function* writeTermBuiltin({ solver, goal, env }) {
   yield env;
 }
 
-function resolvedOrVariable(term, env, expected) {
+function resolvedOrVariable(term: any, env: any, expected: any): any {
   const value = deref(term, env);
   if (value.type !== VAR && value.type !== expected) {
     throw new PrologError(`type_error(${expected === ATOM ? 'atom' : 'number'})`, value);
@@ -1290,11 +1313,11 @@ function resolvedOrVariable(term, env, expected) {
   return value;
 }
 
-function characters(text) {
+function characters(text: any): any {
   return Array.from(text);
 }
 
-function* atomLengthBuiltin({ goal, env }) {
+function* atomLengthBuiltin({ goal, env }: any): any {
   const value = deref(goal.args[0], env);
   if (value.type === VAR) throw new PrologError('instantiation_error');
   if (value.type !== ATOM) throw new PrologError('type_error(atom)', value);
@@ -1309,7 +1332,7 @@ function* atomLengthBuiltin({ goal, env }) {
   if (unify(goal.args[1], numberTerm(characters(value.name).length), next)) yield next;
 }
 
-function* atomConcatBuiltin({ goal, env }) {
+function* atomConcatBuiltin({ goal, env }: any): any {
   const first = resolvedOrVariable(goal.args[0], env, ATOM);
   const second = resolvedOrVariable(goal.args[1], env, ATOM);
   const whole = resolvedOrVariable(goal.args[2], env, ATOM);
@@ -1334,7 +1357,7 @@ function* atomConcatBuiltin({ goal, env }) {
   }
 }
 
-function optionalNonNegativeInteger(term, env) {
+function optionalNonNegativeInteger(term: any, env: any): any {
   const value = deref(term, env);
   if (value.type === VAR) return null;
   if (value.type !== NUMBER || !isDecimalInteger(value.name)) throw new PrologError('type_error(integer)', value);
@@ -1343,7 +1366,7 @@ function optionalNonNegativeInteger(term, env) {
   return integer;
 }
 
-function* subAtomBuiltin({ goal, env }) {
+function* subAtomBuiltin({ goal, env }: any): any {
   const source = deref(goal.args[0], env);
   if (source.type === VAR) throw new PrologError('instantiation_error');
   if (source.type !== ATOM) throw new PrologError('type_error(atom)', source);
@@ -1369,7 +1392,7 @@ function* subAtomBuiltin({ goal, env }) {
   }
 }
 
-function listElements(term, env) {
+function listElements(term: any, env: any): any {
   const items = [];
   let cursor = deref(term, env);
   while (cursor.type === COMPOUND && cursor.name === '.' && cursor.arity === 2) {
@@ -1379,34 +1402,34 @@ function listElements(term, env) {
   return { items, tail: cursor };
 }
 
-function oneChar(value) {
+function oneChar(value: any): any {
   return value.type === ATOM && characters(value.name).length === 1;
 }
 
-function validCharacterCode(value) {
+function validCharacterCode(value: any): any {
   if (value.type !== NUMBER || !isDecimalInteger(value.name)) return false;
   const code = BigInt(value.name);
   return code >= 0n && code <= 0x10ffffn && !(code >= 0xd800n && code <= 0xdfffn);
 }
 
-function listToAtomInput(list, env, kind) {
+function listToAtomInput(list: any, env: any, kind: any): any {
   const { items, tail } = listElements(list, env);
-  if (tail.type === VAR || items.some((item) => item.type === VAR)) throw new PrologError('instantiation_error');
+  if (tail.type === VAR || items.some((item: any) => item.type === VAR)) throw new PrologError('instantiation_error');
   if (tail.type !== ATOM || tail.name !== '[]') throw new PrologError('type_error(list)', tail);
   if (kind === 'chars') {
-    const invalid = items.find((item) => !oneChar(item));
+    const invalid = items.find((item: any) => !oneChar(item));
     if (invalid) throw new PrologError('type_error(character)', invalid);
-    return items.map((item) => item.name).join('');
+    return items.map((item: any) => item.name).join('');
   }
-  const nonInteger = items.find((item) => item.type !== NUMBER || !isDecimalInteger(item.name));
+  const nonInteger = items.find((item: any) => item.type !== NUMBER || !isDecimalInteger(item.name));
   if (nonInteger) throw new PrologError('type_error(integer)', nonInteger);
-  const invalid = items.find((item) => !validCharacterCode(item));
+  const invalid = items.find((item: any) => !validCharacterCode(item));
   if (invalid) throw new PrologError('representation_error(character_code)');
-  return items.map((item) => String.fromCodePoint(Number(item.name))).join('');
+  return items.map((item: any) => String.fromCodePoint(Number(item.name))).join('');
 }
 
-function atomListBuiltin(kind) {
-  return function* ({ goal, env }) {
+function atomListBuiltin(kind: any): any {
+  return function* ({ goal, env }: any) {
     const value = deref(goal.args[0], env);
     if (value.type !== VAR && value.type !== ATOM) throw new PrologError('type_error(atom)', value);
     const list = deref(goal.args[1], env);
@@ -1417,7 +1440,7 @@ function atomListBuiltin(kind) {
       if (tail.type !== VAR && !(tail.type === ATOM && tail.name === '[]')) {
         throw new PrologError('type_error(list)', list);
       }
-      const invalid = supplied.find((item) => item.type !== VAR &&
+      const invalid = supplied.find((item: any) => item.type !== VAR &&
         (kind === 'chars' ? !oneChar(item) :
           item.type !== NUMBER || !isDecimalInteger(item.name) || !validCharacterCode(item)));
       if (invalid) {
@@ -1427,7 +1450,7 @@ function atomListBuiltin(kind) {
         }
         throw new PrologError('representation_error(character_code)');
       }
-      const items = characters(value.name).map((ch) =>
+      const items = characters(value.name).map((ch: any) =>
         kind === 'chars' ? atom(ch) : numberTerm(ch.codePointAt(0)));
       if (unify(goal.args[1], listFromItems(items), next)) yield next;
       return;
@@ -1438,7 +1461,7 @@ function atomListBuiltin(kind) {
 const atomCharsBuiltin = atomListBuiltin('chars');
 const atomCodesBuiltin = atomListBuiltin('codes');
 
-function* charCodeBuiltin({ goal, env }) {
+function* charCodeBuiltin({ goal, env }: any): any {
   const char = deref(goal.args[0], env);
   const code = deref(goal.args[1], env);
   if (char.type === VAR && code.type === VAR) throw new PrologError('instantiation_error');
@@ -1453,7 +1476,7 @@ function* charCodeBuiltin({ goal, env }) {
   } else if (unify(goal.args[0], atom(String.fromCodePoint(Number(code.name))), next)) yield next;
 }
 
-function skipNumberLayout(text, start) {
+function skipNumberLayout(text: any, start: any): any {
   let position = start;
   while (true) {
     while (position < text.length && /[\u0009-\u000d\u0020]/.test(text[position])) {
@@ -1475,7 +1498,7 @@ function skipNumberLayout(text, start) {
   }
 }
 
-function quotedNumberSign(text, start) {
+function quotedNumberSign(text: any, start: any): any {
   if (text[start] !== "'") return null;
   let position = start + 1;
   let value = '';
@@ -1497,7 +1520,9 @@ function quotedNumberSign(text, start) {
     character = text[position++];
     if (character === '\n') continue;
     const controls = { a: '\x07', b: '\b', r: '\r', f: '\f', t: '\t', n: '\n', v: '\v' };
+    // @ts-expect-error TS7053: auto-suppressed
     if (controls[character] != null) {
+      // @ts-expect-error TS7053: auto-suppressed
       value += controls[character];
       continue;
     }
@@ -1506,7 +1531,7 @@ function quotedNumberSign(text, start) {
   return null;
 }
 
-function parseIsoNumber(text) {
+function parseIsoNumber(text: any): any {
   // number_chars/2 accepts leading layout, but its character list must end
   // with the numeric token itself rather than trailing layout text.
   if (text.length === 0 || /[\u0009-\u000d\u0020]$/.test(text)) return null;
@@ -1543,7 +1568,7 @@ function parseIsoNumber(text) {
   }
 }
 
-function sameNumber(left, right) {
+function sameNumber(left: any, right: any): any {
   const leftInteger = isDecimalInteger(left.name);
   const rightInteger = isDecimalInteger(right.name);
   if (leftInteger || rightInteger) {
@@ -1554,13 +1579,13 @@ function sameNumber(left, right) {
   return Number.isFinite(leftValue) && Number.isFinite(rightValue) && leftValue === rightValue;
 }
 
-function numberListText(list, env, kind, valueIsBound) {
+function numberListText(list: any, env: any, kind: any, valueIsBound: any): any {
   const whole = deref(list, env);
   const { items, tail } = listElements(list, env);
   const proper = tail.type === ATOM && tail.name === '[]';
   if (tail.type !== VAR && !proper) throw new PrologError('type_error(list)', whole);
 
-  const invalid = items.find((item) => item.type !== VAR &&
+  const invalid = items.find((item: any) => item.type !== VAR &&
     (kind === 'chars' ? !oneChar(item) : !validCharacterCode(item)));
   if (invalid) {
     if (kind === 'chars') throw new PrologError('type_error(character)', invalid);
@@ -1570,16 +1595,16 @@ function numberListText(list, env, kind, valueIsBound) {
     throw new PrologError('representation_error(character_code)');
   }
 
-  const hasVariable = tail.type === VAR || items.some((item) => item.type === VAR);
+  const hasVariable = tail.type === VAR || items.some((item: any) => item.type === VAR);
   if (!valueIsBound && hasVariable) throw new PrologError('instantiation_error');
   if (hasVariable) return null;
-  return items.map((item) => kind === 'chars'
+  return items.map((item: any) => kind === 'chars'
     ? item.name
     : String.fromCodePoint(Number(item.name))).join('');
 }
 
-function numberListBuiltin(kind) {
-  return function* ({ goal, env }) {
+function numberListBuiltin(kind: any): any {
+  return function* ({ goal, env }: any) {
     const value = deref(goal.args[0], env);
     if (value.type !== VAR && value.type !== NUMBER) throw new PrologError('type_error(number)', value);
     const list = deref(goal.args[1], env);
@@ -1593,7 +1618,7 @@ function numberListBuiltin(kind) {
         if (sameNumber(value, parsed)) yield next;
         return;
       }
-      const items = characters(value.name).map((ch) =>
+      const items = characters(value.name).map((ch: any) =>
         kind === 'chars' ? atom(ch) : numberTerm(ch.codePointAt(0)));
       if (unify(goal.args[1], listFromItems(items), next)) yield next;
       return;
@@ -1606,7 +1631,7 @@ function numberListBuiltin(kind) {
 const numberCharsBuiltin = numberListBuiltin('chars');
 const numberCodesBuiltin = numberListBuiltin('codes');
 
-function* findallBuiltin({ solver, goal, env }) {
+function* findallBuiltin({ solver, goal, env }: any): any {
   const [template, innerGoal, bag] = goal.args;
   assertListOrPartial(bag, env);
   const collector = solver.cloneForInnerGoal(10000000);
@@ -1619,7 +1644,7 @@ function* findallBuiltin({ solver, goal, env }) {
   if (unify(bag, listFromItems(collected), next)) yield next;
 }
 
-function collectVariableNames(term, env, names = new Set()) {
+function collectVariableNames(term: any, env: any, names: any = new Set()): any {
   term = deref(term, env);
   if (term.type === VAR) {
     names.add(term.name);
@@ -1629,7 +1654,7 @@ function collectVariableNames(term, env, names = new Set()) {
   return names;
 }
 
-function bagGoalParts(term, env) {
+function bagGoalParts(term: any, env: any): any {
   const quantified = new Set();
   let iterated = deref(term, env);
   while (iterated.type === COMPOUND && iterated.name === '^' && iterated.arity === 2) {
@@ -1639,30 +1664,30 @@ function bagGoalParts(term, env) {
   return { iterated: callable(iterated, env), quantified };
 }
 
-function assertListOrPartial(term, env) {
+function assertListOrPartial(term: any, env: any): any {
   if (properListItems(term, env) != null || isPartialList(term, env)) return;
   throw new PrologError('type_error(list)', deref(term, env));
 }
 
-function freeVariables(goal, template, quantified, env) {
+function freeVariables(goal: any, template: any, quantified: any, env: any): any {
   const templateNames = collectVariableNames(template, env);
   const goalNames = collectVariableNames(goal, env);
   return [...goalNames]
-    .filter((name) => !templateNames.has(name) && !quantified.has(name))
+    .filter((name: any) => !templateNames.has(name) && !quantified.has(name))
     .map(variable);
 }
 
-function sameWitness(left, right) {
+function sameWitness(left: any, right: any): any {
   return variantTerms(left, new Env(), right, new Env());
 }
 
-function sortedUnique(items) {
+function sortedUnique(items: any): any {
   const sorted = [...items].sort(compareTerms);
-  return sorted.filter((item, index) => index === 0 || compareTerms(sorted[index - 1], item) !== 0);
+  return sorted.filter((item: any, index: any) => index === 0 || compareTerms(sorted[index - 1], item) !== 0);
 }
 
-function allSolutionsBuiltin(asSet) {
-  return function* ({ solver, goal, env }) {
+function allSolutionsBuiltin(asSet: any): any {
+  return function* ({ solver, goal, env }: any) {
     assertListOrPartial(goal.args[2], env);
     const { iterated, quantified } = bagGoalParts(goal.args[1], env);
     const free = freeVariables(iterated, goal.args[0], quantified, env);
@@ -1673,7 +1698,8 @@ function allSolutionsBuiltin(asSet) {
         compound('$witness', free),
         goal.args[0],
       ]), answerEnv);
-      let group = groups.find((candidate) => sameWitness(candidate.witness, copied.args[0]));
+      // @ts-expect-error TS7022: auto-suppressed
+      let group = groups.find((candidate: any) => sameWitness(candidate.witness, copied.args[0]));
       if (!group) {
         group = { witness: copied.args[0], templates: [] };
         groups.push(group);
@@ -1699,14 +1725,14 @@ function allSolutionsBuiltin(asSet) {
 const bagofBuiltin = allSolutionsBuiltin(false);
 const setofBuiltin = allSolutionsBuiltin(true);
 
-function callable(term, env) {
+function callable(term: any, env: any): any {
   term = resolveCallable(term, env);
   if (term.type === VAR) throw new PrologError('instantiation_error');
   if (term.type !== ATOM && term.type !== COMPOUND) throw new PrologError('type_error(callable)', term);
   validateControlCallable(term, term);
   return term;
 }
-function validateControlCallable(term, culprit) {
+function validateControlCallable(term: any, culprit: any): any {
   if (term.type !== COMPOUND || ![',', ';', '->'].includes(term.name) || term.arity !== 2) return;
   for (const argument of term.args) {
     if (argument.type === VAR) throw new PrologError('instantiation_error');
@@ -1716,14 +1742,14 @@ function validateControlCallable(term, culprit) {
     validateControlCallable(argument, culprit);
   }
 }
-function resolveCallable(term, env) {
+function resolveCallable(term: any, env: any): any {
   const resolved = deref(term, env);
   if (resolved.type !== COMPOUND) return resolved;
-  const callable = compound(resolved.name, resolved.args.map((arg) => resolveCallable(arg, env)));
+  const callable = compound(resolved.name, resolved.args.map((arg: any) => resolveCallable(arg, env)));
   if (resolved.module != null) callable.module = resolved.module;
   return callable;
 }
-function* callBuiltin({ solver, goal, env }) {
+function* callBuiltin({ solver, goal, env }: any): any {
   const child = solver.cloneForInnerGoal();
   try {
     yield* child.solve([callable(goal.args[0], env)], env, 0);
@@ -1731,7 +1757,7 @@ function* callBuiltin({ solver, goal, env }) {
     solver.absorbStatsFrom(child);
   }
 }
-function* callClosureBuiltin({ solver, goal, env }) {
+function* callClosureBuiltin({ solver, goal, env }: any): any {
   const closure = callable(goal.args[0], env);
   const existing = closure.type === COMPOUND ? closure.args : [];
   const invoked = compound(closure.name, [...existing, ...goal.args.slice(1)]);
@@ -1744,7 +1770,7 @@ function* callClosureBuiltin({ solver, goal, env }) {
   }
 }
 
-function* callNthBuiltin({ solver, goal, env }) {
+function* callNthBuiltin({ solver, goal, env }: any): any {
   const requestedTerm = deref(goal.args[1], env);
   // Zero is the one Nth value that fails before Goal is inspected.
   if (requestedTerm.type === NUMBER && isDecimalInteger(requestedTerm.name) && BigInt(requestedTerm.name) === 0n) return;
@@ -1774,7 +1800,7 @@ function* callNthBuiltin({ solver, goal, env }) {
   }
 }
 
-function* freezeBuiltin({ solver, goal, env }) {
+function* freezeBuiltin({ solver, goal, env }: any): any {
   const watched = deref(goal.args[0], env);
   if (watched.type !== VAR) {
     const child = solver.cloneForInnerGoal();
@@ -1790,7 +1816,7 @@ function* freezeBuiltin({ solver, goal, env }) {
   yield next;
 }
 
-function* phraseBuiltin({ solver, goal, env }) {
+function* phraseBuiltin({ solver, goal, env }: any): any {
   const grammarBody = deref(goal.args[0], env);
   if (grammarBody.type === VAR) throw new PrologError('instantiation_error');
   if (grammarBody.type !== ATOM && grammarBody.type !== COMPOUND) {
@@ -1821,10 +1847,11 @@ function* phraseBuiltin({ solver, goal, env }) {
     solver.absorbStatsFrom(child);
   }
 }
-export function formalErrorTerm(error) {
+export function formalErrorTerm(error: any): any {
   const context = error.contextTerm ?? atom('eyeprolog');
   if (error.formalTerm != null) return compound('error', [error.formalTerm, context]);
-  const parse = (text) => {
+  // @ts-expect-error TS7023: auto-suppressed
+  const parse = (text: any) => {
     const open = text.indexOf('(');
     if (open === -1) return atom(text);
     const name = text.slice(0, open);
@@ -1852,7 +1879,7 @@ export function formalErrorTerm(error) {
   }
   return compound('error', [formal, context]);
 }
-function* catchBuiltin({ solver, goal, env }) {
+function* catchBuiltin({ solver, goal, env }: any): any {
   const child = solver.cloneForInnerGoal();
   try {
     // Corrigendum 2 removed catch/3's own callability errors so that errors
@@ -1872,14 +1899,14 @@ function* catchBuiltin({ solver, goal, env }) {
     solver.absorbStatsFrom(child);
   }
 }
-function* throwBuiltin({ goal, env }) {
+function* throwBuiltin({ goal, env }: any): any {
   const ball = deref(goal.args[0], env);
   if (ball.type === VAR) throw new PrologError('instantiation_error');
   // ISO throw/1 copies the thrown term before control unwinds. Freshen
   // variables so the catcher cannot retain aliases to the protected goal.
   throw new ThrownTerm(freshCopy(ball, env));
 }
-function* onceBuiltin({ solver, goal, env }) {
+function* onceBuiltin({ solver, goal, env }: any): any {
   const child = solver.cloneForInnerGoal(1);
   for (const answer of child.solve([callable(goal.args[0], env)], env.clone(), 0)) {
     solver.absorbStatsFrom(child);
@@ -1888,14 +1915,14 @@ function* onceBuiltin({ solver, goal, env }) {
   }
   solver.absorbStatsFrom(child);
 }
-function* repeatBuiltin({ env }) {
+function* repeatBuiltin({ env }: any): any {
   while (true) yield env;
 }
-function* negationBuiltin({ solver, goal, env }) {
+function* negationBuiltin({ solver, goal, env }: any): any {
   for (const _ of solver.cloneForInnerGoal(1).solve([callable(goal.args[0], env)], env.clone(), 0)) return;
   yield env;
 }
-function* disjunctionBuiltin({ solver, goal, env }) {
+function* disjunctionBuiltin({ solver, goal, env }: any): any {
   const left = deref(goal.args[0], env);
   if (left.type === COMPOUND && left.name === '->' && left.arity === 2) {
     for (const conditionEnv of solver.cloneForInnerGoal(1).solve([callable(left.args[0], env)], env.clone(), 0)) {
@@ -1915,7 +1942,7 @@ function* disjunctionBuiltin({ solver, goal, env }) {
   if (cutThisScope) return;
   yield* solver.solve([callable(goal.args[1], env)], env.clone(), 0);
 }
-function* ifThenBuiltin({ solver, goal, env }) {
+function* ifThenBuiltin({ solver, goal, env }: any): any {
   for (const conditionEnv of solver.cloneForInnerGoal(1).solve([callable(goal.args[0], env)], env.clone(), 0)) {
     for (const consequentEnv of solver.solve([callable(goal.args[1], conditionEnv)], conditionEnv, 0)) {
       // The consequent is an internal part of the current solution, not a
@@ -1928,7 +1955,7 @@ function* ifThenBuiltin({ solver, goal, env }) {
   }
 }
 
-function evaluate(term, env) {
+function evaluate(term: any, env: any): any {
   term = deref(term, env);
   if (term.type === VAR) throw new PrologError('instantiation_error');
   if (term.type === NUMBER) {
@@ -1941,10 +1968,10 @@ function evaluate(term, env) {
     if (term.name === 'e') return { integer: false, value: Math.E };
   }
   if (term.type !== COMPOUND) throw new PrologError('type_error(evaluable)', term);
-  const args = term.args.map((arg) => evaluate(arg, env));
+  const args = term.args.map((arg: any) => evaluate(arg, env));
   return evaluateOperation(term, args);
 }
-function evaluateOperation(term, args) {
+function evaluateOperation(term: any, args: any): any {
   const name = term.name;
   const arity = term.arity;
   if (arity === 1 && (name === '+' || name === '-')) {
@@ -1971,7 +1998,8 @@ function evaluateOperation(term, args) {
       const value = name === 'float_integer_part' ? Math.trunc(a) : a - Math.trunc(a);
       return { integer: false, value };
     }
-    const fn = name === 'float' ? (x) => x : name === 'abs' ? Math.abs : name === 'sign' ? Math.sign : Math[name];
+    // @ts-expect-error TS7053: auto-suppressed
+    const fn = name === 'float' ? (x: any) => x : name === 'abs' ? Math.abs : name === 'sign' ? Math.sign : Math[name];
     const value = fn(a);
     if (Number.isNaN(value) || (name === 'log' && a === 0)) throw new PrologError('evaluation_error(undefined)');
     if (!Number.isFinite(value)) throw new PrologError('evaluation_error(float_overflow)');
@@ -1989,6 +2017,7 @@ function evaluateOperation(term, args) {
     if (b >= 0n) return { integer: true, value: a ** b };
     if (a === 0n) throw new PrologError('evaluation_error(undefined)');
     if (a === 1n) return { integer: true, value: 1n };
+    // @ts-expect-error TS2365: auto-suppressed
     if (a === -1n) return { integer: true, value: (-b) % 2n === 0n ? 1n : -1n };
     // Corrigendum 3: the defined real result needs a floating-point base.
     throw new PrologError('type_error(float)', numericTerm(args[0]));
@@ -2002,6 +2031,7 @@ function evaluateOperation(term, args) {
     if (name === 'div') {
       const quotient = a / b;
       const remainder = a % b;
+      // @ts-expect-error TS2367: auto-suppressed
       return { integer: true, value: remainder !== 0n && ((a < 0n) !== (b < 0n)) ? quotient - 1n : quotient };
     }
     if (name === 'rem') return { integer: true, value: a % b };
@@ -2042,29 +2072,29 @@ function evaluateOperation(term, args) {
   if (underflow) throw new PrologError('evaluation_error(underflow)');
   return { integer: false, value };
 }
-export function arithmeticValueTerm(value) {
+export function arithmeticValueTerm(value: any): any {
   return value.integer ? numberTerm(value.value.toString()) : numberTerm(numberTextFromDouble(value.value));
 }
-function numericTerm(value) {
+function numericTerm(value: any): any {
   return arithmeticValueTerm(value);
 }
-export function evaluateArithmetic(term, env) {
+export function evaluateArithmetic(term: any, env: any): any {
   return evaluate(term, env);
 }
-export function compareArithmeticValues(left, right) {
+export function compareArithmeticValues(left: any, right: any): any {
   const a = left.value;
   const b = right.value;
   return left.integer && right.integer
     ? (a < b ? -1 : a > b ? 1 : 0)
     : (Number(a) < Number(b) ? -1 : Number(a) > Number(b) ? 1 : 0);
 }
-function* isBuiltin({ goal, env }) {
+function* isBuiltin({ goal, env }: any): any {
   const result = arithmeticValueTerm(evaluateArithmetic(goal.args[1], env));
   const next = env.clone();
   if (unify(goal.args[0], result, next)) yield next;
 }
-function arithmeticComparison(test) {
-  return function* ({ goal, env }) {
+function arithmeticComparison(test: any): any {
+  return function* ({ goal, env }: any) {
     const left = evaluateArithmetic(goal.args[0], env);
     const right = evaluateArithmetic(goal.args[1], env);
     const cmp = compareArithmeticValues(left, right);
@@ -2078,7 +2108,7 @@ export class BuiltinRegistry {
     this.defs = new Map();
   }
 
-  add(name, arity, handler, options = {}) {
+  add(name: any, arity: any, handler: any, options: any = {}): any {
     this.defs.set(`${name}/${arity}`, {
       name,
       arity,
@@ -2092,17 +2122,19 @@ export class BuiltinRegistry {
     return this;
   }
 
-  get(name, arity) {
+  get(name: any, arity: any): any {
     return this.defs.get(`${name}/${arity}`) ?? null;
   }
 
-  remove(name, arity) {
+  remove(name: any, arity: any): any {
     this.defs.delete(`${name}/${arity}`);
     return this;
   }
+
+    defs: any;
 }
 
-export function createDefaultRegistry() {
+export function createDefaultRegistry(): any {
   const registry = new BuiltinRegistry();
   isoBuiltins.register(registry);
   return registry;
@@ -2111,21 +2143,24 @@ export function createDefaultRegistry() {
 // ISO/IEC 13211-1:1995 + Corrigenda 1-3 only.  phrase/2-3 and grammar-rule
 // expansion belong to the separate grammar-rule specification, while the
 // EyeProlog standard-library/CLP(Z) adapters are registered elsewhere.
-export function createStrictIsoRegistry() {
+export function createStrictIsoRegistry(): any {
   return createDefaultRegistry()
     .remove('phrase', 2)
     .remove('phrase', 3);
 }
 
-let defaultRegistry = null;
+let defaultRegistry: any = null;
+// @ts-expect-error TS7034: auto-suppressed
 let strictIsoRegistry = null;
 
-export function getDefaultRegistry() {
+export function getDefaultRegistry(): any {
   if (defaultRegistry == null) defaultRegistry = createDefaultRegistry();
   return defaultRegistry;
 }
 
-export function getStrictIsoRegistry() {
+export function getStrictIsoRegistry(): any {
+  // @ts-expect-error TS7005: auto-suppressed
   if (strictIsoRegistry == null) strictIsoRegistry = createStrictIsoRegistry();
+  // @ts-expect-error TS7005: auto-suppressed
   return strictIsoRegistry;
 }

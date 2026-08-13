@@ -5,36 +5,61 @@ export const ATOM = 'atom';
 export const STRING = 'string';
 export const NUMBER = 'number';
 export const COMPOUND = 'compound';
-const EMPTY_ARGS = Object.freeze([]);
+
+export type EyePrologTerm = Term | { type: string; name: string; args?: EyePrologTerm[]; arity?: number; order?: number; module?: string };
+
+const EMPTY_ARGS = Object.freeze([]) as readonly EyePrologTerm[];
 let variableOrder = 0;
-const variableOrders = new Map();
+const variableOrders = new Map<string, number>();
 
 export class Term {
-  constructor(type, name, args = []) {
+  type: string;
+  name: string;
+  args: EyePrologTerm[];
+  order?: number;
+  module?: string;
+
+  constructor(type: string, name?: unknown, args: EyePrologTerm[] = []) {
     this.type = type;
     this.name = String(name ?? '');
     this.args = args;
   }
-  get arity() {
+  get arity(): number {
     return this.args.length;
   }
 }
 
-export const variable = (name) => {
-  const term = new Term(VAR, name, EMPTY_ARGS);
+export const variable = (name: string): Term => {
+  const term = new Term(VAR, name, EMPTY_ARGS as EyePrologTerm[]);
   if (!variableOrders.has(term.name)) variableOrders.set(term.name, ++variableOrder);
-  term.order = variableOrders.get(term.name);
+  term.order = variableOrders.get(term.name) as number;
   return term;
 };
-export const atom = (name) => new Term(ATOM, name, EMPTY_ARGS);
-export const stringTerm = (value) => new Term(STRING, value, EMPTY_ARGS);
-export const numberTerm = (value) => new Term(NUMBER, value, EMPTY_ARGS);
-export const compound = (name, args = []) => args.length === 0 ? atom(name) : new Term(COMPOUND, name, args);
-export const emptyList = () => atom('[]');
-export const cons = (head, tail) => compound('.', [head, tail]);
+export const atom = (name: string): Term => new Term(ATOM, name, EMPTY_ARGS as EyePrologTerm[]);
+export const stringTerm = (value: string): Term => new Term(STRING, value, EMPTY_ARGS as EyePrologTerm[]);
+export const numberTerm = (value: string | number): Term => new Term(NUMBER, value, EMPTY_ARGS as EyePrologTerm[]);
+export const compound = (name: string, args: EyePrologTerm[] = []): Term => args.length === 0 ? atom(name) : new Term(COMPOUND, name, args);
+export const emptyList = (): Term => atom('[]');
+export const cons = (head: EyePrologTerm, tail: EyePrologTerm): Term => compound('.', [head, tail]);
+
+export interface EnvState {
+  bindings: Map<string, EyePrologTerm> | null;
+  bindingName: string | null;
+  bindingValue: EyePrologTerm | undefined;
+  parent: EnvState | null;
+  depth: number;
+  cacheName: string | null;
+  cacheValue: EyePrologTerm | undefined;
+  cache: Map<string, EyePrologTerm> | null;
+}
 
 export class Env {
-  constructor(bindings) {
+  _state: EnvState;
+  _delays: any;
+  _clpz: any;
+  _occursCheckHandler: ((left: EyePrologTerm, right: EyePrologTerm, env: Env) => void) | null;
+
+  constructor(bindings?: Iterable<readonly [string, EyePrologTerm]> | null) {
     this._state = {
       bindings: bindings ? new Map(bindings) : null,
       bindingName: null,
@@ -49,32 +74,32 @@ export class Env {
     this._clpz = null;
     this._occursCheckHandler = null;
   }
-  clone() {
+  clone(): Env {
     // Most speculative environments are either rejected without a binding or
     // only compare ground terms. Persistent layers make cloning constant-time
     // and keep later writes to either branch isolated. Hot-path layers store a
     // single binding directly; a Map is allocated only when a deep chain is
     // occasionally flattened.
-    const clone = Object.create(Env.prototype);
+    const clone = Object.create(Env.prototype) as Env;
     clone._state = this._state;
     clone._delays = this._delays;
     clone._clpz = this._clpz;
     clone._occursCheckHandler = this._occursCheckHandler;
     return clone;
   }
-  setOccursCheckHandler(handler) {
+  setOccursCheckHandler(handler: ((left: EyePrologTerm, right: EyePrologTerm, env: Env) => void) | null): this {
     this._occursCheckHandler = typeof handler === 'function' ? handler : null;
     return this;
   }
-  has(name) {
+  has(name: string): boolean {
     return this.get(name) !== undefined;
   }
-  get(name) {
+  get(name: string): EyePrologTerm | undefined {
     const root = this._state;
     if (root.cacheName === name) return root.cacheValue;
     const cached = root.cache?.get(name);
     if (cached !== undefined) return cached;
-    for (let state = root; state != null; state = state.parent) {
+    for (let state: EnvState | null = root; state != null; state = state.parent) {
       let value;
       let found = false;
       if (state.bindingName === name) {
@@ -89,7 +114,7 @@ export class Env {
           if (root.cacheName == null) {
             root.cacheName = name;
             root.cacheValue = value;
-          } else {
+          } else if (root.cacheName != null && root.cacheValue !== undefined && value !== undefined) {
             (root.cache ??= new Map([[root.cacheName, root.cacheValue]])).set(name, value);
           }
         }
@@ -98,9 +123,10 @@ export class Env {
     }
     return undefined;
   }
-  bind(name, term) {
+  bind(name: any, term: any): any {
     if (this._state.depth >= 32) {
       const flattened = new Map();
+      // @ts-expect-error TS2322: auto-suppressed
       for (let state = this._state; state != null; state = state.parent) {
         if (state.bindingName != null && !flattened.has(state.bindingName)) {
           flattened.set(state.bindingName, state.bindingValue);
@@ -135,12 +161,15 @@ export class Env {
       cache: null,
     };
   }
-  delay(name, goal, module = 'user') {
+  delay(name: any, goal: any, module: any = 'user'): any {
     const delays = new Map(this._delays ?? []);
-    delays.set(name, [...(delays.get(name) ?? []), { goal, module }]);
+    const existing = delays.get(name);
+    // @ts-expect-error TS2488: auto-suppressed
+    delays.set(name, [...(existing && (typeof existing[Symbol.iterator] === 'function') ? existing : []), { goal, module }]);
     this._delays = delays;
+    return this;
   }
-  takeReadyDelays() {
+  takeReadyDelays(): any {
     if (this._delays == null || this._delays.size === 0) return [];
     const ready = [];
     let remaining = this._delays;
@@ -155,7 +184,7 @@ export class Env {
   }
 }
 
-export function deref(term, env) {
+export function deref(term: any, env: any): any {
   // Follow variable bindings until a non-variable term is reached. The seen set
   // protects readback from accidental cycles in partially constructed terms.
   let current = term;
@@ -170,23 +199,23 @@ export function deref(term, env) {
   return current;
 }
 
-export function isScalar(term) {
+export function isScalar(term: any): any {
   return term && (term.type === ATOM || term.type === STRING || term.type === NUMBER);
 }
 
-export function isEmptyList(term) {
+export function isEmptyList(term: any): any {
   return term?.type === ATOM && term.name === '[]';
 }
 
-export function isCons(term) {
+export function isCons(term: any): any {
   return term?.type === COMPOUND && term.name === '.' && term.arity === 2;
 }
 
-export function isConjunction(term) {
+export function isConjunction(term: any): any {
   return term?.type === COMPOUND && term.name === ',' && term.arity === 2;
 }
 
-function occurs(variableName, term, env) {
+function occurs(variableName: any, term: any, env: any): any {
   // Walk bindings and compound arguments iteratively so the occurs check also
   // remains safe for very deep terms. The visited sets make this defensive
   // against cycles introduced through the public Env API.
@@ -213,15 +242,17 @@ function occurs(variableName, term, env) {
   return false;
 }
 
-export function unify(left, right, env, options = {}) {
+export function unify(left: any, right: any, env: any, options: any = {}): any {
   // Iterative unification avoids deep JavaScript recursion on long lists or
   // deeply nested compounds. The occurs check gives EyeProlog finite-tree
   // unification: a variable cannot be bound to a term containing itself.
   // Bindings are written into the supplied Env.
   const occursCheckHandler = options.occursCheck === 'fail' ? null : env?._occursCheckHandler;
   const stack = [[left, right]];
-  while (stack.length) {
-    let [a, b] = stack.pop();
+  while (stack.length > 0) {
+    const pop = stack.pop();
+    if (!pop) continue;
+    let [a, b] = pop as [any, any];
     a = deref(a, env);
     b = deref(b, env);
 
@@ -269,7 +300,7 @@ export function unify(left, right, env, options = {}) {
   return true;
 }
 
-export function cloneTerm(term) {
+export function cloneTerm(term: any): any {
   const cloned = term.type === COMPOUND && term.arity === 0
     ? atom(term.name)
     : new Term(term.type, term.name, term.args.map(cloneTerm));
@@ -277,26 +308,26 @@ export function cloneTerm(term) {
   return cloned;
 }
 
-export function freshTerm(term, suffix) {
+export function freshTerm(term: any, suffix: any): any {
   if (term.type === VAR) return variable(`${term.name}#${suffix}`);
   const fresh = term.type === COMPOUND && term.arity === 0
     ? atom(term.name)
-    : new Term(term.type, term.name, term.args.map((arg) => freshTerm(arg, suffix)));
+    : new Term(term.type, term.name, term.args.map((arg: any) => freshTerm(arg, suffix)));
   if (term.module != null) fresh.module = term.module;
   return fresh;
 }
 
-export function copyResolved(term, env) {
+export function copyResolved(term: any, env: any): any {
   const resolved = deref(term, env);
   if (resolved.type === VAR) return variable(resolved.name);
   const copied = resolved.type === COMPOUND && resolved.arity === 0
     ? atom(resolved.name)
-    : new Term(resolved.type, resolved.name, resolved.args.map((arg) => copyResolved(arg, env)));
+    : new Term(resolved.type, resolved.name, resolved.args.map((arg: any) => copyResolved(arg, env)));
   if (resolved.module != null) copied.module = resolved.module;
   return copied;
 }
 
-export function termIsGround(term, env = new Env()) {
+export function termIsGround(term: any, env: any = new Env()): any {
   const pending = [term];
   const seen = new Set();
   while (pending.length > 0) {
@@ -311,7 +342,7 @@ export function termIsGround(term, env = new Env()) {
 
 const graphicAtomChars = new Set('!#$&*+-/<=>@^~\\'.split(''));
 
-function atomNeedsQuotes(name) {
+function atomNeedsQuotes(name: any): any {
   if (!name) return true;
   if (name === '[]' || name === '{}') return false;
   if (name === '\\+' || name === '+' || name === '-' || name === '\\') return true;
@@ -320,7 +351,7 @@ function atomNeedsQuotes(name) {
   return false;
 }
 
-function quoteAtom(name) {
+function quoteAtom(name: any): any {
   let out = "'";
   for (const ch of name) {
     if (ch === "'") out += "''";
@@ -332,11 +363,11 @@ function quoteAtom(name) {
   return out + "'";
 }
 
-function writeAtom(name) {
+function writeAtom(name: any): any {
   return atomNeedsQuotes(name) ? quoteAtom(name) : name;
 }
 
-function legacyVariableToIso(name) {
+function legacyVariableToIso(name: any): any {
   if (name === '?') return '_';
   const tail = name.slice(1);
   if (!tail) return '_';
@@ -344,7 +375,7 @@ function legacyVariableToIso(name) {
   return tail[0].toUpperCase() + tail.slice(1);
 }
 
-function writeVariable(name) {
+function writeVariable(name: any): any {
   name = String(name ?? '');
   if (/^\?(?:[A-Za-z_][A-Za-z0-9_]*)?$/.test(name)) return legacyVariableToIso(name);
   if (/^(?:_|[A-Z_][A-Za-z0-9_]*)$/.test(name)) return name;
@@ -353,7 +384,7 @@ function writeVariable(name) {
   return /^[A-Z_]/.test(sanitized) ? sanitized : `_${sanitized}`;
 }
 
-function writeString(value, quoteStrings) {
+function writeString(value: any, quoteStrings: any): any {
   if (!quoteStrings) return value;
   let out = '"';
   for (const ch of value) {
@@ -370,7 +401,7 @@ function writeString(value, quoteStrings) {
   return out + '"';
 }
 
-function quotedListText(term, env, doubleQuotes) {
+function quotedListText(term: any, env: any, doubleQuotes: any): any {
   if (doubleQuotes !== 'chars' && doubleQuotes !== 'codes') return null;
   const characters = [];
   let cursor = term;
@@ -392,7 +423,7 @@ function quotedListText(term, env, doubleQuotes) {
   }
 }
 
-function writeList(term, env, options) {
+function writeList(term: any, env: any, options: any): any {
   const quotedText = quotedListText(term, env, options.doubleQuotes);
   if (quotedText != null) return writeString(quotedText, true);
   const parts = [];
@@ -409,7 +440,7 @@ function writeList(term, env, options) {
   }
 }
 
-export function termToString(term, env = new Env(), quoteStrings = true, options = {}) {
+export function termToString(term: any, env: any = new Env(), quoteStrings: any = true, options: any = {}): any {
   options = { doubleQuotes: options.doubleQuotes ?? 'chars' };
   const resolved = deref(term, env);
   if (resolved.type === VAR) return writeVariable(resolved.name);
@@ -439,17 +470,17 @@ export function termToString(term, env = new Env(), quoteStrings = true, options
     }
     return `(${parts.join(', ')})`;
   }
-  return `${writeAtom(resolved.name)}(${resolved.args.map((arg) => termToString(arg, env, true, options)).join(', ')})`;
+  return `${writeAtom(resolved.name)}(${resolved.args.map((arg: any) => termToString(arg, env, true, options)).join(', ')})`;
 }
 
-export function lexicalValue(term, env) {
+export function lexicalValue(term: any, env: any): any {
   const resolved = deref(term, env);
   if (resolved.type === VAR) return null;
   if (resolved.type === ATOM || resolved.type === STRING || resolved.type === NUMBER) return resolved.name;
   return termToString(resolved, env, true);
 }
 
-export function properListItems(list, env) {
+export function properListItems(list: any, env: any): any {
   const items = [];
   let cursor = deref(list, env);
   while (isCons(cursor)) {
@@ -460,13 +491,13 @@ export function properListItems(list, env) {
   return items;
 }
 
-export function listFromItems(items, start = 0, end = items.length, tail = emptyList()) {
+export function listFromItems(items: any, start: any = 0, end: any = items.length, tail: any = emptyList()): any {
   let result = tail;
   for (let i = end - 1; i >= start; i--) result = cons(items[i], result);
   return result;
 }
 
-export function flattenConjunction(goal) {
+export function flattenConjunction(goal: any): any {
   const out = [];
   const stack = [goal];
   while (stack.length) {
@@ -480,11 +511,11 @@ export function flattenConjunction(goal) {
   return out;
 }
 
-export function termSignature(term) {
+export function termSignature(term: any): any {
   return term?.type === COMPOUND ? `${term.name}/${term.arity}` : null;
 }
 
-export function variantTerms(left, leftEnv, right, rightEnv, pairs = new Map(), reverse = new Map()) {
+export function variantTerms(left: any, leftEnv: any, right: any, rightEnv: any, pairs: any = new Map(), reverse: any = new Map()): any {
   left = deref(left, leftEnv);
   right = deref(right, rightEnv);
   if (left.type === VAR || right.type === VAR) {
@@ -503,8 +534,8 @@ export function variantTerms(left, leftEnv, right, rightEnv, pairs = new Map(), 
   return true;
 }
 
-export function compareTerms(left, right) {
-  const rank = (term) => ({ [VAR]: 0, [NUMBER]: 1, [ATOM]: 2, [STRING]: 3, [COMPOUND]: 4 })[term.type];
+export function compareTerms(left: any, right: any): any {
+  const rank = (term: any) => ({ [VAR]: 0, [NUMBER]: 1, [ATOM]: 2, [STRING]: 3, [COMPOUND]: 4 })[term.type as string] ?? -1;
   left = deref(left, new Env());
   right = deref(right, new Env());
   const lr = rank(left);
@@ -531,24 +562,24 @@ export function compareTerms(left, right) {
   return 0;
 }
 
-export function isDecimalInteger(text) {
+export function isDecimalInteger(text: any): any {
   return /^-?\d+$/.test(text ?? '');
 }
 
-export function compareIntegerText(left, right) {
+export function compareIntegerText(left: any, right: any): any {
   const a = BigInt(left);
   const b = BigInt(right);
   return a < b ? -1 : a > b ? 1 : 0;
 }
 
-export function parseFiniteNumber(text) {
+export function parseFiniteNumber(text: any): any {
   if (text == null || text === '') return null;
   if (!/^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?$/.test(text)) return null;
   const n = Number(text);
   return Number.isFinite(n) ? n : null;
 }
 
-export function numberTextFromDouble(value) {
+export function numberTextFromDouble(value: any): any {
   if (!Number.isFinite(value)) return null;
   if (Object.is(value, -0)) value = 0;
   let text = Number(value).toPrecision(17);
@@ -561,7 +592,7 @@ export function numberTextFromDouble(value) {
   return text;
 }
 
-export function compareNumberText(left, right) {
+export function compareNumberText(left: any, right: any): any {
   if (isDecimalInteger(left) && isDecimalInteger(right)) return compareIntegerText(left, right);
   const a = parseFiniteNumber(left);
   const b = parseFiniteNumber(right);

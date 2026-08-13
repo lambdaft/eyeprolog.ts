@@ -2,6 +2,7 @@
 // Most semantic decisions still flow through unification; optimizations only select candidates earlier.
 import {
   COMPOUND, Env, compound, copyResolved, deref, emptyList, flattenConjunction, freshTerm,
+  // @ts-expect-error TS6133: auto-suppressed
   numberTerm, numberTextFromDouble, termIsGround, termToString, unify, variantTerms,
 } from './term.js';
 import { PrologError, getStrictIsoRegistry } from './iso.js';
@@ -12,28 +13,29 @@ import { clpzStateConsistent } from './clpz.js';
 
 let freshCounter = 0;
 
-function qualifyTerm(term, module) {
+function qualifyTerm(term: any, module: any): any {
   if (!term || (term.type !== COMPOUND && term.type !== 'atom')) return term;
   term.module = module;
   for (const arg of term.args) qualifyTerm(arg, module);
   return term;
 }
 
-export function nextFreshId() {
+export function nextFreshId(): any {
   return ++freshCounter;
 }
 
-function raiseOccursCheckError(left, right, env) {
+function raiseOccursCheckError(_left: any, _right: any, _env: any): any {
   // occurs_check=error is an implementation-specific STO diagnostic.  Report
   // the unrepresentable cyclic result through the standard error envelope.
   // Keep the implementation-defined context empty for stable, portable output.
   const error = new PrologError('representation_error(term)');
+  // @ts-expect-error TS2339: auto-suppressed
   error.contextTerm = emptyList();
   throw error;
 }
 
 export class Solver {
-  constructor(program, options = {}) {
+  constructor(program: any, options: any = {}) {
     this.program = program;
     this.isoStrict = options.isoStrict === true || program.strictIso === true;
     // A strict processor mode must not silently admit host-registered
@@ -55,7 +57,7 @@ export class Solver {
         if (!ISO_CORE_FLAG_NAMES.has(name)) this.prologFlags.delete(name);
       }
     }
-    this.occursCheckHandler = (left, right, env) => {
+    this.occursCheckHandler = (left: any, right: any, env: any) => {
       if (this.prologFlags.get('occurs_check')?.value?.name === 'error') {
         raiseOccursCheckError(left, right, env);
       }
@@ -107,7 +109,7 @@ export class Solver {
     };
   }
 
-  cloneForInnerGoal(solutionLimit = this.solutionLimit) {
+  cloneForInnerGoal(solutionLimit: any = this.solutionLimit): any {
     const solver = new Solver(this.program, {
       registry: this.registry,
       maxDepth: this.maxDepth,
@@ -124,7 +126,7 @@ export class Solver {
     return solver;
   }
 
-  syncProgramRevision() {
+  syncProgramRevision(): any {
     if (!this.mutableProgram) {
       if (this.program.mutable !== true) return;
       this.mutableProgram = true;
@@ -138,12 +140,13 @@ export class Solver {
     this.compactChainSuccess.clear();
   }
 
-  absorbStatsFrom(child) {
+  absorbStatsFrom(child: any): any {
     if (!child || child === this || !child.stats) return;
     this.depthLimitExceeded ||= child.depthLimitExceeded;
     this.inferenceLimitExceeded ||= child.inferenceLimitExceeded;
     for (const [key, value] of Object.entries(child.stats)) {
       if (key === 'max_depth' || key === 'max_goal_count') {
+        // @ts-expect-error TS2345: auto-suppressed
         this.stats[key] = Math.max(this.stats[key] ?? 0, value ?? 0);
       } else {
         this.stats[key] = (this.stats[key] ?? 0) + (value ?? 0);
@@ -151,7 +154,7 @@ export class Solver {
     }
   }
 
-  runInitializations() {
+  runInitializations(): any {
     for (const goal of this.program.initializations ?? []) {
       let succeeded = false;
       for (const _ of this.solve([goal], new Env(), 0)) {
@@ -162,7 +165,7 @@ export class Solver {
     }
   }
 
-  *solve(goals, env = new Env(), depth = 0) {
+  *solve(goals: any, env: any = new Env(), depth: any = 0): any {
     if (!Array.isArray(goals)) goals = [goals];
     env.setOccursCheckHandler(this.occursCheckHandler);
 
@@ -180,47 +183,67 @@ export class Solver {
       }
       const frame = stack.pop();
       this.syncProgramRevision();
+      // @ts-expect-error TS18048: auto-suppressed
       if (frame.kind === 'resumeBuiltin') {
         if (this.solutionsSeen >= this.solutionLimit) continue;
+        // @ts-expect-error TS18048: auto-suppressed
         const result = frame.iterator.next();
         if (result.done) continue;
+        // @ts-expect-error TS2345: auto-suppressed
         stack.push(frame);
         stack.push({
           kind: 'goals',
+          // @ts-expect-error TS18048: auto-suppressed
           goals: frame.goals,
           env: result.value,
+          // @ts-expect-error TS18048: auto-suppressed
           depth: frame.depth,
+          // @ts-expect-error TS18048: auto-suppressed
           active: frame.active,
         });
         continue;
       }
+      // @ts-expect-error TS18048: auto-suppressed
       if (frame.kind === 'completeTableFixpointRound') {
+        // @ts-expect-error TS18048: auto-suppressed
         if (frame.revision !== this.programRevision) continue;
+        // @ts-expect-error TS18048: auto-suppressed
         frame.entry.computing = false;
+        // @ts-expect-error TS18048: auto-suppressed
         const answerCount = frame.entry.answers.length;
+        // @ts-expect-error TS18048: auto-suppressed
         if (this.tableCoordinator?.cycleSeen && answerCount > frame.answerCountBefore) {
           scheduleTableFixpointRound(stack, this, frame);
         } else {
+          // @ts-expect-error TS18048: auto-suppressed
           for (const entry of this.tableCoordinator?.entries ?? [frame.entry]) {
             entry.computing = false;
             entry.complete = true;
           }
           this.tableCoordinator = null;
+          // @ts-expect-error TS18048: auto-suppressed
           pushMemoAnswerFrames(stack, frame.entry, frame.goal, frame.rest, frame.env, frame.depth, frame.active, this);
         }
         continue;
       }
+      // @ts-expect-error TS18048: auto-suppressed
       if (frame.kind === 'completeMemo') {
+        // @ts-expect-error TS18048: auto-suppressed
         if (frame.revision !== this.programRevision) continue;
+        // @ts-expect-error TS18048: auto-suppressed
         frame.entry.computing = false;
+        // @ts-expect-error TS18048: auto-suppressed
         frame.entry.complete = true;
         continue;
       }
 
-      goals = frame.goals;
+      goals = frame!.goals;
+      // @ts-expect-error TS18048: auto-suppressed
       env = frame.env;
       env.setOccursCheckHandler(this.occursCheckHandler);
+      // @ts-expect-error TS18048: auto-suppressed
       depth = frame.depth;
+      // @ts-expect-error TS18048: auto-suppressed
       let active = frame.active;
 
       while (true) {
@@ -242,7 +265,7 @@ export class Solver {
 
         const readyDelays = env.takeReadyDelays();
         if (readyDelays.length > 0) {
-          const awakened = readyDelays.map(({ goal, module }) => {
+          const awakened = readyDelays.map(({ goal, module }: any) => {
             const delayed = copyResolved(goal, env);
             qualifyTerm(delayed, module);
             return delayed;
@@ -326,6 +349,7 @@ export class Solver {
           if (!def.deterministic) {
             stack.push({
               kind: 'resumeBuiltin',
+              // @ts-expect-error TS2353: auto-suppressed
               iterator,
               goals: rest,
               depth: depth + 1,
@@ -377,6 +401,7 @@ export class Solver {
                 scheduleTableFixpointRound(stack, this, { entry, group, goal, rest, env, depth, active });
               } else {
                 entry.computing = true;
+                // @ts-expect-error TS2353: auto-suppressed
                 stack.push({ kind: 'completeMemo', entry, revision: this.programRevision });
                 pushUserGoalUncachedFrames(stack, this, group, goal, [{ kind: 'memoStore', entry, goal, revision: this.programRevision }, ...rest], env, depth, active);
               }
@@ -402,11 +427,11 @@ export class Solver {
     }
   }
 
-  activeVariant(goal, env) {
+  activeVariant(goal: any, env: any): any {
     return activeVariantIn(goal, env, this.active);
   }
 
-  *solveUserGoal(goal, rest, env, depth) {
+  *solveUserGoal(goal: any, rest: any, env: any, depth: any): any {
     this.stats.solve_one_goal_calls++;
     if (depth > this.maxDepth) {
       this.depthLimitExceeded = true;
@@ -424,11 +449,11 @@ export class Solver {
     yield* this.solveUserGoalUncached(group, goal, rest, env, depth);
   }
 
-  *solveMemoizedGoal(group, goal, rest, env, depth) {
+  *solveMemoizedGoal(_group: any, goal: any, rest: any, env: any, depth: any): any {
     yield* this.solve([goal, ...rest], env, depth);
   }
 
-  *solveUserGoalUncached(group, goal, rest, env, depth) {
+  *solveUserGoalUncached(group: any, goal: any, rest: any, env: any, depth: any): any {
     if (group.recursive && !group.cutRecursive && !group.linearNumeric && this.activeVariant(goal, env)) return;
     // Program indexes provide candidate clauses, but every candidate is still
     // freshened and unified below. The index is a performance hint, not a
@@ -448,7 +473,7 @@ export class Solver {
         if (headCannotMatch(goal, clause.head, env)) continue;
         const id = nextFreshId();
         const freshHead = freshTerm(clause.head, id);
-        const freshBody = clause.body.map((term) => freshTerm(term, id));
+        const freshBody = clause.body.map((term: any) => freshTerm(term, id));
         const next = env.clone();
         this.stats.unify_calls++;
         if (!unify(goal, freshHead, next)) continue;
@@ -461,7 +486,7 @@ export class Solver {
       }
     }
   }
-  *solveRuleBodyThenRest(goal, goalEnv, body, rest, env, depth) {
+  *solveRuleBodyThenRest(goal: any, goalEnv: any, body: any, rest: any, env: any, depth: any): any {
     // Match the C engine's active-call lifetime: the active guard protects
     // expansion of the current rule body, but it must be released before
     // the caller's remaining goals are solved. Keeping the goal active
@@ -477,9 +502,33 @@ export class Solver {
     this.active.pop();
   }
 
+    solutionLimit: any;
+    program: any;
+    registry: any;
+    maxDepth: any;
+    maxInferences: any;
+    isoStrict: any;
+    prologFlags: any;
+    charConversions: any;
+    io: any;
+    memo: any;
+    groundChainSuccess: any;
+    compactChainSuccess: any;
+    mutableProgram: any;
+    programRevision: any;
+    tableCoordinator: any;
+    depthLimitExceeded: any;
+    inferenceLimitExceeded: any;
+    stats: any;
+    occursCheckHandler: any;
+    active: any;
+    solveStacks: any;
+    inferences: any;
+    solutionsSeen: any;
+    cutEpoch: any;
 }
 
-function qualifyMetaArguments(goal, group) {
+function qualifyMetaArguments(goal: any, group: any): any {
   const callerModule = goal.module ?? 'user';
   for (const index of group.metaArgumentPositions ?? []) {
     const argument = goal.args[index];
@@ -494,7 +543,7 @@ const ISO_CORE_FLAG_NAMES = new Set([
   'max_integer', 'min_integer', 'max_arity', 'unknown', 'double_quotes',
 ]);
 
-function defaultPrologFlags(unknown = 'error', strictIso = false) {
+function defaultPrologFlags(unknown: any = 'error', strictIso: any = false): any {
   const flags = new Map([
     ['bounded', { value: compound('false', []), allowed: ['false'], changeable: false }],
     ['integer_rounding_function', { value: compound('toward_zero', []), allowed: ['toward_zero'], changeable: false }],
@@ -512,11 +561,11 @@ function defaultPrologFlags(unknown = 'error', strictIso = false) {
 }
 
 
-function makeMemoEntry() {
+function makeMemoEntry(): any {
   return { computing: false, complete: false, answers: [], answerKeys: new Set() };
 }
 
-function scheduleTableFixpointRound(stack, solver, frame) {
+function scheduleTableFixpointRound(stack: any, solver: any, frame: any): any {
   solver.stats.table_fixpoint_rounds++;
   solver.tableCoordinator.cycleSeen = false;
   for (const entry of solver.tableCoordinator.entries) {
@@ -550,13 +599,13 @@ function scheduleTableFixpointRound(stack, solver, frame) {
 }
 
 
-function pushMemoAnswerFrames(stack, entry, goal, rest, env, depth, active, solver) {
+function pushMemoAnswerFrames(stack: any, entry: any, goal: any, rest: any, env: any, depth: any, active: any, solver: any): any {
   for (let answerIndex = entry.answers.length - 1; answerIndex >= 0; answerIndex--) {
     // Stored table variables belong to the answer template, not to any caller.
     // Freshen the complete tuple together so sharing within an answer is kept
     // while separate replays cannot alias otherwise independent call variables.
     const storedArgs = entry.answers[answerIndex];
-    const answerArgs = storedArgs.every((arg) => termIsGround(arg))
+    const answerArgs = storedArgs.every((arg: any) => termIsGround(arg))
       ? storedArgs
       : freshTerm(compound('$memo_answer', storedArgs), nextFreshId()).args;
     const next = env.clone();
@@ -569,7 +618,7 @@ function pushMemoAnswerFrames(stack, entry, goal, rest, env, depth, active, solv
   }
 }
 
-function pushUserGoalUncachedFrames(stack, solver, group, goal, rest, env, depth, active) {
+function pushUserGoalUncachedFrames(stack: any, solver: any, group: any, goal: any, rest: any, env: any, depth: any, active: any): any {
   if (group.recursive && !group.cutRecursive && !group.linearNumeric && activeVariantIn(goal, env, active)) return;
   if (group.fastPi && pushFastPiFrames(stack, goal, rest, env, depth, active)) return;
   if (tryPushGroundChainFrames(stack, solver, group, goal, rest, env, depth, active)) return;
@@ -599,7 +648,7 @@ function pushUserGoalUncachedFrames(stack, solver, group, goal, rest, env, depth
       if (headCannotMatch(goal, clause.head, env)) continue;
       const id = nextFreshId();
       const freshHead = freshTerm(clause.head, id);
-      const freshBody = clause.body.map((term) => freshTerm(term, id));
+      const freshBody = clause.body.map((term: any) => freshTerm(term, id));
       const next = env.clone();
       solver.stats.unify_calls++;
       if (!unify(goal, freshHead, next)) continue;
@@ -625,9 +674,9 @@ function pushUserGoalUncachedFrames(stack, solver, group, goal, rest, env, depth
   for (let i = frames.length - 1; i >= 0; i--) stack.push(frames[i]);
 }
 
-function pushFastPiFrames(stack, goal, rest, env, depth, active) {
-  const values = goal.args.map((arg) => deref(arg, env));
-  if ([0, 1, 2, 4].some((index) => values[index].type !== 'number')) return false;
+function pushFastPiFrames(stack: any, goal: any, rest: any, env: any, depth: any, active: any): any {
+  const values = goal.args.map((arg: any) => deref(arg, env));
+  if ([0, 1, 2, 4].some((index: any) => values[index].type !== 'number')) return false;
   let a = Number(values[0].name);
   const b = Number(values[1].name);
   let sum = Number(values[2].name);
@@ -648,7 +697,7 @@ function pushFastPiFrames(stack, goal, rest, env, depth, active) {
 
 const SCALAR_FACT_RUN_FRAME_LIMIT = 100000;
 
-function tryPushScalarFactRunFrames(stack, solver, goals, env, depth, active) {
+function tryPushScalarFactRunFrames(stack: any, solver: any, goals: any, env: any, depth: any, active: any): any {
   // Consecutive lookups into predicates that are entirely scalar ground facts
   // are common in data-heavy joins. Execute such a prefix as one iterative join
   // using local binding arrays, so intermediate fact candidates do not allocate
@@ -674,29 +723,38 @@ function tryPushScalarFactRunFrames(stack, solver, goals, env, depth, active) {
 
   while (localStack.length) {
     const state = localStack.pop();
+    // @ts-expect-error TS18048: auto-suppressed
     solver.stats.max_depth = Math.max(solver.stats.max_depth, state.depth);
+    // @ts-expect-error TS18048: auto-suppressed
     if (state.index === runLength) {
       const next = env.clone();
+      // @ts-expect-error TS18048: auto-suppressed
       for (let i = 0; i < state.names.length; i++) next.bind(state.names[i], state.values[i]);
+      // @ts-expect-error TS18048: auto-suppressed
       frames.push({ kind: 'goals', goals: rest, env: next, depth: state.depth, active });
       if (frames.length > SCALAR_FACT_RUN_FRAME_LIMIT) return false;
       continue;
     }
 
-    const goal = goals[state.index];
+    const goal = goals[state!.index];
+    // @ts-expect-error TS18048: auto-suppressed
     if (activeMightContain(goal, active) && activeVariantIn(goal, envWithLocal(env, state.names, state.values), active)) continue;
     solver.stats.solve_one_goal_calls++;
+    // @ts-expect-error TS18048: auto-suppressed
     const candidates = selectScalarFactCandidates(groups[state.index], goal, env, state.names, state.values);
     const nextStates = [];
     for (const pass of [candidates.primary, candidates.fallback]) {
       for (let candidateIndex = 0; candidateIndex < clauseCandidateLength(pass); candidateIndex++) {
         const clause = clauseCandidateAt(pass, candidateIndex);
+        // @ts-expect-error TS18048: auto-suppressed
         const match = matchScalarFactLocal(goal, clause.head, env, state.names, state.values);
         if (!match) continue;
         solver.stats.unify_calls++;
+        // @ts-expect-error TS18048: auto-suppressed
         nextStates.push({ index: state.index + 1, names: match.names, values: match.values, depth: state.depth + 1 });
       }
     }
+    // @ts-expect-error TS2345: auto-suppressed
     for (let i = nextStates.length - 1; i >= 0; i--) localStack.push(nextStates[i]);
     if (solver.solutionsSeen >= solver.solutionLimit) break;
   }
@@ -706,7 +764,7 @@ function tryPushScalarFactRunFrames(stack, solver, goals, env, depth, active) {
 }
 
 
-function activeMightContain(goal, active) {
+function activeMightContain(goal: any, active: any): any {
   if (active.length === 0 || goal.type !== COMPOUND) return false;
   for (const entry of active) {
     const activeGoal = entry.goal;
@@ -715,18 +773,18 @@ function activeMightContain(goal, active) {
   return false;
 }
 
-function envWithLocal(env, names, values) {
+function envWithLocal(env: any, names: any, values: any): any {
   if (names.length === 0) return env;
   return {
-    has(name) { return names.includes(name) || env.has(name); },
-    get(name) {
+    has(name: any) { return names.includes(name) || env.has(name); },
+    get(name: any) {
       const index = names.indexOf(name);
       return index >= 0 ? values[index] : env.get(name);
     },
   };
 }
 
-function selectScalarFactCandidates(group, goal, env, names, values) {
+function selectScalarFactCandidates(group: any, goal: any, env: any, names: any, values: any): any {
   const positions = [];
   const boundValues = [];
   for (let i = 0; i < goal.arity; i++) {
@@ -738,7 +796,7 @@ function selectScalarFactCandidates(group, goal, env, names, values) {
   return selectClauseCandidatesForValues(group, positions, boundValues);
 }
 
-function matchScalarFactLocal(goal, head, env, names, values) {
+function matchScalarFactLocal(goal: any, head: any, env: any, names: any, values: any): any {
   if (goal.type !== COMPOUND || head.type !== COMPOUND) return null;
   if (goal.name !== head.name || goal.arity !== head.arity) return null;
 
@@ -761,7 +819,7 @@ function matchScalarFactLocal(goal, head, env, names, values) {
   return { names: nextNames, values: nextValues };
 }
 
-function matchScalarFact(goal, head, env) {
+function matchScalarFact(goal: any, head: any, env: any): any {
   // A scalar ground fact has no variables to freshen and no compound structure
   // to traverse. Match the goal arguments directly and clone only after the
   // candidate has succeeded.
@@ -786,7 +844,7 @@ function matchScalarFact(goal, head, env) {
   return next;
 }
 
-function derefScalarMatch(term, env, names, values) {
+function derefScalarMatch(term: any, env: any, names: any, values: any): any {
   let current = term;
   for (let guard = 0; current?.type === 'var' && guard < 128; guard++) {
     const localIndex = names.indexOf(current.name);
@@ -797,11 +855,11 @@ function derefScalarMatch(term, env, names, values) {
   return current;
 }
 
-function scalarSetContainer() {
+function scalarSetContainer(): any {
   return { atom: new Set(), string: new Set(), number: new Set() };
 }
 
-function compactChainCacheFor(solver, group, first) {
+function compactChainCacheFor(solver: any, group: any, first: any): any {
   let groupCache = solver.compactChainSuccess.get(group);
   if (!groupCache) {
     groupCache = { atom: new Map(), string: new Map(), number: new Map() };
@@ -816,7 +874,7 @@ function compactChainCacheFor(solver, group, first) {
   return cache;
 }
 
-function rememberCompactChainSuccess(cache, seen) {
+function rememberCompactChainSuccess(cache: any, seen: any): any {
   for (const type of ['atom', 'string', 'number']) {
     let index = 0;
     const values = seen[type];
@@ -828,14 +886,14 @@ function rememberCompactChainSuccess(cache, seen) {
   }
 }
 
-function compactIndexBucket(index, type, name) {
+function compactIndexBucket(index: any, type: any, name: any): any {
   if (type === 'atom') return index.atomBuckets.get(name) ?? null;
   if (type === 'string') return index.stringBuckets.get(name) ?? null;
   if (type === 'number') return index.numberBuckets.get(name) ?? null;
   return null;
 }
 
-function tryPushCompactBinaryChainFrames(stack, solver, group, goal, rest, env, depth, active) {
+function tryPushCompactBinaryChainFrames(stack: any, solver: any, group: any, goal: any, rest: any, env: any, depth: any, active: any): any {
   if (active.length !== 0 || goal.type !== COMPOUND || goal.arity !== 2) return false;
   const resolved = copyResolved(goal, env);
   const first = resolved.args[0];
@@ -884,7 +942,7 @@ function tryPushCompactBinaryChainFrames(stack, solver, group, goal, rest, env, 
   }
 }
 
-function tryPushGroundChainFrames(stack, solver, group, goal, rest, env, depth, active) {
+function tryPushGroundChainFrames(stack: any, solver: any, group: any, goal: any, rest: any, env: any, depth: any, active: any): any {
   if (tryPushCompactBinaryChainFrames(stack, solver, group, goal, rest, env, depth, active)) return true;
   // Compress deterministic ground single-goal chains such as deep taxonomy
   // proofs: a(ind, n100000) -> a(ind, n99999) -> ... -> a(ind, n0).
@@ -952,15 +1010,15 @@ function tryPushGroundChainFrames(stack, solver, group, goal, rest, env, depth, 
 
 
 
-function clauseCandidateLength(candidate) {
+function clauseCandidateLength(candidate: any): any {
   return candidate == null ? 0 : Array.isArray(candidate) ? candidate.length : 1;
 }
 
-function clauseCandidateAt(candidate, index) {
+function clauseCandidateAt(candidate: any, index: any): any {
   return Array.isArray(candidate) ? candidate[index] : index === 0 ? candidate : undefined;
 }
 
-function matchGroundClause(goal, clause) {
+function matchGroundClause(goal: any, clause: any): any {
   if (clause.head.type !== COMPOUND || goal.type !== COMPOUND) return undefined;
   if (clause.head.name !== goal.name || clause.head.arity !== goal.arity) return null;
   if (goal.arity === 2) return matchGroundBinaryClause(goal, clause);
@@ -1004,7 +1062,7 @@ function matchGroundClause(goal, clause) {
   return { nextGoal: compound(bodyGoal.name, args) };
 }
 
-function matchGroundBinaryClause(goal, clause) {
+function matchGroundBinaryClause(goal: any, clause: any): any {
   const headArgs = clause.head.args;
   const goalArgs = goal.args;
   for (let i = 0; i < 2; i++) {
@@ -1047,15 +1105,15 @@ function matchGroundBinaryClause(goal, clause) {
   return { nextGoal: compound(bodyGoal.name, bodyArgs) };
 }
 
-function isScalarTerm(term) {
+function isScalarTerm(term: any): any {
   return term && (term.type === 'atom' || term.type === 'string' || term.type === 'number');
 }
 
-function sameScalarTerm(left, right) {
+function sameScalarTerm(left: any, right: any): any {
   return isScalarTerm(left) && isScalarTerm(right) && left.type === right.type && left.name === right.name;
 }
 
-function sameGroundTerm(left, right) {
+function sameGroundTerm(left: any, right: any): any {
   if (left?.type !== right?.type || left?.name !== right?.name) return false;
   const arity = left.args?.length ?? 0;
   if (arity !== (right.args?.length ?? 0)) return false;
@@ -1063,7 +1121,7 @@ function sameGroundTerm(left, right) {
   return true;
 }
 
-function groundChainKey(term) {
+function groundChainKey(term: any): any {
   if (term?.type === COMPOUND) {
     let out = `${term.name}/${term.arity}`;
     for (let i = 0; i < term.arity; i++) out += `${groundChainKey(term.args[i])}`;
@@ -1072,7 +1130,7 @@ function groundChainKey(term) {
   return `${term?.type ?? ''}:${term?.name ?? ''}`;
 }
 
-function rememberGroundChainSuccess(solver, seen) {
+function rememberGroundChainSuccess(solver: any, seen: any): any {
   // Cache a sparse set of checkpoints. This preserves fast reuse of long
   // deterministic chains without retaining every intermediate goal.
   let index = 0;
@@ -1083,21 +1141,23 @@ function rememberGroundChainSuccess(solver, seen) {
   }
 }
 
-function rememberMemoAnswer(entry, goal, env) {
+function rememberMemoAnswer(entry: any, goal: any, env: any): any {
   const variables = new Map();
+  // @ts-expect-error TS7034: auto-suppressed
   const answerKeys = [];
-  const answerArgs = goal.args.map((arg) => {
+  const answerArgs = goal.args.map((arg: any) => {
     const answer = copyResolvedWithKey(arg, env, variables);
     answerKeys.push(answer.key);
     return answer.term;
   });
+  // @ts-expect-error TS7005: auto-suppressed
   const key = answerKeys.join('\x1f');
   if (entry.answerKeys.has(key)) return;
   entry.answerKeys.add(key);
   entry.answers.push(answerArgs);
 }
 
-function activeVariantIn(goal, env, active) {
+function activeVariantIn(goal: any, env: any, active: any): any {
   if (active.length === 0) return false;
   let goalShape = null;
   for (const entry of active) {
@@ -1114,12 +1174,12 @@ function activeVariantIn(goal, env, active) {
   return false;
 }
 
-function variantShape(term, env) {
+function variantShape(term: any, env: any): any {
   if (term?.type !== COMPOUND) return '0';
-  return term.args.map((arg) => variantArgumentSize(arg, env)).join(',');
+  return term.args.map((arg: any) => variantArgumentSize(arg, env)).join(',');
 }
 
-function variantArgumentSize(term, env) {
+function variantArgumentSize(term: any, env: any): any {
   const pending = [term];
   let size = 0;
   while (pending.length > 0) {
@@ -1137,14 +1197,14 @@ function variantArgumentSize(term, env) {
 }
 
 
-function builtinIsReadyOrAuthoritative(def, solver, goal, env) {
+function builtinIsReadyOrAuthoritative(def: any, solver: any, goal: any, env: any): any {
   if (typeof def.shouldUse === 'function' && !def.shouldUse({ solver, goal, env })) return false;
   if (typeof def.ready !== 'function') return true;
   if (def.ready(goal, env)) return true;
   return !def.fallbackWhenNotReady;
 }
 
-function selectReadyDeterministicBuiltin(goals, env, registry) {
+function selectReadyDeterministicBuiltin(goals: any, env: any, registry: any): any {
   for (let i = 0; i < goals.length; i++) {
     const goal = goals[i];
     if (goal?.kind === 'releaseActive' || goal?.kind === 'memoStore') return 0;
@@ -1157,7 +1217,7 @@ function selectReadyDeterministicBuiltin(goals, env, registry) {
   return 0;
 }
 
-function headCannotMatch(goal, head, env) {
+function headCannotMatch(goal: any, head: any, env: any): any {
   if (goal.type !== COMPOUND || head.type !== COMPOUND) return false;
   if (goal.name !== head.name || goal.arity !== head.arity) return true;
   for (let i = 0; i < goal.arity; i++) {
@@ -1170,7 +1230,7 @@ function headCannotMatch(goal, head, env) {
   return false;
 }
 
-function derefForLocal(term, env) {
+function derefForLocal(term: any, env: any): any {
   let current = term;
   while (current.type === 'var') {
     const next = env.get(current.name);
@@ -1180,12 +1240,13 @@ function derefForLocal(term, env) {
   return current;
 }
 
-function memoKey(goal, env, group = null) {
+function memoKey(goal: any, env: any, group: any = null): any {
   let hasBound = false;
   const variables = new Map();
   const required = group?.tableInputPositions ?? [];
+  // @ts-expect-error TS7034: auto-suppressed
   const ground = [];
-  const parts = goal.args.map((arg) => {
+  const parts = goal.args.map((arg: any) => {
     const value = derefForLocal(arg, env);
     if (value.type === 'var') {
       ground.push(false);
@@ -1197,12 +1258,13 @@ function memoKey(goal, env, group = null) {
     return canonical.key;
   });
   if (required.length > 0) {
-    hasBound = required.some((index) => ground[index]);
+    // @ts-expect-error TS7005: auto-suppressed
+    hasBound = required.some((index: any) => ground[index]);
   }
   return { hasBound, text: parts.join('|') };
 }
 
-function canonicalTermInfo(term, env, variables) {
+function canonicalTermInfo(term: any, env: any, variables: any): any {
   const value = derefForLocal(term, env);
   if (value.type === 'var') {
     let id = variables.get(value.name);
@@ -1214,7 +1276,7 @@ function canonicalTermInfo(term, env, variables) {
   }
   if (!value.args?.length) return { key: `${value.type}:${value.name}`, ground: true };
   let ground = true;
-  const keys = value.args.map((arg) => {
+  const keys = value.args.map((arg: any) => {
     const child = canonicalTermInfo(arg, env, variables);
     if (!child.ground) ground = false;
     return child.key;
@@ -1222,7 +1284,7 @@ function canonicalTermInfo(term, env, variables) {
   return { key: `${value.type}:${value.name}(${keys.join(',')})`, ground };
 }
 
-function copyResolvedWithKey(term, env, variables) {
+function copyResolvedWithKey(term: any, env: any, variables: any): any {
   const value = derefForLocal(term, env);
   if (value.type === 'var') {
     let id = variables.get(value.name);
@@ -1238,10 +1300,10 @@ function copyResolvedWithKey(term, env, variables) {
       key: `${value.type}:${value.name}`,
     };
   }
-  const children = value.args.map((arg) => copyResolvedWithKey(arg, env, variables));
+  const children = value.args.map((arg: any) => copyResolvedWithKey(arg, env, variables));
   return {
-    term: termModuleCache.compound(value.name, children.map((child) => child.term)),
-    key: `${value.type}:${value.name}(${children.map((child) => child.key).join(',')})`,
+    term: termModuleCache.compound(value.name, children.map((child: any) => child.term)),
+    key: `${value.type}:${value.name}(${children.map((child: any) => child.key).join(',')})`,
   };
 }
 
