@@ -19,6 +19,6 @@
     "erasableSyntaxOnly": true,
     "types": ["node"]
   },
-  "include": ["src/**/*.ts", "test/**/*.ts"],
+  "include": ["src/**/*.ts", "test/**/*.ts", "docs/playground/**/*.ts"],
   "exclude": ["dist", "node_modules"]
 }

@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import {
   executePlaygroundRequest,
   installPlaygroundWorker,
-} from '../src/playground-worker.js';
+} from '../docs/playground/playground-worker.js';
 import { TestReporter, isMainModule } from './test-style.mjs';
 
 const testRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)));
@@ -19,8 +19,8 @@ export async function runPlayground(reporter = new TestReporter()) {
   reporter.section('Playground');
 
   await reporter.testAsync('page starts a dedicated module worker', async () => {
-    const html = fs.readFileSync(path.join(packageRoot, 'playground.html'), 'utf8');
-    assertIncludes(html, "new URL('./src/playground-worker.js?playground=", 'playground worker URL');
+    const html = fs.readFileSync(path.join(packageRoot, 'docs', 'playground', 'playground.html'), 'utf8');
+    assertIncludes(html, "new URL('./playground-worker.js?playground=", 'playground worker URL');
     assertIncludes(html, "new Worker(workerUrl, { type: 'module' })", 'module worker construction');
     assertIncludes(html, "event.data?.type === 'ready'", 'worker readiness handshake');
     assertIncludes(html, 'did not finish loading', 'worker startup timeout');
@@ -102,8 +102,8 @@ export async function runPlayground(reporter = new TestReporter()) {
   await reporter.testAsync('served playground assets have browser-safe MIME types', async () => {
     await withStaticServer(async (baseUrl) => {
       const expected = [
-        ['playground.html', 'text/html'],
-        ['src/playground-worker.js', 'text/javascript'],
+        ['docs/playground/playground.html', 'text/html'],
+        ['docs/playground/playground-worker.js', 'text/javascript'],
         ['src/index.js', 'text/javascript'],
         ['src/lib/aggregate.pl', 'text/plain'],
         ['src/lib/comparison.pl', 'text/plain'],
@@ -127,7 +127,7 @@ export async function runPlayground(reporter = new TestReporter()) {
 
   await reporter.testAsync('HTTP worker module graph resolves without Node built-ins', async () => {
     await withStaticServer(async (baseUrl) => {
-      const modules = await crawlModuleGraph(new URL('src/playground-worker.js?playground=test', baseUrl));
+      const modules = await crawlModuleGraph(new URL('docs/playground/playground-worker.js?playground=test', baseUrl));
       assert(modules.size >= 10, `expected a substantial worker module graph, got ${modules.size}`);
       assert([...modules].some((url) => url.includes('/src/standard-library.js')), 'standard module registry missing from worker graph');
       assert([...modules].some((url) => url.includes('/src/solver.js')), 'solver missing from worker graph');
@@ -174,7 +174,7 @@ async function withStaticServer(run) {
   const server = http.createServer((request, response) => {
     try {
       const url = new URL(request.url ?? '/', 'http://127.0.0.1');
-      const relative = decodeURIComponent(url.pathname).replace(/^\/+/, '') || 'playground.html';
+      const relative = decodeURIComponent(url.pathname).replace(/^\/+/, '') || 'docs/playground/playground.html';
       const filename = path.resolve(packageRoot, relative);
       if (filename !== packageRoot && !filename.startsWith(`${packageRoot}${path.sep}`)) {
         response.writeHead(403).end('forbidden');

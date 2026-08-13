@@ -11,7 +11,7 @@ Detailed analysis covering:
 - Categorized by complexity and ROI
 - Effort estimates and risk assessment
 - Implementation roadmap (3 phases)
-- Performance milestones and projections
+- Performance milestones and comparison
 
 **Key Finding:** EyeProlog.ts can achieve **3-5x speedup** through targeted optimizations
 

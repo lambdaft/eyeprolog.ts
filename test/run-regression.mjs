@@ -1456,7 +1456,7 @@ function documentationSyncCases() {
           'src/lib/aggregate.pl', 'src/lib/comparison.pl', 'src/lib/dates.pl',
           'src/lib/iso_ext.pl', 'src/lib/lists.pl', 'src/lib/primes.pl', 'src/lib/prologue.pl',
           'src/lib/random.pl', 'src/lib/strings.pl', 'src/lib/uuid.pl',
-          'src/playground-worker.js']) {
+          'docs/playground/playground-worker.js']) {
           assertEqual(fs.existsSync(path.join(packageRoot, filename)), true, `${filename} exists`);
           assertIncludes(book, filename, `book documents ${filename}`);
         }
@@ -2835,13 +2835,13 @@ function bookExampleCatalogIssues() {
 function playgroundExampleIssues() {
   const issues = [];
   const expected = listExampleNames();
-  const html = fs.readFileSync(path.join(packageRoot, 'playground.html'), 'utf8');
+  const html = fs.readFileSync(path.join(packageRoot, 'docs', 'playground', 'playground.html'), 'utf8');
   const match = html.match(/const EXAMPLES = (\[[\s\S]*?\]);/);
   if (match == null) return ['playground EXAMPLES array not found'];
   const examples = JSON.parse(match[1]).sort();
   issues.push(...arrayDiffMessages(examples, expected, 'playground EXAMPLES'));
-  if (!html.includes('new URL(`./docs/examples/${name}.pl`, location.href)')) {
-    issues.push('playground must load selected examples from relative ./docs/examples/*.pl URLs');
+  if (!html.includes('new URL(`../examples/${name}.pl`, location.href)')) {
+    issues.push('playground must load selected examples from relative ../examples/*.pl URLs');
   }
   if (!html.includes("fetch(exampleUrl, { cache: 'no-store' })")) {
     issues.push('playground must fetch selected example source from its relative URL');
@@ -2851,10 +2851,10 @@ function playgroundExampleIssues() {
 
 function playgroundStaticIssues() {
   const issues = [];
-  const playgroundPath = path.join(packageRoot, 'playground.html');
+  const playgroundPath = path.join(packageRoot, 'docs', 'playground', 'playground.html');
   const html = fs.readFileSync(playgroundPath, 'utf8');
   const readme = fs.readFileSync(path.join(packageRoot, 'docs', 'README.md'), 'utf8');
-  if (!pkg.files?.includes('playground.html')) issues.push('package files must include playground.html');
+  if (!pkg.files?.includes('docs')) issues.push('package files must include docs');
   if (!readme.includes('[Playground](https://eyereasoner.github.io/eyeprolog/playground)')) issues.push('README must link to the GitHub Pages playground URL');
   if (!html.includes('<meta name="viewport" content="width=device-width, initial-scale=1">')) issues.push('missing mobile viewport meta');
   if (!html.includes('main {') || !html.includes('display: block;')) {
@@ -2873,10 +2873,10 @@ function playgroundStaticIssues() {
     issues.push('playground must avoid full syntax coloring for very large examples');
   }
   if (!html.includes('<script type="module">')) issues.push('playground script must be an ES module');
-  if (!html.includes("new URL('./src/playground-worker.js?playground=")) issues.push('playground must cache-bust its dedicated module worker');
+  if (!html.includes("new URL('./playground-worker.js?playground=")) issues.push('playground must cache-bust its dedicated module worker');
   if (!html.includes("new Worker(workerUrl, { type: 'module' })")) issues.push('playground must launch the dedicated module worker');
-  const workerText = fs.readFileSync(path.join(packageRoot, 'src', 'playground-worker.js'), 'utf8');
-if (!workerText.includes("from './index.js?playground=") ||
+  const workerText = fs.readFileSync(path.join(packageRoot, 'docs', 'playground', 'playground-worker.js'), 'utf8');
+  if (!workerText.includes("from '../../src/index.js?playground=") ||
       !workerText.includes('createEyePrologRegistry') ||
       !workerText.includes('executePlaygroundRequest')) {
     issues.push('playground worker must install the EyeProlog library registry');
@@ -2884,7 +2884,7 @@ if (!workerText.includes("from './index.js?playground=") ||
   if (fs.existsSync(path.join(packageRoot, 'src', 'portable-library.js'))) {
     issues.push('obsolete portable-library.js must be absent');
   }
-  for (const filename of ['src/playground-worker.js', 'src/index.js', 'src/program.js', 'src/io.js']) {
+  for (const filename of ['docs/playground/playground-worker.js', 'src/index.js', 'src/program.js', 'src/io.js']) {
     const sourceText = fs.readFileSync(path.join(packageRoot, filename), 'utf8');
     if (/^\s*import\s+[^('\"]*['\"]node:/m.test(sourceText)) {
       issues.push(`${filename} must not statically import Node built-ins in the browser graph`);

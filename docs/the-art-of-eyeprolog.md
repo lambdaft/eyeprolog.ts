@@ -108,7 +108,7 @@ Readers who do not want to install anything can begin in the
 the source of `examples/socrates.pl` into the editor and run it. The playground
 and local CLI accept the same in-memory Prolog source and resolve the same
 standard modules. A program imports relations such as `append/3` and `member/2`
-with `use_module(library(lists))`. The page starts `src/playground-worker.js` as
+with `use_module(library(lists))`. The page starts `docs/playground/playground-worker.js` as
 a dedicated ES-module worker for each run. Serve a
 local checkout over HTTP(S), rather than opening the page as a `file:` URL.
 Filesystem predicates and `include/1` are Node-only; URL and embedding examples
@@ -1816,7 +1816,7 @@ shared ISO Part 3 grammar-rule and dynamic-body expansion. Focused files under
 common list relations. They are ordinary ISO/IEC 13211-2 modules, organized
 like Trealla's `library/` and registered for `library(Name)` by
 `src/standard-library.js` in Node and the browser.
-The browser entry point `src/playground-worker.js` uses that same program and
+The browser entry point `docs/playground/playground-worker.js` uses that same program and
 module-loading path in a dedicated worker.
 
 Normal CLI, JavaScript, `Solver`, proof replay, and the browser playground use

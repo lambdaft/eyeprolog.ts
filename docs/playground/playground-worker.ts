@@ -2,7 +2,7 @@
 // Keep this module free of Node-only imports: it is fetched directly by the
 // browser and is also exercised by test/run-playground.mjs.
 // @ts-expect-error TS2307: auto-suppressed
-import { createEyePrologRegistry, run } from './index.js?playground=20260811c';
+import { createEyePrologRegistry, run } from '../../src/index.js?playground=20260811c';
 
 const registry = createEyePrologRegistry();
 

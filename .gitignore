@@ -2,9 +2,11 @@ package-lock.json
 node_modules/
 src/*.js
 src/*.d.ts
+docs/playground/*.js
+docs/playground/*.d.ts
+docs/INTEGRATION_EXAMPLES.js
+docs/INTEGRATION_EXAMPLES.d.ts
+docs/examples/**/*.js
+docs/examples/**/*.d.ts
 *.log
 *.pid
-strip-*.js
-strip-*.py
-debug.mjs
-generate_examples.mjs

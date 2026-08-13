@@ -58,7 +58,7 @@ class BuiltinRegistry {
 
 ---
 
-### 2.2. Deref Caching in Environment
+## 2.2. Deref Caching in Environment
 **Current:** Dereferencing walks chains every time  
 **Impact:** 15-25% speedup for complex environments  
 **Effort:** 2-3 hours  
