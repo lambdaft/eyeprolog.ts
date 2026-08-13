@@ -1,4 +1,4 @@
-import { Program, Solver, parseGoalText, PrologError, atom } from '../src/index.js';
+import { Program, Solver, parseGoalText, PrologError, atom, renderProofToMermaid } from '../src/index.js';
 import assert from 'node:assert';
 
 function testSolutionLimitRecursion() {
@@ -58,12 +58,27 @@ function testFastPathsOptIn() {
   console.log('✓ testFastPathsOptIn passed');
 }
 
+function testVisualMermaidProof() {
+  const code = `
+    human(socrates).
+    mortal(X) :- human(X).
+  `;
+  const prog = Program.parse(code);
+  const goal = parseGoalText('mortal(socrates)');
+  const mermaid = renderProofToMermaid(prog, goal);
+  assert(mermaid.includes('graph TD'), 'Mermaid output should contain graph TD header');
+  assert(mermaid.includes('mortal(socrates)'), 'Mermaid output should contain goal');
+  assert(mermaid.includes('human(socrates)'), 'Mermaid output should contain premise fact');
+  console.log('✓ testVisualMermaidProof passed');
+}
+
 function runAllAuditRegressionTests() {
   console.log('== Running Audit Regression Tests');
   testSolutionLimitRecursion();
   testCutInNestedMetaCalls();
   testPrologErrorFormat();
   testFastPathsOptIn();
+  testVisualMermaidProof();
   console.log('== All Audit Regression Tests Passed!');
 }
 

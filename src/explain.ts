@@ -26,6 +26,64 @@ export function explainProof(program: any, goal: any, options: any = {}): any {
   return whyProof(program, goal, options);
 }
 
+export function whyProofNode(program: any, goal: any, options: any = {}): any {
+  const maxDepth = options.maxDepth ?? 256;
+  const registry = options.registry ?? getEyePrologRegistry();
+  const env = options.env ?? new Env();
+  for (const proof of proveGoalAll(program, goal, env, 0, maxDepth, registry, [])) {
+    return { ok: true, node: proof.node, env: proof.env };
+  }
+  return { ok: false, node: null, env: null };
+}
+
+export function renderProofToMermaid(program: any, goal: any, options: any = {}): string {
+  const { ok, node } = whyProofNode(program, goal, options);
+  if (!ok || !node) return 'graph TD\n  EmptyProof["No Proof Found"]';
+
+  const lines = ['graph TD'];
+  lines.push('  classDef fact fill:#d4edda,stroke:#28a745,stroke-width:2px,color:#155724;');
+  lines.push('  classDef rule fill:#d1ecf1,stroke:#17a2b8,stroke-width:2px,color:#0c5460;');
+  lines.push('  classDef builtin fill:#fff3cd,stroke:#ffc107,stroke-width:2px,color:#856404;');
+  lines.push('  classDef library fill:#e2e3e5,stroke:#6c757d,stroke-width:2px,color:#383d41;');
+
+  let nodeCounter = 0;
+
+  function processNode(currNode: any): string {
+    const id = `N${++nodeCounter}`;
+    const goalText = termToString(currNode.goal, new Env(), true).replace(/"/g, "'");
+    const methodText = renderMethodLabel(currNode.method).replace(/"/g, "'");
+    const className = getMermaidClass(currNode.method);
+
+    lines.push(`  ${id}["${goalText}<br/><i>(${methodText})</i>"]:::${className}`);
+
+    for (const child of currNode.children ?? []) {
+      const childId = processNode(child);
+      lines.push(`  ${id} --> ${childId}`);
+    }
+    return id;
+  }
+
+  processNode(node);
+  return lines.join('\n');
+}
+
+function renderMethodLabel(method: any): string {
+  if (!method) return 'unknown';
+  if (method.type === 'source') return `${method.kind} in ${method.filename}`;
+  if (method.type === 'builtin') return `builtin ${method.name}/${method.arity}`;
+  if (method.type === 'library') return `library ${method.name}/${method.arity}`;
+  return String(method);
+}
+
+function getMermaidClass(method: any): string {
+  if (method && method.type === 'source') {
+    return method.kind === 'fact' ? 'fact' : 'rule';
+  }
+  if (method && method.type === 'builtin') return 'builtin';
+  if (method && method.type === 'library') return 'library';
+  return 'rule';
+}
+
 function* proveGoalAll(program: any, goal: any, env: any, depth: any, maxDepth: any, registry: any, active: any): any {
   if (depth > maxDepth) return;
 
