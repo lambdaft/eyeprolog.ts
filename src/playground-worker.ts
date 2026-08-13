@@ -18,6 +18,7 @@ export function executePlaygroundRequest(data: any, now: any = defaultNow): any 
       stdout: result.stdout,
       stats: result.stats,
       haltCode: result.haltCode,
+      mermaidProof: result.mermaidProof,
       elapsedMs: Math.max(0, now() - started),
     };
   } catch (error) {

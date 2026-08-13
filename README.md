@@ -13,7 +13,7 @@ EyeProlog.ts turns portable ISO Prolog programs into answers and inspectable pro
   <strong>Click the cover to read <em>The Art of EyeProlog</em> (the original comprehensive manual).</strong>
 </p>
 
-**[Why EyeProlog?](https://eyereasoner.github.io/eyeprolog/why-eyeprolog)** — Discover the original purpose and design.
+**[Playground](https://eyereasoner.github.io/eyeprolog/playground)** | **[Why EyeProlog?](https://eyereasoner.github.io/eyeprolog/why-eyeprolog)** — Discover the original purpose and design.
 
 The book is the reference for the language, command line, API,
 examples, proofs, conformance, and implementation boundaries for both `eyeprolog` and `eyeprolog.ts`.

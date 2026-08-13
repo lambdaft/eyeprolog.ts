@@ -28,7 +28,7 @@ export { runQuads } from './quads.js';
 import { ATOM, COMPOUND, VAR, Env, copyResolved, termIsGround } from './term.js';
 import { Program } from './program.js';
 import { Solver } from './solver.js';
-import { whyNoProof, whyProof } from './explain.js';
+import { whyNoProof, whyProof, renderProofToMermaid } from './explain.js';
 import { HaltSignal, PrologError, getStrictIsoRegistry } from './iso.js';
 import { getEyePrologRegistry } from './standard-library.js';
 import { parseGoalText } from './parser.js';
@@ -69,6 +69,7 @@ export function run(source: any, options: any = {}): any {
   const facts = program.sourceFactLines(queriedKeys, writeOptions);
   const seen = new Set();
   let haltCode = null;
+  const mermaidProofs: string[] = [];
   try {
     solver.runInitializations();
     for (const goal of goals) {
@@ -85,14 +86,18 @@ export function run(source: any, options: any = {}): any {
         if (facts.has(line) || seen.has(line)) continue;
         seen.add(line);
         output.push(line);
-        if (includeWhy) appendExplanation(output, program, resolved, runOptions.registry);
+        if (includeWhy) {
+          appendExplanation(output, program, resolved, runOptions.registry);
+          mermaidProofs.push(renderProofToMermaid(program, resolved, { registry: runOptions.registry }));
+        }
       }
     }
   } catch (error) {
     if (!(error instanceof HaltSignal)) throw error;
     haltCode = error.code;
   }
-  return { stdout: output.join(''), stats: solver.stats, haltCode };
+  const mermaidProof = mermaidProofs.length > 0 ? mermaidProofs.join('\n\n') : null;
+  return { stdout: output.join(''), stats: solver.stats, haltCode, mermaidProof, mermaidProofs };
 }
 
 function normalizeGoals(options: any, solver: any): any {

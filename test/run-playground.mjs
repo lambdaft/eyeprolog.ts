@@ -63,6 +63,16 @@ export async function runPlayground(reporter = new TestReporter()) {
     assertEqual(result.stdout, 'answer(1, 3).\n', 'CLP(Z) worker output');
   });
 
+  await reporter.testAsync('worker returns mermaidProof when proof mode is enabled', async () => {
+    const result = executePlaygroundRequest({
+      source: 'human(socrates).\nmortal(X) :- human(X).\n',
+      options: { goal: 'mortal(socrates)', proof: true },
+    });
+    assertEqual(result.ok, true, 'proof mode worker result status');
+    assertIncludes(result.mermaidProof, 'graph TD', 'mermaid proof header');
+    assertIncludes(result.mermaidProof, 'mortal(socrates)', 'mermaid proof goal');
+  });
+
   await reporter.testAsync('worker message protocol returns serializable results', async () => {
     const messages = [];
     const scope = { postMessage: (message) => messages.push(message) };

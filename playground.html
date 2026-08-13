@@ -315,6 +315,53 @@
       margin: 0.4rem 0 0;
     }
 
+    .output-tab-bar {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .output-tab-btn {
+      padding: 0.4rem 0.8rem;
+      border: 1px solid var(--border);
+      border-radius: 0.4rem;
+      background: var(--panel-soft);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.88rem;
+      font-weight: 500;
+    }
+
+    .output-tab-btn.active {
+      background: var(--accent);
+      color: #ffffff;
+      border-color: var(--accent);
+    }
+
+    .visual-proof-container {
+      min-height: 18rem;
+      max-height: 60vh;
+      overflow: auto;
+      padding: 1rem;
+      background: var(--panel);
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .visual-proof-container.hidden { display: none; }
+
+    .mermaid-render-area {
+      overflow: auto;
+      text-align: center;
+      padding: 1rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+    }
+
     .error { color: var(--danger); }
 
     footer {
@@ -416,10 +463,22 @@
 
     <section aria-labelledby="output-heading">
       <div class="editor-label">
-        <strong id="output-heading">Output</strong>
+        <strong id="output-heading">Output & Visual Proof</strong>
         <span id="elapsed" class="hint">Idle.</span>
       </div>
+      <div class="output-tab-bar">
+        <button id="tab-text" class="output-tab-btn active" type="button">Text Answers</button>
+        <button id="tab-visual" class="output-tab-btn" type="button">Visual Proof Tree (Graph)</button>
+      </div>
       <pre id="output" class="output">(no output yet)</pre>
+      <div id="visual-proof-container" class="visual-proof-container hidden">
+        <div class="toolbar button-row" style="margin:0;">
+          <button id="copy-mermaid" type="button">Copy Mermaid Syntax</button>
+        </div>
+        <div id="mermaid-render-area" class="mermaid-render-area">
+          <p class="hint">Enable "Show proof explanations" in Advanced Configuration and run reasoning to generate an interactive proof tree graph.</p>
+        </div>
+      </div>
       <div class="status">
         <span id="status">Ready.</span>
         <span id="version">eyeprolog v…</span>
@@ -746,6 +805,12 @@
     const stats = document.querySelector('#stats');
     const runButton = document.querySelector('#run');
     const stopButton = document.querySelector('#stop');
+    const tabText = document.querySelector('#tab-text');
+    const tabVisual = document.querySelector('#tab-visual');
+    const visualProofContainer = document.querySelector('#visual-proof-container');
+    const mermaidRenderArea = document.querySelector('#mermaid-render-area');
+    const copyMermaidButton = document.querySelector('#copy-mermaid');
+    let lastMermaidProof = null;
     let backgroundSource = '';
     let backgroundName = '';
     let activeWorker = null;
@@ -1079,9 +1144,46 @@
       let text = message.stdout || '(no answers)\n';
       if (stats.checked && message.stats) text += '\n% stats\n' + formatStats(message.stats);
       output.textContent = text;
+      lastMermaidProof = message.mermaidProof || null;
+      renderMermaidProofGraph(lastMermaidProof);
       const seconds = (message.elapsedMs / 1000).toFixed(3);
       elapsed.textContent = `${seconds} sec`;
       setStatus('Run complete.');
+    }
+
+    tabText.addEventListener('click', () => {
+      tabText.classList.add('active');
+      tabVisual.classList.remove('active');
+      output.style.display = 'block';
+      visualProofContainer.classList.add('hidden');
+    });
+
+    tabVisual.addEventListener('click', () => {
+      tabVisual.classList.add('active');
+      tabText.classList.remove('active');
+      output.style.display = 'none';
+      visualProofContainer.classList.remove('hidden');
+    });
+
+    copyMermaidButton.addEventListener('click', () => {
+      if (!lastMermaidProof) {
+        setStatus('No Mermaid proof graph to copy.');
+        return;
+      }
+      navigator.clipboard.writeText(lastMermaidProof).then(() => setStatus('Copied Mermaid syntax to clipboard!'));
+    });
+
+    function renderMermaidProofGraph(mermaidSource) {
+      if (!mermaidSource) {
+        mermaidRenderArea.innerHTML = '<p class="hint">Enable "Show proof explanations" in Advanced Configuration and click "Run reasoning" to generate a visual proof tree graph.</p>';
+        return;
+      }
+      mermaidRenderArea.innerHTML = `<pre class="mermaid">${escapeHtml(mermaidSource)}</pre>`;
+      if (window.mermaid) {
+        try {
+          window.mermaid.run({ nodes: mermaidRenderArea.querySelectorAll('.mermaid') });
+        } catch (_) {}
+      }
     }
 
     function stopProgram(report = true) {
