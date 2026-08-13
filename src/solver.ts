@@ -51,6 +51,7 @@ export class Solver {
     this.inferenceLimitExceeded = false;
     this.solutionLimit = options.solutionLimit ?? 10000000;
     this.solutionsSeen = 0;
+    this.fastPathsEnabled = options.fastPaths === true;
     this.prologFlags = options.prologFlags ?? defaultPrologFlags('error', this.isoStrict);
     if (this.isoStrict) {
       for (const name of [...this.prologFlags.keys()]) {
@@ -626,7 +627,7 @@ function pushMemoAnswerFrames(stack: any, entry: any, goal: any, rest: any, env:
 
 function pushUserGoalUncachedFrames(stack: any, solver: any, group: any, goal: any, rest: any, env: any, depth: any, active: any): any {
   if (group.recursive && !group.cutRecursive && !group.linearNumeric && activeVariantIn(goal, env, active)) return;
-  if (group.fastPi && pushFastPiFrames(stack, goal, rest, env, depth, active)) return;
+  if (solver.fastPathsEnabled && group.fastPi && pushFastPiFrames(stack, goal, rest, env, depth, active)) return;
   if (tryPushGroundChainFrames(stack, solver, group, goal, rest, env, depth, active)) return;
   const candidates = selectClauseCandidates(group, goal, env);
   const frames = [];

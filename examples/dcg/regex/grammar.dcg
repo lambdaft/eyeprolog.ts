@@ -1,0 +1,22 @@
+% Regex Simulator
+% Matches (a|b)*c+
+
+regex(match(A, C)) --> a_or_b_star(A), c_plus(C).
+
+a_or_b_star([a|Rest]) --> [a], a_or_b_star(Rest).
+a_or_b_star([b|Rest]) --> [b], a_or_b_star(Rest).
+a_or_b_star([]) --> [].
+
+c_plus([c|Rest]) --> [c], c_star(Rest).
+
+c_star([c|Rest]) --> [c], c_star(Rest).
+c_star([]) --> [].
+
+% A different pattern: d{2,4}-d{2}-d{2}
+date_regex(date(Y, M, D)) --> 
+    digit(Y1), digit(Y2), digit(Y3), digit(Y4), ['-'],
+    digit(M1), digit(M2), ['-'],
+    digit(D1), digit(D2),
+    { atom_codes(Y, [Y1, Y2, Y3, Y4]), atom_codes(M, [M1, M2]), atom_codes(D, [D1, D2]) }.
+
+digit(D) --> [D], { D >= 48, D =< 57 }.\n

@@ -1,0 +1,58 @@
+% Natural Language Processing (NLP) Grammar
+% Handles English subject-verb-object parsing with singular/plural agreement.
+
+% Main sentence rule
+sentence(sentence(NP, VP)) --> noun_phrase(Num, NP), verb_phrase(Num, VP).
+
+% Noun phrases
+noun_phrase(Num, np(Det, Noun)) --> determiner(Num, Det), noun(Num, Noun).
+noun_phrase(Num, np(Noun)) --> proper_noun(Num, Noun).
+noun_phrase(Num, np(Det, Adjs, Noun)) --> determiner(Num, Det), adjectives(Adjs), noun(Num, Noun).
+
+% Adjectives
+adjectives([Adj]) --> adjective(Adj).
+adjectives([Adj|Rest]) --> adjective(Adj), adjectives(Rest).
+
+% Verb phrases
+verb_phrase(Num, vp(Verb, NP)) --> verb(Num, Verb), noun_phrase(_, NP).
+verb_phrase(Num, vp(Verb)) --> verb(Num, Verb).
+verb_phrase(Num, vp(Verb, PP)) --> verb(Num, Verb), prep_phrase(PP).
+
+% Prepositional phrases
+prep_phrase(pp(Prep, NP)) --> preposition(Prep), noun_phrase(_, NP).
+
+% Vocabulary - Determiners
+determiner(singular, det(a)) --> [a].
+determiner(singular, det(an)) --> [an].
+determiner(_, det(the)) --> [the].
+determiner(plural, det(some)) --> [some].
+
+% Vocabulary - Nouns
+noun(singular, n(cat)) --> [cat].
+noun(plural, n(cats)) --> [cats].
+noun(singular, n(dog)) --> [dog].
+noun(plural, n(dogs)) --> [dogs].
+noun(singular, n(mouse)) --> [mouse].
+noun(plural, n(mice)) --> [mice].
+
+% Vocabulary - Proper Nouns
+proper_noun(singular, pn(john)) --> [john].
+proper_noun(singular, pn(mary)) --> [mary].
+
+% Vocabulary - Adjectives
+adjective(adj(quick)) --> [quick].
+adjective(adj(brown)) --> [brown].
+adjective(adj(lazy)) --> [lazy].
+
+% Vocabulary - Verbs
+verb(singular, v(chases)) --> [chases].
+verb(plural, v(chase)) --> [chase].
+verb(singular, v(sleeps)) --> [sleeps].
+verb(plural, v(sleep)) --> [sleep].
+verb(singular, v(sees)) --> [sees].
+verb(plural, v(see)) --> [see].
+
+% Vocabulary - Prepositions
+preposition(prep(with)) --> [with].
+preposition(prep(in)) --> [in].
+preposition(prep(on)) --> [on].

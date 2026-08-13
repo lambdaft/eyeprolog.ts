@@ -1,0 +1,26 @@
+% SQL Parser
+
+query(select(Cols, Table, Where)) --> 
+    ws, "SELECT", ws, columns(Cols), ws, 
+    "FROM", ws, identifier(Table), ws,
+    where_clause(Where), ws.
+
+columns([C|Cs]) --> identifier(C), ws, [','], ws, columns(Cs).
+columns([C]) --> identifier(C).
+columns(['*']) --> ['*'].
+
+where_clause(condition(Col, Op, Val)) --> "WHERE", ws, identifier(Col), ws, operator(Op), ws, value(Val).
+where_clause(none) --> [].
+
+operator(=) --> ['='].
+operator(>) --> ['>'].
+operator(<) --> ['<'].
+
+identifier(I) --> chars(C), { C \= [], atom_codes(I, C) }.
+value(V) --> chars(C), { C \= [], atom_codes(V, C) }.
+
+chars([C|Cs]) --> [C], { C >= 97, C =< 122 }, chars(Cs).
+chars([C]) --> [C], { C >= 97, C =< 122 }.
+
+ws --> [32], ws.
+ws --> [].\n

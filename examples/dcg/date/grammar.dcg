@@ -1,0 +1,22 @@
+% Date parser for natural formats
+
+datetime(dt(Y, M, D, H, Min)) --> date(Y, M, D), [32], time(H, Min). % 32 is space
+datetime(dt(Y, M, D)) --> date(Y, M, D).
+
+date(Y, M, D) --> year(Y), ['-'], month(M), ['-'], day(D).
+date(Y, M, D) --> month_name(M), [32], day(D), [',', 32], year(Y).
+
+time(H, M) --> hour(H), [':'], minute(M).
+
+year(Y) --> d(D1), d(D2), d(D3), d(D4), { atom_codes(A, [D1,D2,D3,D4]), atom_number(A, Y) }.
+month(M) --> d(D1), d(D2), { atom_codes(A, [D1,D2]), atom_number(A, M) }.
+day(D) --> d(D1), d(D2), { atom_codes(A, [D1,D2]), atom_number(A, D) }.
+
+hour(H) --> month(H).
+minute(M) --> month(M).
+
+month_name(1) --> "Jan".
+month_name(2) --> "Feb".
+month_name(3) --> "Mar".
+
+d(D) --> [D], { D >= 48, D =< 57 }.\n

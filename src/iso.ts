@@ -3,7 +3,7 @@ import {
   ATOM, COMPOUND, NUMBER, STRING, VAR, Env,
   atom, compareTerms, compound, copyResolved, deref, emptyList,
   isDecimalInteger, listFromItems, numberTerm, numberTextFromDouble,
-  properListItems, termIsGround, termToString, unify, variable, variantTerms,
+  properListItems, termIsGround, unify, variable, variantTerms,
 } from './term.js';
 import { createParserOperatorState, parseClauses, parseGoalText } from './parser.js';
 import { formatTermForWrite } from './write.js';
@@ -13,7 +13,7 @@ let isoFresh = 0;
 
 export class PrologError extends Error {
   constructor(formal: any, culprit: any = null) {
-    const detail = culprit == null ? formal : `${formal}, ${termToString(culprit)}`;
+    const detail = culprit == null ? formal : `${formal}, ${formatTermForWrite(culprit, new Env(), { quoted: true })}`;
     super(`error(${detail})`);
     this.name = 'PrologError';
     this.formal = formal;
@@ -38,7 +38,7 @@ export class HaltSignal extends Error {
 
 class ThrownTerm extends Error {
   constructor(term: any) {
-    super(`uncaught exception: ${termToString(term)}`);
+    super(`uncaught exception: ${formatTermForWrite(term, new Env(), { quoted: true })}`);
     this.name = 'ThrownTerm';
     this.term = term;
   }

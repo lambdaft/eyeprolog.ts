@@ -1,0 +1,19 @@
+% Math AST Parser
+expr(E) --> term(T), expr_tail(T, E).
+
+expr_tail(T1, E) --> ['+'], term(T2), expr_tail(add(T1, T2), E).
+expr_tail(T1, E) --> ['-'], term(T2), expr_tail(sub(T1, T2), E).
+expr_tail(T, T) --> [].
+
+term(T) --> factor(F), term_tail(F, T).
+
+term_tail(F1, T) --> ['*'], factor(F2), term_tail(mul(F1, F2), T).
+term_tail(F1, T) --> ['/'], factor(F2), term_tail(div(F1, F2), T).
+term_tail(F, F) --> [].
+
+factor(num(N)) --> digits(D), { number_codes(N, D) }.
+factor(E) --> ['('], expr(E), [')'].
+
+digits([D|Ds]) --> digit(D), digits(Ds).
+digits([D]) --> digit(D).
+digit(D) --> [D], { D >= 48, D =< 57 }.\n

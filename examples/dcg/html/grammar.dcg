@@ -1,0 +1,22 @@
+% HTML Parser
+
+document(Nodes) --> nodes(Nodes).
+
+nodes([N|Ns]) --> node(N), nodes(Ns).
+nodes([]) --> [].
+
+node(element(Tag, Children)) --> 
+    ['<'], tag_name(Tag), ['>'], 
+    nodes(Children), 
+    ['<', '/'], tag_name(Tag), ['>'].
+
+node(self_closing(Tag)) --> ['<'], tag_name(Tag), ['/', '>'].
+node(text(T)) --> text_chars(C), { C \= [], atom_codes(T, C) }.
+
+tag_name(T) --> tag_chars(C), { C \= [], atom_codes(T, C) }.
+
+tag_chars([C|Cs]) --> [C], { C >= 97, C =< 122 }, tag_chars(Cs). % a-z
+tag_chars([C]) --> [C], { C >= 97, C =< 122 }.
+
+text_chars([C|Cs]) --> [C], { C \= 60, C \= 62 }, text_chars(Cs). % not < or >
+text_chars([]) --> [].\n

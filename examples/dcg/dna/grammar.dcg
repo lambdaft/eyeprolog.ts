@@ -1,0 +1,22 @@
+% DNA Motif Finder
+
+sequence(seq(Motifs)) --> motifs(Motifs).
+
+motifs([M|Ms]) --> motif(M), motifs(Ms).
+motifs([]) --> [].
+
+motif(start_codon) --> [a, t, g].
+motif(stop_codon) --> [t, a, a].
+motif(stop_codon) --> [t, a, g].
+motif(stop_codon) --> [t, g, a].
+
+motif(tata_box) --> [t, a, t, a, a, a].
+motif(tata_box) --> [t, a, t, a, a, t].
+
+% Consume non-motifs
+motif(base(B)) --> base(B).
+
+base(a) --> [a].
+base(c) --> [c].
+base(g) --> [g].
+base(t) --> [t].\n

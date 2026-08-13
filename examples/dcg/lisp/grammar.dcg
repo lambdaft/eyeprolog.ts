@@ -1,0 +1,22 @@
+% Lisp Parser
+
+sexpr(E) --> ws, element(E), ws.
+
+element(list(L)) --> ['('], elements(L), [')'].
+element(atom(A)) --> identifier(A).
+element(num(N)) --> digits(D), { number_codes(N, D) }.
+
+elements([E|Es]) --> element(E), ws, elements(Es).
+elements([E]) --> element(E).
+elements([]) --> [].
+
+identifier(I) --> chars(C), { C \= [], atom_codes(I, C) }.
+
+chars([C|Cs]) --> [C], { C >= 97, C =< 122 ; C = 43 ; C = 45 ; C = 42 ; C = 47 }, chars(Cs). % a-z, +, -, *, /
+chars([C]) --> [C], { C >= 97, C =< 122 ; C = 43 ; C = 45 ; C = 42 ; C = 47 }.
+
+digits([D|Ds]) --> [D], { D >= 48, D =< 57 }, digits(Ds).
+digits([D]) --> [D], { D >= 48, D =< 57 }.
+
+ws --> [32], ws.
+ws --> [].\n

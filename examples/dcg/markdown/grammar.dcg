@@ -1,0 +1,28 @@
+% Markdown to AST Token Parser
+% Parses simple markdown strings (lists of characters) into AST nodes.
+
+markdown(Doc) --> blocks(Doc).
+
+blocks([Block|Rest]) --> block(Block), blocks(Rest).
+blocks([Block]) --> block(Block).
+blocks([]) --> [].
+
+block(header(Level, Text)) -->
+    header_level(Level),
+    [32], % space
+    text_line(Chars),
+    { Chars \= [], atom_codes(Text, Chars) }.
+
+block(paragraph(Text)) -->
+    text_line(Chars),
+    { Chars \= [], atom_codes(Text, Chars) }.
+
+header_level(1) --> [35].
+header_level(2) --> [35, 35].
+header_level(3) --> [35, 35, 35].
+
+text_line([C|Cs]) --> [C], { C \= 10 }, text_line(Cs).
+text_line([]) --> [].
+
+eol --> [10].
+eol --> [].

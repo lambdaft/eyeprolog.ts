@@ -1,0 +1,26 @@
+% JSON Parser DCG
+json(json(V)) --> value(V).
+
+value(object(O)) --> ['{'], members(O), ['}'].
+value(array(A))  --> ['['], elements(A), [']'].
+value(string(S)) --> ['"'], chars(C), ['"'], { atom_codes(S, C) }.
+value(number(N)) --> digits(D), { number_codes(N, D) }.
+value(true)      --> [t, r, u, e].
+value(false)     --> [f, a, l, s, e].
+value(null)      --> [n, u, l, l].
+
+members([]) --> [].
+members([P]) --> pair(P).
+members([P|Ps]) --> pair(P), [','], members(Ps).
+
+pair(kv(K, V)) --> ['"'], chars(C), ['"'], { atom_codes(K, C) }, [':'], value(V).
+
+elements([]) --> [].
+elements([E]) --> value(E).
+elements([E|Es]) --> value(E), [','], elements(Es).
+
+chars([]) --> [].
+chars([C|Cs]) --> [C], { C \= 34 }, chars(Cs).
+
+digits([D|Ds]) --> [D], { D >= 48, D =< 57 }, digits(Ds).
+digits([D]) --> [D], { D >= 48, D =< 57 }.\n
