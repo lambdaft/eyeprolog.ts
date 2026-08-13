@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { Program, run } from '../src/index.js';
+import { Program, run } from '../dist/src/index.js';
 import { TestReporter, isMainModule } from './test-style.mjs';
 import { goalsFromSource } from './goal-metadata.mjs';
 

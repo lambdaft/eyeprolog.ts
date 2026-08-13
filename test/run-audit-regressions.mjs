@@ -1,4 +1,4 @@
-import { Program, Solver, parseGoalText, PrologError, atom, renderProofToMermaid } from '../src/index.js';
+import { Program, Solver, parseGoalText, PrologError, atom, renderProofToMermaid } from '../dist/src/index.js';
 import assert from 'node:assert';
 
 function testSolutionLimitRecursion() {

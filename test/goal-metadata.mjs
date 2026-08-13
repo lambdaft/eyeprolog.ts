@@ -1,5 +1,5 @@
-import { parseGoalText } from '../src/parser.js';
-import { goalsFromSource } from '../src/goal-metadata.js';
+import { parseGoalText } from '../dist/src/parser.js';
+import { goalsFromSource } from '../dist/src/goal-metadata.js';
 
 export { goalsFromSource };
 

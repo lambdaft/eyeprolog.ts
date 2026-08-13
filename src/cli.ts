@@ -306,12 +306,14 @@ function printStats(stats: any): any {
 }
 
 async function packageVersion(): Promise<any> {
-  try {
-    const text = await fs.readFile(new URL('../package.json', import.meta.url), 'utf8');
-    const pkg = JSON.parse(text);
-    if (pkg && typeof pkg.version === 'string' && pkg.version) return pkg.version;
-  } catch (_) {
-    // Fall through to a stable marker if package metadata is unavailable.
+  for (const rel of ['../../package.json', '../package.json']) {
+    try {
+      const text = await fs.readFile(new URL(rel, import.meta.url), 'utf8');
+      const pkg = JSON.parse(text);
+      if (pkg && typeof pkg.version === 'string' && pkg.version) return pkg.version;
+    } catch (_) {
+      // Continue searching
+    }
   }
 
   return 'unknown';

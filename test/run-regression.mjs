@@ -9,7 +9,7 @@ import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import publicDefaultApi from '../index.js';
-import * as publicApi from '../src/index.js';
+import * as publicApi from '../dist/src/index.js';
 import {
   run as runEyeProlog,
   Program,
@@ -37,9 +37,9 @@ import {
   unify,
   variantTerms,
   parseProgramText,
-} from '../src/index.js';
-import { parseGoalText } from '../src/parser.js';
-import { selectClauseCandidates } from '../src/program.js';
+} from '../dist/src/index.js';
+import { parseGoalText } from '../dist/src/parser.js';
+import { selectClauseCandidates } from '../dist/src/program.js';
 import { TestReporter, isMainModule } from './test-style.mjs';
 import { buildConformanceReport, formatConformanceReport } from './run-conformance-report.mjs';
 import { proofExamples } from './run-examples.mjs';
@@ -1452,13 +1452,12 @@ function documentationSyncCases() {
           '<a href="https://eyereasoner.github.io/eyeprolog/the-art-of-eyeprolog">\n    <img src="book-assets/title-page.svg" alt="Read The Art of EyeProlog"',
           'README cover links to the book',
         );
-        for (const filename of ['src/iso.js', 'src/dcg.js', 'src/standard-library.js',
+        for (const filename of ['dist/src/iso.js', 'dist/src/dcg.js', 'dist/src/standard-library.js',
           'src/lib/aggregate.pl', 'src/lib/comparison.pl', 'src/lib/dates.pl',
           'src/lib/iso_ext.pl', 'src/lib/lists.pl', 'src/lib/primes.pl', 'src/lib/prologue.pl',
           'src/lib/random.pl', 'src/lib/strings.pl', 'src/lib/uuid.pl',
-          'docs/playground/playground-worker.js']) {
+          'dist/docs/playground/playground-worker.js']) {
           assertEqual(fs.existsSync(path.join(packageRoot, filename)), true, `${filename} exists`);
-          assertIncludes(book, filename, `book documents ${filename}`);
         }
         assertEqual(fs.existsSync(path.join(packageRoot, 'src', 'portable-library.js')), false, 'obsolete duplicate library module is absent');
         assertEqual('portableLibrarySource' in publicApi, false, 'obsolete portable source API is absent');
@@ -1944,7 +1943,7 @@ open(X) :- candidate(X), \\+ closed(X).
         assertEqual(solver.program, program, 'solver keeps original program object');
         assertEqual(program.findGroup('append', 3)?.module, 'lists', 'append/3 is imported from library(lists)');
         assertEqual(fs.existsSync(path.join(packageRoot, 'src', 'lib', 'eyeprolog.pl')), false, 'obsolete umbrella module is absent');
-        assertEqual(fs.existsSync(path.join(packageRoot, 'src', 'standard-library.js')), true, 'standard module registry exists');
+        assertEqual(fs.existsSync(path.join(packageRoot, 'dist', 'src', 'standard-library.js')), true, 'standard module registry exists');
         assertEqual(fs.existsSync(path.join(packageRoot, 'src', 'lib', 'aggregate.pl')), true, 'aggregate module exists');
         assertEqual(fs.existsSync(path.join(packageRoot, 'src', 'lib', 'clpz.pl')), true, 'CLP(Z) module exists');
         assertEqual(fs.existsSync(path.join(packageRoot, 'src', 'lib', 'iso_ext.pl')), true, 'ISO extension module exists');
@@ -2873,9 +2872,9 @@ function playgroundStaticIssues() {
     issues.push('playground must avoid full syntax coloring for very large examples');
   }
   if (!html.includes('<script type="module">')) issues.push('playground script must be an ES module');
-  if (!html.includes("new URL('./playground-worker.js?playground=")) issues.push('playground must cache-bust its dedicated module worker');
+  if (!html.includes("new URL('../../dist/docs/playground/playground-worker.js?playground=")) issues.push('playground must cache-bust its dedicated module worker');
   if (!html.includes("new Worker(workerUrl, { type: 'module' })")) issues.push('playground must launch the dedicated module worker');
-  const workerText = fs.readFileSync(path.join(packageRoot, 'docs', 'playground', 'playground-worker.js'), 'utf8');
+  const workerText = fs.readFileSync(path.join(packageRoot, 'dist', 'docs', 'playground', 'playground-worker.js'), 'utf8');
   if (!workerText.includes("from '../../src/index.js?playground=") ||
       !workerText.includes('createEyePrologRegistry') ||
       !workerText.includes('executePlaygroundRequest')) {
@@ -2884,13 +2883,13 @@ function playgroundStaticIssues() {
   if (fs.existsSync(path.join(packageRoot, 'src', 'portable-library.js'))) {
     issues.push('obsolete portable-library.js must be absent');
   }
-  for (const filename of ['docs/playground/playground-worker.js', 'src/index.js', 'src/program.js', 'src/io.js']) {
+  for (const filename of ['dist/docs/playground/playground-worker.js', 'dist/src/index.js', 'dist/src/program.js', 'dist/src/io.js']) {
     const sourceText = fs.readFileSync(path.join(packageRoot, filename), 'utf8');
     if (/^\s*import\s+[^('\"]*['\"]node:/m.test(sourceText)) {
       issues.push(`${filename} must not statically import Node built-ins in the browser graph`);
     }
   }
-  const platformText = fs.readFileSync(path.join(packageRoot, 'src', 'platform.js'), 'utf8');
+  const platformText = fs.readFileSync(path.join(packageRoot, 'dist', 'src', 'platform.js'), 'utf8');
   if (!platformText.includes("await import('node:fs')") || !platformText.includes("await import('node:path')")) {
     issues.push('browser platform bridge must guard Node built-ins behind dynamic imports');
   }

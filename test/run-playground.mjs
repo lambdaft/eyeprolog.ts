@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import {
   executePlaygroundRequest,
   installPlaygroundWorker,
-} from '../docs/playground/playground-worker.js';
+} from '../dist/docs/playground/playground-worker.js';
 import { TestReporter, isMainModule } from './test-style.mjs';
 
 const testRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)));
@@ -20,7 +20,7 @@ export async function runPlayground(reporter = new TestReporter()) {
 
   await reporter.testAsync('page starts a dedicated module worker', async () => {
     const html = fs.readFileSync(path.join(packageRoot, 'docs', 'playground', 'playground.html'), 'utf8');
-    assertIncludes(html, "new URL('./playground-worker.js?playground=", 'playground worker URL');
+    assertIncludes(html, "new URL('../../dist/docs/playground/playground-worker.js?playground=", 'playground worker URL');
     assertIncludes(html, "new Worker(workerUrl, { type: 'module' })", 'module worker construction');
     assertIncludes(html, "event.data?.type === 'ready'", 'worker readiness handshake');
     assertIncludes(html, 'did not finish loading', 'worker startup timeout');
@@ -103,8 +103,8 @@ export async function runPlayground(reporter = new TestReporter()) {
     await withStaticServer(async (baseUrl) => {
       const expected = [
         ['docs/playground/playground.html', 'text/html'],
-        ['docs/playground/playground-worker.js', 'text/javascript'],
-        ['src/index.js', 'text/javascript'],
+        ['dist/docs/playground/playground-worker.js', 'text/javascript'],
+        ['dist/src/index.js', 'text/javascript'],
         ['src/lib/aggregate.pl', 'text/plain'],
         ['src/lib/comparison.pl', 'text/plain'],
         ['src/lib/dates.pl', 'text/plain'],
@@ -127,10 +127,10 @@ export async function runPlayground(reporter = new TestReporter()) {
 
   await reporter.testAsync('HTTP worker module graph resolves without Node built-ins', async () => {
     await withStaticServer(async (baseUrl) => {
-      const modules = await crawlModuleGraph(new URL('docs/playground/playground-worker.js?playground=test', baseUrl));
+      const modules = await crawlModuleGraph(new URL('dist/docs/playground/playground-worker.js?playground=test', baseUrl));
       assert(modules.size >= 10, `expected a substantial worker module graph, got ${modules.size}`);
-      assert([...modules].some((url) => url.includes('/src/standard-library.js')), 'standard module registry missing from worker graph');
-      assert([...modules].some((url) => url.includes('/src/solver.js')), 'solver missing from worker graph');
+      assert([...modules].some((url) => url.includes('/dist/src/standard-library.js')), 'standard module registry missing from worker graph');
+      assert([...modules].some((url) => url.includes('/dist/src/solver.js')), 'solver missing from worker graph');
     });
   });
 

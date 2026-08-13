@@ -9,7 +9,7 @@ import {
   createStrictIsoRegistry,
   parseGoalText,
   run,
-} from '../src/index.js';
+} from '../dist/src/index.js';
 import { TestReporter, isMainModule } from './test-style.mjs';
 
 export function runIsoStrict(reporter = new TestReporter()) {

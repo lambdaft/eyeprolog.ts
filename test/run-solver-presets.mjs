@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-import { Program } from '../src/program.js';
-import { Solver } from '../src/solver.js';
-import { parseGoalText } from '../src/parser.js';
-import { deref } from '../src/term.js';
+import { Program } from '../dist/src/program.js';
+import { Solver } from '../dist/src/solver.js';
+import { parseGoalText } from '../dist/src/parser.js';
+import { deref } from '../dist/src/term.js';
 
 const simpleProgram = Program.parse(`
   parent(tom, bob).

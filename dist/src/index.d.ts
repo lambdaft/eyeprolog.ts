@@ -1,0 +1,12 @@
+export { Program, makeProgram } from './program.js';
+export { parseClauses, parseGoalText, parseProgramText } from './parser.js';
+export { DCG } from './dcg-api.js';
+export { Solver } from './solver.js';
+export * from './term.js';
+export { BuiltinRegistry, createDefaultRegistry, createStrictIsoRegistry, getDefaultRegistry, getStrictIsoRegistry, HaltSignal, PrologError, } from './iso.js';
+export { createEyePrologRegistry, getEyePrologRegistry, standardLibrarySources, eyePrologLibraryIndicators, eyePrologNativeLibraryIndicators, eyePrologPortableLibraryIndicators, } from './standard-library.js';
+export { StreamManager } from './io.js';
+export { runQuads } from './quads.js';
+export { whyProof, whyNoProof, explainProof, whyProofNode, renderProofToMermaid } from './explain.js';
+export declare function run(source: any, options?: any): any;
+export * from './explain.js';

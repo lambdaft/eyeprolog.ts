@@ -4,7 +4,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { Program, run } from '../src/index.js';
+import { Program, run } from '../dist/src/index.js';
 import { fileURLToPath } from 'node:url';
 import { TestReporter, isMainModule } from './test-style.mjs';
 import { goalsInProgramOrder } from './goal-metadata.mjs';

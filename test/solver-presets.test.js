@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { Program } from '../src/program.js';
-import { Solver } from '../src/solver.js';
+import { Program } from '../dist/src/program.js';
+import { Solver } from '../dist/src/solver.js';
 describe('Solver Presets', () => {
     const simpleProgram = Program.parse(`
     parent(tom, bob).
