@@ -35,7 +35,7 @@ Welcome! This guide contains comprehensive recommendations for making EyeProlog.
 - Best practices
 
 ### For Developers (Code Reference)
-**Working implementation:** [INTEGRATION_EXAMPLES.ts](../INTEGRATION_EXAMPLES.ts)
+**Working implementation:** [INTEGRATION_EXAMPLES.ts](./INTEGRATION_EXAMPLES.ts)
 - Complete `QueryBuilder` class
 - `ProgramBuilder` DSL
 - Type-safe query API

@@ -11,7 +11,7 @@ import { goalsInProgramOrder } from './goal-metadata.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)));
 const packageRoot = path.resolve(root, '..');
-const examplesDir = path.join(packageRoot, 'examples');
+const examplesDir = path.join(packageRoot, 'docs', 'examples');
 const expectedDir = path.join(examplesDir, 'output');
 const expectedProofDir = path.join(examplesDir, 'proof');
 

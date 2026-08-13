@@ -1449,7 +1449,7 @@ function documentationSyncCases() {
         const book = fs.readFileSync(path.join(packageRoot, 'docs', 'the-art-of-eyeprolog.md'), 'utf8');
         assertIncludes(
           readme,
-          '<a href="https://eyereasoner.github.io/eyeprolog/the-art-of-eyeprolog">\n    <img src="../book-assets/title-page.svg" alt="Read The Art of EyeProlog"',
+          '<a href="https://eyereasoner.github.io/eyeprolog/the-art-of-eyeprolog">\n    <img src="book-assets/title-page.svg" alt="Read The Art of EyeProlog"',
           'README cover links to the book',
         );
         for (const filename of ['src/iso.js', 'src/dcg.js', 'src/standard-library.js',
@@ -1494,7 +1494,7 @@ function documentationSyncCases() {
     {
       name: 'book example extraction matches the Markdown source',
       run: () => {
-        const result = spawnSync(process.execPath, ['tools/extract-book-examples.mjs', '--check'], {
+        const result = spawnSync(process.execPath, ['docs/tools/extract-book-examples.mjs', '--check'], {
           cwd: packageRoot,
           encoding: 'utf8',
         });
@@ -1770,7 +1770,7 @@ function apiCases() {
     {
       name: 'run keeps recursive queries independent in one solver',
       run: () => {
-        const text = fs.readFileSync(path.join(packageRoot, 'examples', 'alignment-demo.pl'), 'utf8');
+        const text = fs.readFileSync(path.join(packageRoot, 'docs', 'examples', 'alignment-demo.pl'), 'utf8');
         const program = Program.parseSources([{ text, filename: 'alignment-demo.pl' }]);
         const result = run(program, { goals: goalsFromSource(text) });
         assertIncludes(result.stdout, 'broaderTransitive(anpr_passenger_car, ref_car).\n', 'stdout');
@@ -2021,13 +2021,13 @@ repeated(X) :- X in 1..3, all_distinct([X, X]).
     {
       name: 'CLP(Z) finite global constraints match the portable example',
       run: () => {
-        const filename = path.join(packageRoot, 'examples', 'clpz-global-constraints.pl');
+        const filename = path.join(packageRoot, 'docs', 'examples', 'clpz-global-constraints.pl');
         const source = fs.readFileSync(filename, 'utf8');
         const program = Program.parseSources([{ text: source, filename }]);
         assertEqual(program.findGroup('tuples_in', 2)?.module, 'clpz', 'tuples_in/2 module');
         assertEqual(program.findGroup('global_cardinality', 3)?.module, 'clpz', 'global_cardinality/3 module');
         assertEqual(program.findGroup('circuit', 1)?.module, 'clpz', 'circuit/1 module');
-        const expected = fs.readFileSync(path.join(packageRoot, 'examples', 'output', 'clpz-global-constraints.pl'), 'utf8');
+        const expected = fs.readFileSync(path.join(packageRoot, 'docs', 'examples', 'output', 'clpz-global-constraints.pl'), 'utf8');
         assertEqual(run(program, { goal: 'advanced_clpz(X0, X1)' }).stdout, expected, 'global constraint answers');
       },
     },
@@ -2513,7 +2513,7 @@ path(X, Z) :- edge(X, Y), path(Y, Z).
           ['weighted-interval-scheduling.pl', 'best_from', 2, true],
         ];
         for (const [filename, name, arity, recursive] of checks) {
-          const text = fs.readFileSync(path.join(packageRoot, 'examples', filename), 'utf8');
+          const text = fs.readFileSync(path.join(packageRoot, 'docs', 'examples', filename), 'utf8');
           const program = Program.parseSources([{ text, filename }]);
           const group = program.findGroup(name, arity);
           assertEqual(Boolean(group), true, `${filename} ${name}/${arity} group exists`);
@@ -2525,7 +2525,7 @@ path(X, Z) :- edge(X, Y), path(Y, Z).
     {
       name: 'n-queens example keeps recursive search predicates tabled',
       run: () => {
-        const text = fs.readFileSync(path.join(packageRoot, 'examples', 'n-queens.pl'), 'utf8');
+        const text = fs.readFileSync(path.join(packageRoot, 'docs', 'examples', 'n-queens.pl'), 'utf8');
         const program = Program.parseSources([{ text, filename: 'n-queens.pl' }]);
         const attack = program.findGroup('attack', 3);
         assertEqual(Boolean(attack), true, 'attack/3 group exists');
@@ -2541,7 +2541,7 @@ path(X, Z) :- edge(X, Y), path(Y, Z).
     {
       name: 'collatz example keeps recursive trajectory predicate tabled',
       run: () => {
-        const text = fs.readFileSync(path.join(packageRoot, 'examples', 'collatz-1000.pl'), 'utf8');
+        const text = fs.readFileSync(path.join(packageRoot, 'docs', 'examples', 'collatz-1000.pl'), 'utf8');
         const program = Program.parseSources([{ text, filename: 'collatz-1000.pl' }]);
         const group = program.findGroup('collatz', 2);
         assertEqual(Boolean(group), true, 'collatz/2 group exists');
@@ -2554,9 +2554,9 @@ path(X, Z) :- edge(X, Y), path(Y, Z).
       name: 'collatz example remains stack-safe for browser-sized stacks',
       run: () => {
         // Use a deliberately tiny stack to catch browser-worker recursion regressions.
-        const source = fs.readFileSync(path.join(packageRoot, 'examples', 'collatz-1000.pl'), 'utf8');
+        const source = fs.readFileSync(path.join(packageRoot, 'docs', 'examples', 'collatz-1000.pl'), 'utf8');
         const goalArgs = goalsFromSource(source).flatMap((goal) => ['--goal', goal]);
-        const result = spawnSync(process.execPath, ['--stack-size=100', bin, ...goalArgs, 'examples/collatz-1000.pl'], {
+        const result = spawnSync(process.execPath, ['--stack-size=100', bin, ...goalArgs, 'docs/examples/collatz-1000.pl'], {
           cwd: packageRoot,
           encoding: 'utf8',
         });
@@ -2753,14 +2753,14 @@ function runWhyLoose({ program, goalText }) {
 }
 
 function listExampleNames() {
-  return fs.readdirSync(path.join(packageRoot, 'examples'))
+  return fs.readdirSync(path.join(packageRoot, 'docs', 'examples'))
     .filter((name) => name.endsWith('.pl'))
     .map((name) => name.slice(0, -3))
     .sort();
 }
 
 function listGoldenExampleNames() {
-  return fs.readdirSync(path.join(packageRoot, 'examples', 'output'))
+  return fs.readdirSync(path.join(packageRoot, 'docs', 'examples', 'output'))
     .filter((name) => name.endsWith('.pl'))
     .map((name) => name.slice(0, -3))
     .sort();
@@ -2789,14 +2789,14 @@ function exampleCorpusSyncIssues() {
 
 
 function proofCorpusSyncIssues() {
-  const proofDir = path.join(packageRoot, 'examples', 'proof');
+  const proofDir = path.join(packageRoot, 'docs', 'examples', 'proof');
   const goldens = fs.readdirSync(proofDir)
     .filter((name) => name.endsWith('.pl'))
     .sort();
   const configured = [...proofExamples].sort();
   const issues = arrayDiffMessages(configured, goldens, 'proof example runner');
   for (const name of goldens) {
-    if (!fs.existsSync(path.join(packageRoot, 'examples', name))) {
+    if (!fs.existsSync(path.join(packageRoot, 'docs', 'examples', name))) {
       issues.push(`examples/proof/${name}: source example is missing`);
     }
   }
@@ -2826,8 +2826,8 @@ function bookExampleCatalogIssues() {
   const issues = [];
   if (names.length === 0) issues.push('no source example links found');
   for (const name of names) {
-    if (!fs.existsSync(path.join(packageRoot, "examples", name + ".pl"))) issues.push("missing examples/" + name + ".pl");
-    if (!fs.existsSync(path.join(packageRoot, "examples", "output", name + ".pl"))) issues.push("missing examples/output/" + name + ".pl");
+    if (!fs.existsSync(path.join(packageRoot, "docs", "examples", name + ".pl"))) issues.push("missing examples/" + name + ".pl");
+    if (!fs.existsSync(path.join(packageRoot, "docs", "examples", "output", name + ".pl"))) issues.push("missing examples/output/" + name + ".pl");
   }
   return [...new Set(issues)].sort();
 }
@@ -2840,8 +2840,8 @@ function playgroundExampleIssues() {
   if (match == null) return ['playground EXAMPLES array not found'];
   const examples = JSON.parse(match[1]).sort();
   issues.push(...arrayDiffMessages(examples, expected, 'playground EXAMPLES'));
-  if (!html.includes('new URL(`./examples/${name}.pl`, location.href)')) {
-    issues.push('playground must load selected examples from relative ./examples/*.pl URLs');
+  if (!html.includes('new URL(`./docs/examples/${name}.pl`, location.href)')) {
+    issues.push('playground must load selected examples from relative ./docs/examples/*.pl URLs');
   }
   if (!html.includes("fetch(exampleUrl, { cache: 'no-store' })")) {
     issues.push('playground must fetch selected example source from its relative URL');
@@ -3152,7 +3152,7 @@ function bookIntroOutputIssues() {
   const match = book.match(/The (?:first|EyeProlog) command should print:\s*```text\n([\s\S]*?)```/);
   if (match == null) return ['the-art-of-eyeprolog.md: introductory output block not found'];
   const documented = `${match[1].trimEnd()}\n`;
-  const expected = fs.readFileSync(path.join(packageRoot, 'examples', 'output', 'socrates.pl'), 'utf8');
+  const expected = fs.readFileSync(path.join(packageRoot, 'docs', 'examples', 'output', 'socrates.pl'), 'utf8');
   return documented === expected
     ? []
     : ['the-art-of-eyeprolog.md: introductory Socrates output differs from examples/output/socrates.pl'];

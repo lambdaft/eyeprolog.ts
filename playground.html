@@ -865,14 +865,14 @@
       if (!name) return;
       try {
         setStatus(`Loading ${name}…`);
-        const exampleUrl = new URL(`./examples/${name}.pl`, location.href);
+        const exampleUrl = new URL(`./docs/examples/${name}.pl`, location.href);
         const response = await fetch(exampleUrl, { cache: 'no-store' });
         if (!response.ok) throw new Error(`${response.status} ${response.statusText}`);
-        setSource(await response.text(), `examples/${name}.pl`, { kind: 'example', name });
-        setStatus(`Loaded examples/${name}.pl.`);
+        setSource(await response.text(), `docs/examples/${name}.pl`, { kind: 'example', name });
+        setStatus(`Loaded docs/examples/${name}.pl.`);
       } catch (error) {
         setSource(FALLBACK_SOURCE, 'fallback program');
-        setStatus(`Could not load examples/${name}.pl: ${formatError(error)}`, true);
+        setStatus(`Could not load docs/examples/${name}.pl: ${formatError(error)}`, true);
       }
     }
 

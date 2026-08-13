@@ -32,9 +32,6 @@
     "playground.html",
     "bin",
     "src",
-    "tools",
-    "book-assets",
-    "examples",
     "test"
   ],
   "engines": {
@@ -43,7 +40,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "node test/run-all.mjs",
-    "generate": "node tools/extract-book-examples.mjs",
+    "generate": "node docs/tools/extract-book-examples.mjs",
     "test:eyeprolog": "node test/run-all.mjs",
     "test:conformance": "node test/run-conformance.mjs",
     "test:iso-strict": "node test/run-iso-strict.mjs",

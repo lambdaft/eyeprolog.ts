@@ -115,7 +115,7 @@ export async function runPlayground(reporter = new TestReporter()) {
         ['src/lib/random.pl', 'text/plain'],
         ['src/lib/strings.pl', 'text/plain'],
         ['src/lib/uuid.pl', 'text/plain'],
-        ['examples/socrates.pl', 'text/plain'],
+        ['docs/examples/socrates.pl', 'text/plain'],
       ];
       for (const [relative, contentType] of expected) {
         const response = await fetch(new URL(relative, baseUrl));

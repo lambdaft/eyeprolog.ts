@@ -1,7 +1,7 @@
 # The Art of EyeProlog — inline examples
 
 These files are generated from the complete `eyeprolog` code blocks in
-[The Art of EyeProlog](../../docs/the-art-of-eyeprolog.md). They are grouped by chapter and
+[The Art of EyeProlog](../../the-art-of-eyeprolog.md). They are grouped by chapter and
 retain the source text from the book. Goal fragments and non-EyeProlog blocks are
 not extracted.
 

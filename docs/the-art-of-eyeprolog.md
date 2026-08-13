@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="../book-assets/title-page.svg" alt="Front page for The Art of EyeProlog, presenting ISO Prolog rules and inspectable proofs." width="720">
+  <img src="book-assets/title-page.svg" alt="Front page for The Art of EyeProlog, presenting ISO Prolog rules and inspectable proofs." width="720">
 </p>
 
 This book is licensed under [Creative Commons Attribution 4.0
@@ -357,7 +357,7 @@ Chapter 46
 # Part I — Relations
 
 <figure>
-  <img src="../book-assets/part-1-relations.svg" alt="People, homes, a school, and a bicycle connected by named relations in a small town.">
+  <img src="book-assets/part-1-relations.svg" alt="People, homes, a school, and a bicycle connected by named relations in a small town.">
   <figcaption>One ordinary scene contains many relations: who lives where, who is a parent, who attends school, and who owns the bicycle.</figcaption>
 </figure>
 
@@ -492,7 +492,7 @@ recursively. `point(X, X)` unifies with `point(2, 2)` but not `point(2, 3)`.
 Functor and arity must agree.
 
 <figure>
-  <img src="../book-assets/unification.svg" alt="Two reading term trees align to produce bindings for Sensor and Value.">
+  <img src="book-assets/unification.svg" alt="Two reading term trees align to produce bindings for Sensor and Value.">
   <figcaption>Unification walks corresponding branches of two term trees and records the bindings needed to make them identical.</figcaption>
 </figure>
 
@@ -580,7 +580,7 @@ reading helps make search finite and selective. Put a generator before a
 built-in that needs its input:
 
 <figure>
-  <img src="../book-assets/logic-and-control.svg" alt="One recursive path rule points to its logical and operational readings.">
+  <img src="book-assets/logic-and-control.svg" alt="One recursive path rule points to its logical and operational readings.">
   <figcaption>A clause is both a sentence in a theory and a recipe for reducing a question to subquestions.</figcaption>
 </figure>
 
@@ -676,7 +676,7 @@ whose members are ground atomic formulas such as `person(pat)` and
 interpretation may make true.
 
 <figure>
-  <img src="../book-assets/herbrand-world.svg" alt="Ground terms form the Herbrand universe, ground formulas form the base, and justified formulas form the least model.">
+  <img src="book-assets/herbrand-world.svg" alt="Ground terms form the Herbrand universe, ground formulas form the base, and justified formulas form the least model.">
   <figcaption>Terms provide the vocabulary; atomic formulas provide the possible claims; facts and rules select the least model.</figcaption>
 </figure>
 
@@ -904,7 +904,7 @@ call, iterates cyclic calls to a fixed point, and reuses results. Authors
 describe `path/2`; the engine chooses the recursive strategy.
 
 <figure>
-  <img src="../book-assets/recursion-tabling-railway.svg" alt="A railway network with a cycle and a ledger of routes already reached.">
+  <img src="book-assets/recursion-tabling-railway.svg" alt="A railway network with a cycle and a ledger of routes already reached.">
   <figcaption>Recursive route questions may return to the same station. A table acts like a route ledger: new destinations are recorded and recurring questions reuse them.</figcaption>
 </figure>
 
@@ -944,7 +944,7 @@ derivation.
 `[]` is empty.
 
 <figure>
-  <img src="../book-assets/lists-train.svg" alt="Three railway carriages illustrate a list head and tail.">
+  <img src="book-assets/lists-train.svg" alt="Three railway carriages illustrate a list head and tail.">
   <figcaption>A list resembles a train: expose the first carriage as the head, pass the remaining train as the tail, or join two trains with an append relation.</figcaption>
 </figure>
 
@@ -1019,7 +1019,7 @@ and structural induction—into executable form.
 # Part II — Search
 
 <figure>
-  <img src="../book-assets/part-2-search.svg" alt="A traveler chooses among mountain paths leading toward a cabin.">
+  <img src="book-assets/part-2-search.svg" alt="A traveler chooses among mountain paths leading toward a cabin.">
   <figcaption>A route is found by exploring alternatives, recognizing dead ends and cycles, and carrying a productive choice toward the destination.</figcaption>
 </figure>
 
@@ -1033,7 +1033,7 @@ Arithmetic uses the standard `is/2` predicate, conventionally written with
 infix operator syntax:
 
 <figure>
-  <img src="../book-assets/arithmetic-binding-flow.svg" alt="A finite generator binds a number before arithmetic computes a result and a comparison filters it.">
+  <img src="book-assets/arithmetic-binding-flow.svg" alt="A finite generator binds a number before arithmetic computes a result and a comparison filters it.">
   <figcaption>Arithmetic goals consume bindings rather than inventing them: generate a finite candidate, compute from ready inputs, then filter the ground result.</figcaption>
 </figure>
 
@@ -1118,7 +1118,7 @@ negation. Bind variables before negating. Putting `\+ blocked(User)` before
 particular user is unblocked.
 
 <figure>
-  <img src="../book-assets/negation-guest-registry.svg" alt="A receptionist checks a complete guest registry against a blocked list.">
+  <img src="book-assets/negation-guest-registry.svg" alt="A receptionist checks a complete guest registry against a blocked list.">
   <figcaption>Absence becomes informative only inside a declared complete boundary: Clara is allowed because the event registry is complete and she is not on its blocked list.</figcaption>
 </figure>
 
@@ -1192,7 +1192,7 @@ that decision explicit prevents a database-style summary from silently
 changing the question.
 
 <figure>
-  <img src="../book-assets/aggregation-market.svg" alt="Market baskets with weights flow into count, sum, minimum, and maximum results.">
+  <img src="book-assets/aggregation-market.svg" alt="Market baskets with weights flow into count, sum, minimum, and maximum results.">
   <figcaption>Aggregation temporarily treats a finite family of solutions as a collection: the same baskets can be counted, summed, or compared.</figcaption>
 </figure>
 
@@ -1234,7 +1234,7 @@ finite generator that bounds each aggregate in a program of your own.
 Term predicates decompose or construct general terms:
 
 <figure>
-  <img src="../book-assets/context-data-boundary.svg" alt="Raw text becomes structured members inside one message context, which ordinary term traversal inspects without asserting those members globally.">
+  <img src="book-assets/context-data-boundary.svg" alt="Raw text becomes structured members inside one message context, which ordinary term traversal inspects without asserting those members globally.">
   <figcaption>Normalize text into explicit structure at the boundary; inspecting a member inside one context does not turn it into an ambient fact.</figcaption>
 </figure>
 
@@ -1400,7 +1400,7 @@ and termination.
 # Part III — Trustworthy reasoning
 
 <figure>
-  <img src="../book-assets/part-3-trustworthy-reasoning.svg" alt="A spacecraft engineer reviews sensor evidence leading to a battery safety action.">
+  <img src="book-assets/part-3-trustworthy-reasoning.svg" alt="A spacecraft engineer reviews sensor evidence leading to a battery safety action.">
   <figcaption>Current, resistance, and temperature readings remain visible as independent premises for a thermal warning and safety action.</figcaption>
 </figure>
 
@@ -1499,7 +1499,7 @@ a protected static procedure, so `false.` and clauses of the form
 pre-query behavior.
 
 <figure>
-  <img src="../book-assets/integrity-check-control-panel.svg" alt="An explicit invalid-state query identifies conflicting engineering limits before operation.">
+  <img src="book-assets/integrity-check-control-panel.svg" alt="An explicit invalid-state query identifies conflicting engineering limits before operation.">
   <figcaption>An integrity relation reports the invalid state; the host decides whether that state blocks later decisions.</figcaption>
 </figure>
 
@@ -1559,7 +1559,7 @@ Declarative clarity and operational care reinforce each other. Bind selective
 arguments early, keep generators finite, and make decreasing structure visible.
 
 <figure>
-  <img src="../book-assets/termination-map.svg" alt="Three recursive call patterns: decreasing lists, finite tabled graph answers, and terms that grow without bound.">
+  <img src="book-assets/termination-map.svg" alt="Three recursive call patterns: decreasing lists, finite tabled graph answers, and terms that grow without bound.">
   <figcaption>Termination needs a specific argument: a decreasing measure or a finite tabled call-and-answer space; ever-growing terms satisfy neither.</figcaption>
 </figure>
 
@@ -1637,7 +1637,7 @@ A maintainable theory separates:
 - outputs: focused host-supplied goals.
 
 <figure>
-  <img src="../book-assets/knowledge-engineering-workflow.svg" alt="Source facts pass through normalization and domain concepts into a decision and proof.">
+  <img src="book-assets/knowledge-engineering-workflow.svg" alt="Source facts pass through normalization and domain concepts into a decision and proof.">
   <figcaption>A maintainable theory moves in visible layers from observations to decisions, while the proof preserves the route back to evidence.</figcaption>
 </figure>
 
@@ -1922,7 +1922,7 @@ when those boundaries became named rather than implicit.
 # Part IV — The craft of logic programming
 
 <figure>
-  <img src="../book-assets/part-4-craft.svg" alt="A logic programmer works between domain sketches, design questions, and tested EyeProlog clauses.">
+  <img src="book-assets/part-4-craft.svg" alt="A logic programmer works between domain sketches, design questions, and tested EyeProlog clauses.">
   <figcaption>Craft moves repeatedly between the real domain, the relations on paper, executable clauses, answers, and proofs.</figcaption>
 </figure>
 
@@ -2036,7 +2036,7 @@ Confusing the two leads to a common surprise: a tiny proof may have required a
 large search.
 
 <figure>
-  <img src="../book-assets/proof-and-search.svg" alt="A compact successful proof tree beside a larger search tree containing failures and repeated branches.">
+  <img src="book-assets/proof-and-search.svg" alt="A compact successful proof tree beside a larger search tree containing failures and repeated branches.">
   <figcaption>The proof explains why an answer holds; the search tree explains the work needed to discover that proof.</figcaption>
 </figure>
 
@@ -2068,7 +2068,7 @@ bottom. It is constructed by moving between examples, relations, and
 invariants.
 
 <figure>
-  <img src="../book-assets/program-construction-loop.svg" alt="A program is constructed by cycling from a ground sentence through examples, representation, invariants, clauses, answers, and proofs.">
+  <img src="book-assets/program-construction-loop.svg" alt="A program is constructed by cycling from a ground sentence through examples, representation, invariants, clauses, answers, and proofs.">
   <figcaption>Construction begins with meaning and examples, chooses a representation that exposes an invariant, and lets surprising answers send the design back to the right layer.</figcaption>
 </figure>
 
@@ -2209,7 +2209,7 @@ Testing examples is necessary, but a reusable relation deserves a stronger
 argument. Two questions should be asked separately:
 
 <figure>
-  <img src="../book-assets/correctness-obligations.svg" alt="Overlapping circles for soundness, completeness, and termination meet at a dependable operational contract.">
+  <img src="book-assets/correctness-obligations.svg" alt="Overlapping circles for soundness, completeness, and termination meet at a dependable operational contract.">
   <figcaption>Soundness, completeness, and termination are independent promises; a dependable intended call needs all three.</figcaption>
 </figure>
 
@@ -2418,7 +2418,7 @@ turn a true relation into a productive computation and say what was preserved.
 # Part V — Advanced relational design
 
 <figure>
-  <img src="../book-assets/part-5-relational-design.svg" alt="A central relation connects a search tree, a syntax tree, a transformed program, and an auditable decision.">
+  <img src="book-assets/part-5-relational-design.svg" alt="A central relation connects a search tree, a syntax tree, a transformed program, and an auditable decision.">
   <figcaption>Advanced design keeps meaning at the center while search is inspected, syntax is represented, control is transformed, and decisions remain auditable.</figcaption>
 </figure>
 
@@ -2491,7 +2491,7 @@ alone: a variable that should have been shared, a recursive call that did not
 consume input, or a generator placed after the test that needs its output.
 
 <figure>
-  <img src="../book-assets/and-or-binding-trace.svg" alt="An ancestor query branches between clauses while a binding ledger shows Y becoming byron and flowing into the remaining recursive goal.">
+  <img src="book-assets/and-or-binding-trace.svg" alt="An ancestor query branches between clauses while a binding ledger shows Y becoming byron and flowing into the remaining recursive goal.">
   <figcaption>Search alternates between choices and conjunctions; substitutions flow forward, while failure returns to the latest unfinished choice.</figcaption>
 </figure>
 
@@ -2623,7 +2623,7 @@ order is an implementation choice. If a caller uses `once/1`, it becomes
 observable.
 
 <figure>
-  <img src="../book-assets/syntax-relations.svg" alt="One expression tree is inspected as data, evaluated to a value, and rewritten to another syntax tree with an explicit environment.">
+  <img src="book-assets/syntax-relations.svg" alt="One expression tree is inspected as data, evaluated to a value, and rewritten to another syntax tree with an explicit environment.">
   <figcaption>A compound term remains persistent data; different relations inspect, evaluate, or rewrite it according to the question being asked.</figcaption>
 </figure>
 
@@ -2784,7 +2784,7 @@ Each can improve control or reveal structure. Each can also change modes,
 duplicate work, or alter proof shape.
 
 <figure>
-  <img src="../book-assets/program-transformation-workbench.svg" alt="An original relation branches into unfolding, folding, specialization, and accumulation, then all four return to a shared contract comparison.">
+  <img src="book-assets/program-transformation-workbench.svg" alt="An original relation branches into unfolding, folding, specialization, and accumulation, then all four return to a shared contract comparison.">
   <figcaption>Transformation is a controlled experiment: change the clauses, then compare meaning, supported modes, termination, proof shape, and cost.</figcaption>
 </figure>
 
@@ -2946,7 +2946,7 @@ problem is to make useful alternatives complete while keeping their number
 finite and their order productive.
 
 <figure>
-  <img src="../book-assets/finite-search-funnel.svg" alt="A funnel narrows six generated worker-task candidates through ready constraints into four witnesses before ordering the survivors.">
+  <img src="book-assets/finite-search-funnel.svg" alt="A funnel narrows six generated worker-task candidates through ready constraints into four witnesses before ordering the survivors.">
   <figcaption>Finite search is designed from the top down: bound generation, prune with ready constraints, preserve the witness, then order only the survivors.</figcaption>
 </figure>
 
@@ -3088,7 +3088,7 @@ explainable theory. The purpose is the sequence of design decisions that turns
 informal requirements into maintainable relations.
 
 <figure>
-  <img src="../book-assets/auditable-decision-service.svg" alt="Versioned source facts and policy pass integrity checks and reasoning to produce a decision with a replayable proof bundle.">
+  <img src="book-assets/auditable-decision-service.svg" alt="Versioned source facts and policy pass integrity checks and reasoning to produce a decision with a replayable proof bundle.">
   <figcaption>An auditable service keeps source and theory versions attached to the premises, blocks invalid input at an integrity gate, and returns the decision with replayable provenance.</figcaption>
 </figure>
 
@@ -3295,7 +3295,7 @@ syntax is data, state is an argument, and audit evidence remains visible.
 # Part VI — Mathematics made executable
 
 <figure>
-  <img src="../book-assets/part-6-mathematics.svg" alt="A bridge carries mathematical definitions and proof into executable clauses, witnesses, counterexamples, and derivations.">
+  <img src="book-assets/part-6-mathematics.svg" alt="A bridge carries mathematical definitions and proof into executable clauses, witnesses, counterexamples, and derivations.">
   <figcaption>Formal clauses form a bridge: definitions and invariants become computations that return witnesses, counterexamples, and inspectable proofs.</figcaption>
 </figure>
 
@@ -3352,7 +3352,7 @@ connections among a proposition, its proof, and the construction carried by
 that proof.
 
 <figure>
-  <img src="../book-assets/proof-as-computation.svg" alt="An existential query passes through theory and proof search, producing both a ground object witness and a derivation witness.">
+  <img src="book-assets/proof-as-computation.svg" alt="An existential query passes through theory and proof search, producing both a ground object witness and a derivation witness.">
   <figcaption>A successful existential query returns an object that satisfies the claim and a derivation that explains why the theory licenses that object.</figcaption>
 </figure>
 
@@ -3542,7 +3542,7 @@ property of `plus/3` for all Peano naturals, induction on that first argument is
 the obvious proof shape.
 
 <figure>
-  <img src="../book-assets/recursion-induction-ladder.svg" alt="Parallel ladders align a base clause with an induction base case, a recursive call with the induction hypothesis, and the rule head with the preserved conclusion; a separate box states the decreasing termination measure.">
+  <img src="book-assets/recursion-induction-ladder.svg" alt="Parallel ladders align a base clause with an induction base case, a recursive call with the induction hypothesis, and the rule head with the preserved conclusion; a separate box states the decreasing termination measure.">
   <figcaption>Recursion and induction can share a structural skeleton, but termination still requires its own well-founded decreasing measure.</figcaption>
 </figure>
 
@@ -3839,7 +3839,7 @@ finite mathematical world, state the property relationally, and ask for
 witnesses or failures.
 
 <figure>
-  <img src="../book-assets/bounded-experimental-math.svg" alt="A universal conjecture is tested over a declared finite box; a found counterexample refutes it globally, while exhaustion gives only bounded evidence.">
+  <img src="book-assets/bounded-experimental-math.svg" alt="A universal conjecture is tested over a declared finite box; a found counterexample refutes it globally, while exhaustion gives only bounded evidence.">
   <figcaption>Finite search is asymmetric: one valid counterexample defeats a universal claim, while finding none establishes only the explicitly bounded statement.</figcaption>
 </figure>
 
@@ -4175,7 +4175,7 @@ the same reason: limits are part of the result, not fine print.
 # Part VII — The reasoning laboratory
 
 <figure>
-  <img src="../book-assets/part-7-laboratory.svg" alt="A reasoning laboratory bench connects a small theory to predictions, tests, search statistics, proofs, and revisions.">
+  <img src="book-assets/part-7-laboratory.svg" alt="A reasoning laboratory bench connects a small theory to predictions, tests, search statistics, proofs, and revisions.">
   <figcaption>A theory becomes dependable through a repeated laboratory cycle: predict, test, inspect the search and proof, then revise one assumption at a time.</figcaption>
 </figure>
 
@@ -4198,7 +4198,7 @@ absence of forbidden answers, the shape of witnesses, and the finiteness of
 the intended search.
 
 <figure>
-  <img src="../book-assets/relational-test-spectrum.svg" alt="A public relation is surrounded by tests for meaning, supported modes, finite properties, metamorphic changes, integrity, proofs, and scale.">
+  <img src="book-assets/relational-test-spectrum.svg" alt="A public relation is surrounded by tests for meaning, supported modes, finite properties, metamorphic changes, integrity, proofs, and scale.">
   <figcaption>A relational contract has several observable surfaces; examples, mode tests, bounded properties, metamorphic checks, integrity cases, proofs, and scale checks protect different promises.</figcaption>
 </figure>
 
@@ -4414,7 +4414,7 @@ Use four views in a fixed order:
 4. **proof:** which successful premises support the observed answer?
 
 <figure>
-  <img src="../book-assets/debugging-four-lenses.svg" alt="A disputed ground query passes through four diagnostic lenses—meaning, bindings, search, and proof—before the repaired invariant is preserved as a regression.">
+  <img src="book-assets/debugging-four-lenses.svg" alt="A disputed ground query passes through four diagnostic lenses—meaning, bindings, search, and proof—before the repaired invariant is preserved as a regression.">
   <figcaption>Each debugging lens answers a different question; begin with meaning, move outward only as needed, and preserve the lesson as an executable check.</figcaption>
 </figure>
 
@@ -4616,7 +4616,7 @@ meaning, representation, and control that solves a named design problem. The
 following patterns summarize the strongest constructions in this book.
 
 <figure>
-  <img src="../book-assets/pattern-selection-map.svg" alt="Six recurring design symptoms point to patterns for meaning, tabling, closed boundaries, finite search, proof-carrying answers, and canonical representation.">
+  <img src="book-assets/pattern-selection-map.svg" alt="Six recurring design symptoms point to patterns for meaning, tabling, closed boundaries, finite search, proof-carrying answers, and canonical representation.">
   <figcaption>Choose a pattern by the design problem and its consequence, not by superficial code shape; each pattern coordinates meaning, representation, modes, and control.</figcaption>
 </figure>
 
@@ -4912,7 +4912,7 @@ executable memory.
 # Part VIII — Standard Prolog in practice
 
 <figure>
-  <img src="../book-assets/part-8-standard-prolog.svg" alt="A standards workbench connects an ISO Prolog manual to control, term, state, operator, and stream instruments.">
+  <img src="book-assets/part-8-standard-prolog.svg" alt="A standards workbench connects an ISO Prolog manual to control, term, state, operator, and stream instruments.">
   <figcaption>The broader ISO profile is a practical workbench: relational term operations remain at its center while control, mutable state, and I/O are introduced at explicit boundaries.</figcaption>
 </figure>
 
@@ -4940,7 +4940,7 @@ term, `once/1` keeps its first solution, and `!/0` commits within the clause
 that contains it. If-then-else commits to the first successful condition:
 
 <figure>
-  <img src="../book-assets/iso-control-board.svg" alt="A goal passes through choice and exception recovery before finite solutions enter findall, bagof, and setof collectors.">
+  <img src="book-assets/iso-control-board.svg" alt="A goal passes through choice and exception recovery before finite solutions enter findall, bagof, and setof collectors.">
   <figcaption>Control narrows or redirects search; collection then gives a finite solution stream a deliberate list or grouping shape.</figcaption>
 </figure>
 
@@ -5024,7 +5024,7 @@ known. Reflective predicates are valuable when the shape itself is input:
 generic walkers, schema checkers, interpreters, and source transformations.
 
 <figure>
-  <img src="../book-assets/iso-term-prism.svg" alt="One structured event term fans out into functor, argument, univ-list, variable, ordering, character, and code views.">
+  <img src="book-assets/iso-term-prism.svg" alt="One structured event term fans out into functor, argument, univ-list, variable, ordering, character, and code views.">
   <figcaption>A term is not mutated by reflection: standard relations expose its structure, ordering, or lexical representation for a particular question.</figcaption>
 </figure>
 
@@ -5083,7 +5083,7 @@ A dynamic predicate is a mutable clause store owned by one solver run. Declare
 it before updates:
 
 <figure>
-  <img src="../book-assets/iso-state-operator-console.svg" alt="Initialization and assertions establish an ordered dynamic task queue beside an operator declaration that parses readable syntax into an ordinary reports term.">
+  <img src="book-assets/iso-state-operator-console.svg" alt="Initialization and assertions establish an ordered dynamic task queue beside an operator declaration that parses readable syntax into an ordinary reports term.">
   <figcaption>Dynamic predicates change solver-local clause order; operator declarations change how subsequent source is parsed. Both effects are explicit and ordered.</figcaption>
 </figure>
 
@@ -5169,7 +5169,7 @@ action. Always close a nonstandard stream, including exceptional paths in
 application code.
 
 <figure>
-  <img src="../book-assets/iso-stream-roundtrip.svg" alt="A structured event is written with a terminating period to a text stream, read back as a term, and followed to end of file.">
+  <img src="book-assets/iso-stream-roundtrip.svg" alt="A structured event is written with a terminating period to a text stream, read back as a term, and followed to end of file.">
   <figcaption>A term round trip has visible lifecycle obligations: open the right stream type, write readable syntax with a period, read in order, observe end state, and close.</figcaption>
 </figure>
 
@@ -5246,7 +5246,7 @@ predicate, and Chapter 40 turns a file into observable evidence. Chapters
 The long catalogs are meant to be entered locally, not memorized linearly.
 
 <figure>
-  <img src="../book-assets/reference-navigation.svg" alt="A task map routes language, predicate, and execution questions into Chapters 38 to 40, then onward to study paths, boundaries, and vocabulary in Chapters 41 to 43.">
+  <img src="book-assets/reference-navigation.svg" alt="A task map routes language, predicate, and execution questions into Chapters 38 to 40, then onward to study paths, boundaries, and vocabulary in Chapters 41 to 43.">
   <figcaption>Enter the reference through a concrete question. The first three chapters answer how to read, choose, and run; the next three help place that answer in a course, a boundary, and a shared vocabulary.</figcaption>
 </figure>
 
@@ -6190,7 +6190,7 @@ proof output for support, warnings for portability risks, and statistics for
 search behavior.
 
 <figure>
-  <img src="../book-assets/cli-observation-loop.svg" alt="An EyeProlog source and query enter the CLI, which separates ground answers and proofs on standard output, warnings and statistics on standard error, and a process status for automation; comparison leads back to program revision.">
+  <img src="book-assets/cli-observation-loop.svg" alt="An EyeProlog source and query enter the CLI, which separates ground answers and proofs on standard output, warnings and statistics on standard error, and a process status for automation; comparison leads back to program revision.">
   <figcaption>The CLI exposes three independent channels. Compare each with the right prediction before revising the theory: answers and proofs on stdout, diagnostics on stderr, and status for the calling process.</figcaption>
 </figure>
 
@@ -6487,7 +6487,7 @@ Review questions:
 ### Further examples
 
 <figure>
-  <img src="../book-assets/example-landscape.svg" alt="A map connects EyeProlog examples across mathematics, search, planning, policy, science, program analysis, and symbolic systems.">
+  <img src="book-assets/example-landscape.svg" alt="A map connects EyeProlog examples across mathematics, search, planning, policy, science, program analysis, and symbolic systems.">
   <figcaption>The corpus is a connected landscape. Every path leads from a readable source program to checked answers and, for selected examples, checked proofs.</figcaption>
 </figure>
 
@@ -7400,7 +7400,7 @@ acceptance test, and a reflection question. Complete them in order or choose a
 route suited to a study group.
 
 <figure>
-  <img src="../book-assets/laboratory-progression.svg" alt="Twelve laboratories progress from relational foundations through finite search, mathematical and symbolic methods, domain reasoning, and a release-quality reasoning service.">
+  <img src="book-assets/laboratory-progression.svg" alt="Twelve laboratories progress from relational foundations through finite search, mathematical and symbolic methods, domain reasoning, and a release-quality reasoning service.">
   <figcaption>The laboratories enlarge one construction discipline rather than form twelve unrelated projects: state meaning, control a finite computation, preserve evidence, name the boundary, and finally integrate all four.</figcaption>
 </figure>
 
@@ -7667,7 +7667,7 @@ of your own, compare the structure of your argument rather than expecting one
 canonical implementation.
 
 <figure>
-  <img src="../book-assets/review-lenses.svg" alt="A program artifact is examined through five review lenses: meaning, logic, control, evidence, and boundary, followed by a cycle of prediction, execution, explanation, and revision.">
+  <img src="book-assets/review-lenses.svg" alt="A program artifact is examined through five review lenses: meaning, logic, control, evidence, and boundary, followed by a cycle of prediction, execution, explanation, and revision.">
   <figcaption>Review the same artifact through five independent lenses. A failure under one lens should lead to a specific revision, not to the vague conclusion that logic programming itself is mysterious.</figcaption>
 </figure>
 
