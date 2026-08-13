@@ -8,8 +8,7 @@ import {
   QUAD_OPERATOR_DEFINITIONS,
   createParserOperatorState,
   parseClauses,
-  parseClausesInto,
-  tryParseClausesFastInto,
+  parseClausesInto
 } from './parser.js';
 import { PrologError, getStrictIsoRegistry } from './iso.js';
 // @ts-expect-error TS7034: auto-suppressed
@@ -20,67 +19,11 @@ import { expandDcgRuleClause } from './dcg.js';
 const DEFER_PROGRAM_BUILD = Symbol('deferProgramBuild');
 const FAST_PARSE_ABORT = Symbol('fastParseAbort');
 const PROGRAM_BUILD_BATCH_SIZE = 16384;
-const EMPTY_CLAUSE_BODY = Object.freeze([]);
 
 function modulePredicateKey(module: any, name: any, arity: any): any {
   return module === 'user' ? `${name}/${arity}` : `${module}:${name}/${arity}`;
 }
 
-class CompactBinaryClause {
-  constructor(headName: any, head0Type: any, head0Name: any, head1Type: any, head1Name: any,
-      bodyName: any, body0Type: any, body0Name: any, body1Type: any, body1Name: any) {
-    this.compactBinary = true;
-    this.headName = headName;
-    this.head0Type = head0Type;
-    this.head0Name = head0Name;
-    this.head1Type = head1Type;
-    this.head1Name = head1Name;
-    this.bodyName = bodyName;
-    this.body0Type = body0Type;
-    this.body0Name = body0Name;
-    this.body1Type = body1Type;
-    this.body1Name = body1Name;
-  }
-
-  get head() {
-    // @ts-expect-error TS2551: auto-suppressed
-    if (!this._head) {
-      // @ts-expect-error TS2551: auto-suppressed
-      this._head = compound(this.headName, [
-        compactTerm(this.head0Type, this.head0Name),
-        compactTerm(this.head1Type, this.head1Name),
-      ]);
-    }
-    // @ts-expect-error TS2551: auto-suppressed
-    return this._head;
-  }
-
-  get body() {
-    if (this.bodyName == null) return EMPTY_CLAUSE_BODY;
-    // @ts-expect-error TS2551: auto-suppressed
-    if (!this._body) {
-      // @ts-expect-error TS2551: auto-suppressed
-      this._body = [compound(this.bodyName, [
-        compactTerm(this.body0Type, this.body0Name),
-        compactTerm(this.body1Type, this.body1Name),
-      ])];
-    }
-    // @ts-expect-error TS2551: auto-suppressed
-    return this._body;
-  }
-
-    compactBinary: any;
-    headName: any;
-    head0Type: any;
-    head0Name: any;
-    head1Type: any;
-    head1Name: any;
-    bodyName: any;
-    body0Type: any;
-    body0Name: any;
-    body1Type: any;
-    body1Name: any;
-}
 
 function compactTerm(type: any, name: any): any {
   if (type === VAR) return variable(name);
@@ -88,9 +31,6 @@ function compactTerm(type: any, name: any): any {
   return atom(name);
 }
 
-function isCompactBinaryClause(clause: any): any {
-  return clause?.compactBinary === true;
-}
 
 function compactHeadArgType(clause: any, index: any): any {
   return index === 0 ? clause.head0Type : clause.head1Type;
@@ -103,7 +43,7 @@ function compactHeadArgName(clause: any, index: any): any {
 
 
 function clauseBodyLength(clause: any): any {
-  return isCompactBinaryClause(clause) ? (clause.bodyName == null ? 0 : 1) : clause.body.length;
+  return clause.body.length;
 }
 
 
@@ -309,7 +249,7 @@ export class Program {
     for (const group of groups) {
       const groupIndex = indexByGroup.get(group);
       for (const clause of group.clauses) {
-        if (isCompactBinaryClause(clause)) {
+        if (false) {
           if (clause.bodyName != null) {
             const dep = this.findGroup(clause.bodyName, 2, group.module);
             // @ts-expect-error TS2532: auto-suppressed
@@ -474,7 +414,7 @@ export class Program {
       quoted: true,
     };
     for (const clause of this.clauses) {
-      if (isCompactBinaryClause(clause)) {
+      if (false) {
         if (clause.bodyName != null) continue;
         if (predicateKeys && !predicateKeys.has(`${clause.headName}/2`)) continue;
         lines.add(`${formatTermForWrite(clause.head, env, writeOptions)}.\n`);
@@ -531,7 +471,7 @@ class ProgramBuilder {
       clause.index = program.clauses.length;
       program.clauses.push(clause);
 
-      if (isCompactBinaryClause(clause)) {
+      if (false) {
         assertPredicateIsDefinable(clause.headName, 2, program.strictIso);
         const module = clause.module ?? 'user';
         const key = modulePredicateKey(module, clause.headName, 2);
@@ -789,28 +729,13 @@ function loadSourceIntoBuilder(builder: any, source: any, options: any, ensured:
     }
   };
 
-  if (fast) {
-    const acceptBinary = (headName: any, head0Type: any, head0Name: any, head1Type: any, head1Name: any,
-        bodyName: any, body0Type: any, body0Name: any, body1Type: any, body1Name: any) => {
-      batch.push(new CompactBinaryClause(
-        headName, head0Type, head0Name, head1Type, head1Name,
-        bodyName, body0Type, body0Name, body1Type, body1Name,
-      ));
-      // @ts-expect-error TS7005: auto-suppressed
-      batch[batch.length - 1].module = context.module;
-      if (batch.length >= PROGRAM_BUILD_BATCH_SIZE) flush();
-    };
-    const parsed = tryParseClausesFastInto(source, accept, acceptBinary, options);
-    if (parsed) flush();
-    return parsed;
-  }
   parseClausesInto(source, options, accept);
   flush();
   return true;
 }
 
 function includeDirective(clause: any): any {
-  if (isCompactBinaryClause(clause) || !isDirectiveClause(clause)) return null;
+  if (!isDirectiveClause(clause)) return null;
   const directive = clause.head.args[0];
   return directive?.type === COMPOUND && directive.arity === 1 &&
     (directive.name === 'include' || directive.name === 'ensure_loaded')
@@ -819,7 +744,7 @@ function includeDirective(clause: any): any {
 }
 
 function moduleDirective(clause: any): any {
-  if (isCompactBinaryClause(clause) || !isDirectiveClause(clause)) return null;
+  if (!isDirectiveClause(clause)) return null;
   const directive = clause.head.args[0];
   if (directive?.type !== COMPOUND || directive.name !== 'module' || directive.arity !== 2) return null;
   if (directive.args[0].type !== ATOM) throw new PrologError('type_error(atom)', directive.args[0]);
@@ -830,7 +755,7 @@ function moduleDirective(clause: any): any {
 }
 
 function useModuleDirective(clause: any): any {
-  if (isCompactBinaryClause(clause) || !isDirectiveClause(clause)) return null;
+  if (!isDirectiveClause(clause)) return null;
   const directive = clause.head.args[0];
   if (directive?.type !== COMPOUND || directive.name !== 'use_module' || ![1, 2].includes(directive.arity)) return null;
   const imports = directive.arity === 2 ? moduleExportIndicators(directive.args[1]) : null;
@@ -1006,16 +931,12 @@ function componentHasNegativeEdge(start: any, deps: any, negativeEdges: any): an
   return negativeEdges.some(([from, to]: any) => component.has(from) && component.has(to));
 }
 
-function compactClauseIsDirectRecursive(clause: any, group: any): any {
-  return isCompactBinaryClause(clause) && clause.bodyName === group.name && group.arity === 2;
-}
-
 function clauseHasCut(clause: any): any {
-  return !isCompactBinaryClause(clause) && clause.body.some(termContainsCut);
+  return clause.body.some(termContainsCut);
 }
 
 function clauseIsDirectRecursive(clause: any, group: any): any {
-  if (isCompactBinaryClause(clause)) return compactClauseIsDirectRecursive(clause, group);
+  if (false) return false;
   return clause.body.some((goal: any) =>
     goal.type === COMPOUND && goal.name === group.name && goal.arity === group.arity
   );
@@ -1055,16 +976,7 @@ function inferStructuralInputPositions(group: any): any {
   const changed = new Uint8Array(group.arity);
 
   for (const clause of group.clauses) {
-    if (isCompactBinaryClause(clause)) {
-      if (!compactClauseIsDirectRecursive(clause, group)) continue;
-      for (let index = 0; index < 2; index++) {
-        const headType = compactHeadArgType(clause, index);
-        if (headType !== VAR && (firstPatternedPosition < 0 || index < firstPatternedPosition)) {
-          firstPatternedPosition = index;
-        }
-      }
-      continue;
-    }
+
 
     changed.fill(0);
     let recursive = false;
@@ -1099,13 +1011,7 @@ function inferStructuralInputPositions(group: any): any {
 function hasLinearNumericRecursion(group: any): any {
   let recursiveClause = null;
   for (const clause of group.clauses) {
-    if (isCompactBinaryClause(clause)) {
-      if (clause.head0Type !== VAR || clause.head1Type !== VAR) return false;
-      if (!compactClauseIsDirectRecursive(clause, group)) continue;
-      if (recursiveClause) return false;
-      recursiveClause = clause;
-      continue;
-    }
+
     for (const arg of clause.head.args) if (arg.type !== 'var') return false;
     let recursive = false;
     for (const goal of clause.body) {
@@ -1118,14 +1024,14 @@ function hasLinearNumericRecursion(group: any): any {
     if (recursiveClause) return false;
     recursiveClause = clause;
   }
-  return recursiveClause != null && !isCompactBinaryClause(recursiveClause) && recursiveClause.body.some((goal: any) =>
+  return recursiveClause != null && recursiveClause.body.some((goal: any) =>
     goal.type === COMPOUND && goal.name === 'is' && goal.arity === 2
   );
 }
 
 function isPiAccumulator(group: any): any {
   return group.name === 'pi' && group.arity === 5 && group.clauses.some((clause: any) =>
-    !isCompactBinaryClause(clause) && clause.body.some((goal: any) => goal.type === COMPOUND && goal.name === 'is' && goal.arity === 2)
+    clause.body.some((goal: any) => goal.type === COMPOUND && goal.name === 'is' && goal.arity === 2)
   );
 }
 
@@ -1360,7 +1266,7 @@ function rebuildGroupIndexes(group: any): any {
   group.scalarFactsOnly = true;
   for (let clausePosition = 0; clausePosition < group.clauses.length; clausePosition++) {
     const clause = group.clauses[clausePosition];
-    if (isCompactBinaryClause(clause)) {
+    if (false) {
       clause.groundHead = clause.head0Type !== VAR && clause.head1Type !== VAR;
       clause.scalarHead = clause.groundHead;
       if (clause.bodyName != null || !clause.scalarHead) group.scalarFactsOnly = false;
@@ -1393,7 +1299,7 @@ function demandValueKey(values: any): any {
 function buildDemandIndex(group: any, positions: any): any {
   const index = { positions, buckets: new Map(), fallback: [] };
   for (const clause of group.clauses) {
-    if (isCompactBinaryClause(clause)) {
+    if (false) {
       const values = positions.map((position: any) => compactTerm(
         compactHeadArgType(clause, position), compactHeadArgName(clause, position)));
       if (!values.every(isScalar)) {

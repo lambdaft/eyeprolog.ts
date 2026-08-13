@@ -1,2 +1,10 @@
 package-lock.json
 node_modules/
+src/*.js
+src/*.d.ts
+*.log
+*.pid
+strip-*.js
+strip-*.py
+debug.mjs
+generate_examples.mjs

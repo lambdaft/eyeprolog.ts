@@ -1894,7 +1894,12 @@ function* catchBuiltin({ solver, goal, env }: any): any {
     if (ball == null) throw error;
     const recovered = env.clone();
     if (!unify(goal.args[1], ball, recovered)) throw error;
-    yield* solver.solve([callable(goal.args[2], recovered)], recovered, 0);
+    const recoveryChild = solver.cloneForInnerGoal();
+    try {
+      yield* recoveryChild.solve([callable(goal.args[2], recovered)], recovered, 0);
+    } finally {
+      solver.absorbStatsFrom(recoveryChild);
+    }
   } finally {
     solver.absorbStatsFrom(child);
   }

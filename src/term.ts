@@ -10,7 +10,6 @@ export type EyePrologTerm = Term | { type: string; name: string; args?: EyeProlo
 
 const EMPTY_ARGS = Object.freeze([]) as readonly EyePrologTerm[];
 let variableOrder = 0;
-const variableOrders = new Map<string, number>();
 
 export class Term {
   type: string;
@@ -31,8 +30,7 @@ export class Term {
 
 export const variable = (name: string): Term => {
   const term = new Term(VAR, name, EMPTY_ARGS as EyePrologTerm[]);
-  if (!variableOrders.has(term.name)) variableOrders.set(term.name, ++variableOrder);
-  term.order = variableOrders.get(term.name) as number;
+  term.order = ++variableOrder;
   return term;
 };
 export const atom = (name: string): Term => new Term(ATOM, name, EMPTY_ARGS as EyePrologTerm[]);
@@ -442,7 +440,11 @@ function writeList(term: any, env: any, options: any): any {
 
 export function termToString(term: any, env: any = new Env(), quoteStrings: any = true, options: any = {}): any {
   options = { doubleQuotes: options.doubleQuotes ?? 'chars' };
+  if (!term) return String(term);
   const resolved = deref(term, env);
+  if (!resolved || typeof resolved !== 'object' || !('type' in resolved)) {
+    return `<?${String(resolved)}?>`;
+  }
   if (resolved.type === VAR) return writeVariable(resolved.name);
   if (isCons(resolved)) return writeList(resolved, env, options);
   if (resolved.type === STRING) return writeString(resolved.name, quoteStrings);
@@ -470,7 +472,8 @@ export function termToString(term: any, env: any = new Env(), quoteStrings: any 
     }
     return `(${parts.join(', ')})`;
   }
-  return `${writeAtom(resolved.name)}(${resolved.args.map((arg: any) => termToString(arg, env, true, options)).join(', ')})`;
+  const args = Array.isArray(resolved.args) ? resolved.args : [];
+  return `${writeAtom(resolved.name)}(${args.map((arg: any) => termToString(arg, env, true, options)).join(', ')})`;
 }
 
 export function lexicalValue(term: any, env: any): any {
@@ -548,9 +551,8 @@ export function compareTerms(left: any, right: any): any {
     return compareNumberText(left.name, right.name);
   }
   if (left.type === VAR) {
-    const leftOrder = left.order ?? 0;
-    const rightOrder = right.order ?? 0;
-    return leftOrder < rightOrder ? -1 : leftOrder > rightOrder ? 1 : 0;
+    if (left.name === right.name) return 0;
+    return left.name < right.name ? -1 : 1;
   }
   if (left.type === ATOM || left.type === STRING) return left.name < right.name ? -1 : left.name > right.name ? 1 : 0;
   if (left.arity !== right.arity) return left.arity < right.arity ? -1 : 1;

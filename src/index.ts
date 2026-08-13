@@ -2,6 +2,7 @@
 // The CLI imports the same parser, program, solver, and term primitives from here.
 export { Program, makeProgram } from './program.js';
 export { parseClauses, parseGoalText, parseProgramText } from './parser.js';
+export { DCG } from './dcg-api.js';
 export { Solver } from './solver.js';
 export * from './term.js';
 export {

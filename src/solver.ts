@@ -95,7 +95,6 @@ export class Solver {
     this.memo = new Map();
     this.tableCoordinator = null;
     this.groundChainSuccess = new Set();
-    this.compactChainSuccess = new Map();
     this.stats = {
       completed_goal_lists: 0,
       solve_goals_calls: 0,
@@ -122,7 +121,6 @@ export class Solver {
     });
     solver.memo = this.memo;
     solver.groundChainSuccess = this.groundChainSuccess;
-    solver.compactChainSuccess = this.compactChainSuccess;
     return solver;
   }
 
@@ -137,7 +135,6 @@ export class Solver {
     this.memo.clear();
     this.tableCoordinator = null;
     this.groundChainSuccess.clear();
-    this.compactChainSuccess.clear();
   }
 
   absorbStatsFrom(child: any): any {
@@ -166,6 +163,18 @@ export class Solver {
   }
 
   *solve(goals: any, env: any = new Env(), depth: any = 0): any {
+    if (depth === 0) {
+      for (const result of this._solveInner(goals, env, depth)) {
+        this.solutionsSeen++;
+        yield result;
+        if (this.solutionsSeen >= this.solutionLimit) break;
+      }
+    } else {
+      yield* this._solveInner(goals, env, depth);
+    }
+  }
+
+  *_solveInner(goals: any, env: any = new Env(), depth: any = 0): any {
     if (!Array.isArray(goals)) goals = [goals];
     env.setOccursCheckHandler(this.occursCheckHandler);
 
@@ -275,7 +284,6 @@ export class Solver {
 
         if (goals.length === 0) {
           if (!clpzStateConsistent(env)) break;
-          this.solutionsSeen++;
           this.stats.completed_goal_lists++;
           this.active = active;
           yield env;
@@ -437,7 +445,7 @@ export class Solver {
       this.depthLimitExceeded = true;
       return;
     }
-    if (this.solutionsSeen >= this.solutionLimit) return;
+    if (this.solutionsSeen >= this.solutionLimit && depth === 0) return;
     if (goal.type !== COMPOUND && goal.type !== 'atom') return;
     const group = this.program.findGroup(goal.name, goal.arity, goal.module ?? 'user');
     if (!group) return;
@@ -450,7 +458,7 @@ export class Solver {
   }
 
   *solveMemoizedGoal(_group: any, goal: any, rest: any, env: any, depth: any): any {
-    yield* this.solve([goal, ...rest], env, depth);
+    yield* this._solveInner([goal, ...rest], env, depth);
   }
 
   *solveUserGoalUncached(group: any, goal: any, rest: any, env: any, depth: any): any {
@@ -466,8 +474,8 @@ export class Solver {
           const next = matchScalarFact(goal, clause.head, env);
           if (!next) continue;
           this.stats.unify_calls++;
-          yield* this.solve(rest, next, depth + 1);
-          if (this.solutionsSeen >= this.solutionLimit) return;
+          yield* this._solveInner(rest, next, depth + 1);
+          if (this.solutionsSeen >= this.solutionLimit && depth === 0) return;
           continue;
         }
         if (headCannotMatch(goal, clause.head, env)) continue;
@@ -478,11 +486,11 @@ export class Solver {
         this.stats.unify_calls++;
         if (!unify(goal, freshHead, next)) continue;
         if (freshBody.length === 0) {
-          yield* this.solve(rest, next, depth + 1);
+          yield* this._solveInner(rest, next, depth + 1);
         } else {
           yield* this.solveRuleBodyThenRest(goal, env, freshBody, rest, next, depth);
         }
-        if (this.solutionsSeen >= this.solutionLimit) return;
+        if (this.solutionsSeen >= this.solutionLimit && depth === 0) return;
       }
     }
   }
@@ -492,12 +500,11 @@ export class Solver {
     // the caller's remaining goals are solved. Keeping the goal active
     // through rest goals over-prunes valid transitive/recursive derivations.
     this.active.push({ goal, env: goalEnv });
-    for (const bodyEnv of this.solve(body, env, depth + 1)) {
-      if (this.solutionsSeen > 0) this.solutionsSeen--;
+    for (const bodyEnv of this._solveInner(body, env, depth + 1)) {
       this.active.pop();
-      yield* this.solve(rest, bodyEnv, depth + 1);
+      yield* this._solveInner(rest, bodyEnv, depth + 1);
       this.active.push({ goal, env: goalEnv });
-      if (this.solutionsSeen >= this.solutionLimit) break;
+      if (this.solutionsSeen >= this.solutionLimit && depth === 0) break;
     }
     this.active.pop();
   }
@@ -513,7 +520,6 @@ export class Solver {
     io: any;
     memo: any;
     groundChainSuccess: any;
-    compactChainSuccess: any;
     mutableProgram: any;
     programRevision: any;
     tableCoordinator: any;
@@ -855,95 +861,7 @@ function derefScalarMatch(term: any, env: any, names: any, values: any): any {
   return current;
 }
 
-function scalarSetContainer(): any {
-  return { atom: new Set(), string: new Set(), number: new Set() };
-}
-
-function compactChainCacheFor(solver: any, group: any, first: any): any {
-  let groupCache = solver.compactChainSuccess.get(group);
-  if (!groupCache) {
-    groupCache = { atom: new Map(), string: new Map(), number: new Map() };
-    solver.compactChainSuccess.set(group, groupCache);
-  }
-  const byFirstName = groupCache[first.type];
-  let cache = byFirstName.get(first.name);
-  if (!cache) {
-    cache = scalarSetContainer();
-    byFirstName.set(first.name, cache);
-  }
-  return cache;
-}
-
-function rememberCompactChainSuccess(cache: any, seen: any): any {
-  for (const type of ['atom', 'string', 'number']) {
-    let index = 0;
-    const values = seen[type];
-    const last = values.size - 1;
-    for (const name of values) {
-      if ((index & 63) === 0 || index === last) cache[type].add(name);
-      index++;
-    }
-  }
-}
-
-function compactIndexBucket(index: any, type: any, name: any): any {
-  if (type === 'atom') return index.atomBuckets.get(name) ?? null;
-  if (type === 'string') return index.stringBuckets.get(name) ?? null;
-  if (type === 'number') return index.numberBuckets.get(name) ?? null;
-  return null;
-}
-
-function tryPushCompactBinaryChainFrames(stack: any, solver: any, group: any, goal: any, rest: any, env: any, depth: any, active: any): any {
-  if (active.length !== 0 || goal.type !== COMPOUND || goal.arity !== 2) return false;
-  const resolved = copyResolved(goal, env);
-  const first = resolved.args[0];
-  let secondType = resolved.args[1]?.type;
-  let secondName = resolved.args[1]?.name;
-  if (!isScalarTerm(first) || !['atom', 'string', 'number'].includes(secondType)) return false;
-
-  const index = group.argIndexes[1];
-  if (!index?.sawScalar || index.fallback.length !== 0) return false;
-  const cache = compactChainCacheFor(solver, group, first);
-  const seen = scalarSetContainer();
-  let currentDepth = depth;
-
-  while (true) {
-    if (solver.solutionsSeen >= solver.solutionLimit) return true;
-    solver.stats.max_depth = Math.max(solver.stats.max_depth, currentDepth);
-    const seenSet = seen[secondType];
-    if (!seenSet || seenSet.has(secondName)) return true;
-    if (cache[secondType].has(secondName)) {
-      rememberCompactChainSuccess(cache, seen);
-      stack.push({ kind: 'goals', goals: rest, env, depth: depth + 1, active });
-      return true;
-    }
-    seenSet.add(secondName);
-
-    const candidates = compactIndexBucket(index, secondType, secondName);
-    if (clauseCandidateLength(candidates) !== 1) return false;
-    const clause = clauseCandidateAt(candidates, 0);
-    if (clause?.compactBinary !== true || clause.headName !== group.name) return false;
-    if (clause.head1Type !== secondType || clause.head1Name !== secondName) return true;
-    if (clause.head0Type !== 'var' &&
-        (clause.head0Type !== first.type || clause.head0Name !== first.name)) return true;
-
-    if (clause.bodyName == null) {
-      rememberCompactChainSuccess(cache, seen);
-      stack.push({ kind: 'goals', goals: rest, env, depth: depth + 1, active });
-      return true;
-    }
-    if (clause.bodyName !== group.name || clause.head0Type !== 'var' ||
-        clause.body0Type !== 'var' || clause.body0Name !== clause.head0Name ||
-        !['atom', 'string', 'number'].includes(clause.body1Type)) return false;
-
-    secondType = clause.body1Type;
-    secondName = clause.body1Name;
-    currentDepth++;
-  }
-}
-
 function tryPushGroundChainFrames(stack: any, solver: any, group: any, goal: any, rest: any, env: any, depth: any, active: any): any {
-  if (tryPushCompactBinaryChainFrames(stack, solver, group, goal, rest, env, depth, active)) return true;
   // Compress deterministic ground single-goal chains such as deep taxonomy
   // proofs: a(ind, n100000) -> a(ind, n99999) -> ... -> a(ind, n0).
   // This is a search-control optimization only. It fires only while each step
