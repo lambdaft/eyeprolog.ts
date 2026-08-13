@@ -348,6 +348,19 @@ export class Solver {
         const def = callable ? this.registry.get(goal.name, goal.arity) : null;
         this.active = active;
         if (def && builtinIsReadyOrAuthoritative(def, this, goal, env)) {
+          if (def.deterministic && def.directHandler) {
+            const nextEnv = def.directHandler({ solver: this, goal, env });
+            if (nextEnv !== null) {
+              this.stats.deterministic_builtin_successes++;
+              goals = rest;
+              env = nextEnv;
+              depth++;
+              continue;
+            } else {
+              this.stats.deterministic_builtin_failures++;
+              break;
+            }
+          }
           const iterator = def.handler({ solver: this, goal, env });
           const firstResult = iterator.next();
           if (def.deterministic) {
