@@ -20,9 +20,9 @@ examples, proofs, conformance, and implementation boundaries for both `eyeprolog
 
 ## Quick start
 
-EyeProlog.ts requires Node.js 18 or newer and native TypeScript execution tools like `tsx` or standard `tsc`.
+First verify that `node --version` reports Node.js 18 or newer. Upgrade an older runtime through a Node version manager or the [official Node.js download](https://nodejs.org/en/download).
 
-Run EyeProlog.ts from the command line:
+The package can be launched without a global installation:
 
 ```sh
 npx --yes eyeprolog.ts
@@ -34,13 +34,15 @@ npx --yes eyeprolog.ts
 ?- halt.
 ```
 
-For a persistent `eyeprolog` command without administrator access, install it globally:
+For a persistent `eyeprolog` command without administrator access, install it into a user-owned prefix:
 
 ```sh
 npm install --global --prefix "$HOME/.local" eyeprolog.ts
 export PATH="$HOME/.local/bin:$PATH"
 eyeprolog
 ```
+
+Do not use `sudo npm install`; npm's [EACCES guidance](https://docs.npmjs.com/resolving-eacces-permissions-errors-when-installing-packages-globally/) recommends a user-owned prefix.
 
 For a non-interactive run:
 

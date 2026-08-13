@@ -1,0 +1,1 @@
+answer(empty_substring, "").

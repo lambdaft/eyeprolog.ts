@@ -167,6 +167,7 @@ class Parser {
     this.anonymous = 0;
     this.sourceMetadata = options.sourceMetadata !== false;
     this.strictIso = options.isoStrict === true;
+    this.maxParseDepth = options.maxParseDepth ?? 10000;
     this.parserFlagState = options.parserFlagState ?? {
       doubleQuotes: options.doubleQuotes ?? 'chars',
     };
@@ -470,7 +471,7 @@ class Parser {
   parseParenthesizedTerm(): any {
     this.expect(TOK.LPAREN, '(');
     this.advance();
-    const term = this.parseTerm(0, true);
+    const term = this.parseTerm(0, true, undefined, 1);
     this.expect(TOK.RPAREN, ')');
     this.advance();
     return term;
@@ -487,14 +488,14 @@ class Parser {
     const items = [];
     let tail = null;
     while (true) {
-      items.push(this.parseTerm(0, false, false));
+      items.push(this.parseTerm(0, false, false, 1));
       if (this.token.type === TOK.COMMA) {
         this.advance();
         continue;
       }
       if (this.token.type === TOK.BAR) {
         this.advance();
-        tail = this.parseTerm(0, false, false);
+        tail = this.parseTerm(0, false, false, 1);
         this.expect(TOK.RBRACKET, ']');
         this.advance();
         break;
@@ -514,13 +515,14 @@ class Parser {
       this.advance();
       return atom('{}');
     }
-    const term = this.parseTerm(0, true);
+    const term = this.parseTerm(0, true, undefined, 1);
     this.expect(TOK.RBRACE, '}');
     this.advance();
     return compound('{}', [term]);
   }
-  parseTerm(minPrecedence: any = 0, allowComma: any = false, allowBar: any = true): any {
-    let left = this.parsePrefixTerm(minPrecedence, allowBar);
+  parseTerm(minPrecedence: any = 0, allowComma: any = false, allowBar: any = true, depth: any = 0): any {
+    if (depth > this.maxParseDepth) throw new Error(`parse line ${this.token.line}: maximum nesting depth exceeded`);
+    let left = this.parsePrefixTerm(minPrecedence, allowBar, depth + 1);
     let strictPostfixPrecedence = null;
     while (true) {
       const op = this.token.type === TOK.COMMA && allowComma
@@ -542,7 +544,7 @@ class Parser {
       }
       strictPostfixPrecedence = null;
       this.advance();
-      const right = this.parseTerm(info.associativity === 'right' ? info.precedence : info.precedence + 1, allowComma, allowBar);
+      const right = this.parseTerm(info.associativity === 'right' ? info.precedence : info.precedence + 1, allowComma, allowBar, depth + 1);
       left = compound(op, [left, right]);
       if (info.associativity === 'none') {
         const nextOp = this.token.type === TOK.COMMA && allowComma
@@ -557,7 +559,7 @@ class Parser {
     }
     return left;
   }
-  parsePrefixTerm(minPrecedence: any = 0, allowBar: any = true): any {
+  parsePrefixTerm(minPrecedence: any = 0, allowBar: any = true, depth: any = 0): any {
     // `:-` is tokenized specially so the program grammar can recognize clause
     // and directive markers. In term argument position, however, ISO 6.3.3.1
     // permits an operator atom directly as an `arg`; a leading `:-` cannot be
@@ -583,7 +585,7 @@ class Parser {
         this.advance();
         const args = [];
         while (true) {
-          args.push(this.parseTerm(0, false, false));
+          args.push(this.parseTerm(0, false, false, depth + 1));
           if (this.token.type !== TOK.COMMA) break;
           this.advance();
         }
@@ -591,7 +593,7 @@ class Parser {
         this.advance();
         return compound(op, args);
       }
-      return compound(op, [this.parseTerm(info.precedence + (info.strict ? 1 : 0), false, allowBar)]);
+      return compound(op, [this.parseTerm(info.precedence + (info.strict ? 1 : 0), false, allowBar, depth + 1)]);
     }
     if (this.token.type === TOK.LPAREN) return this.parseParenthesizedTerm();
     if (this.token.type === TOK.LBRACKET) return this.parseList();
@@ -613,7 +615,7 @@ class Parser {
             throw new Error(`parse line ${this.token.line}: zero-arity compound syntax is not supported; use atom ${JSON.stringify(value)} for arity zero data`);
           }
           while (true) {
-            args.push(this.parseTerm(0, false, false));
+            args.push(this.parseTerm(0, false, false, depth + 1));
             if (this.token.type !== TOK.COMMA) break;
             this.advance();
           }
@@ -647,7 +649,7 @@ class Parser {
           throw new Error(`parse line ${this.token.line}: zero-arity compound syntax is not supported; use atom ${JSON.stringify(name)} for arity zero data`);
         }
         while (true) {
-          args.push(this.parseTerm(0, false, false));
+          args.push(this.parseTerm(0, false, false, depth + 1));
           if (this.token.type === TOK.COMMA) {
             this.advance();
             continue;
@@ -677,7 +679,7 @@ class Parser {
 
     const answers = [];
     while (this.token.type !== TOK.EOF && this.sourceLineIsIndented(this.token.line)) {
-      answers.push(this.parseTerm(0, true));
+      answers.push(this.parseTerm(0, true, undefined, 0));
       this.expect(TOK.DOT, '.');
       this.advance();
     }
@@ -692,7 +694,7 @@ class Parser {
     });
   }
   parseQuad(id: any, line: any, accept: any): any {
-    const query = this.parseTerm(0, true);
+    const query = this.parseTerm(0, true, undefined, 0);
     this.parseQuadAnswers(id, query, line, accept);
   }
   parseQuadTerm(term: any, line: any, accept: any): any {
@@ -836,6 +838,7 @@ class Parser {
     filename: any;
     strictIso: any;
     sourceMetadata: any;
+    maxParseDepth: any;
 }
 
 function listAtomNames(term: any): any {

@@ -913,9 +913,16 @@ function* openBuiltin({ solver, goal, env }: any): any {
   } catch (_) {
     throw new PrologError('existence_error(source_sink)', path);
   }
-  const next = env.clone();
-  if (unify(goal.args[2], streamHandle(stream.id), next)) yield next;
-  else solver.io.close(stream);
+  try {
+    const next = env.clone();
+    if (unify(goal.args[2], streamHandle(stream.id), next)) yield next;
+    else throw new Error('stream_unify_failed');
+  } catch (error) {
+    solver.io.close(stream);
+    if (error instanceof PrologError || error instanceof ThrownTerm) throw error;
+    // Re-throw unification errors or control flow
+    throw error;
+  }
 }
 
 function* closeBuiltin({ solver, goal, env }: any): any {
@@ -1893,12 +1900,17 @@ function* catchBuiltin({ solver, goal, env }: any): any {
     // raised while converting/executing the protected goal are catchable.
     yield* child.solve([callable(goal.args[0], env)], env.clone(), 0);
   } catch (error) {
-    const ball = error instanceof ThrownTerm
-      ? error.term
-      : error instanceof PrologError
-        ? freshCopy(formalErrorTerm(error), new Env())
-        : null;
-    if (ball == null) throw error;
+    let ball;
+    if (error instanceof ThrownTerm) {
+      ball = error.term;
+    } else if (error instanceof PrologError) {
+      ball = freshCopy(formalErrorTerm(error), new Env());
+    } else if (error instanceof HaltSignal) {
+      throw error; // Re-throw halt signal
+    } else {
+      // Convert native JavaScript errors to ISO system_error
+      ball = freshCopy(formalErrorTerm(new PrologError('system_error')), new Env());
+    }
     const recovered = env.clone();
     if (!unify(goal.args[1], ball, recovered)) throw error;
     const recoveryChild = solver.cloneForInnerGoal();

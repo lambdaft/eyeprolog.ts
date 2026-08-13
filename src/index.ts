@@ -24,6 +24,7 @@ export {
 } from './standard-library.js';
 export { StreamManager } from './io.js';
 export { runQuads } from './quads.js';
+export { whyProof, whyNoProof, explainProof, whyProofNode, renderProofToMermaid } from './explain.js';
 
 import { ATOM, COMPOUND, VAR, Env, copyResolved, termIsGround } from './term.js';
 import { Program } from './program.js';

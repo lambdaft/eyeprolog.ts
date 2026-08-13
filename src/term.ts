@@ -545,10 +545,20 @@ export function compareTerms(left: any, right: any): any {
   const rr = rank(right);
   if (lr !== rr) return lr < rr ? -1 : 1;
   if (left.type === NUMBER) {
-    const leftInteger = isDecimalInteger(left.name);
-    const rightInteger = isDecimalInteger(right.name);
-    if (leftInteger !== rightInteger) return leftInteger ? 1 : -1;
-    return compareNumberText(left.name, right.name);
+    // ISO leaves the relative order of an integer and a float of equal value
+    // implementation-defined. Treat them as the same value (so setof/sort merge
+    // 1 and 1.0) to match SWI-Prolog and Trealla, while keeping exact BigInt
+    // ordering for integers that exceed double precision.
+    if (isDecimalInteger(left.name) && isDecimalInteger(right.name)) {
+      return compareIntegerText(left.name, right.name);
+    }
+    const a = parseFiniteNumber(left.name);
+    const b = parseFiniteNumber(right.name);
+    if (a != null && b != null) {
+      if (a === b) return 0;
+      return a < b ? -1 : 1;
+    }
+    return left.name < right.name ? -1 : left.name > right.name ? 1 : 0;
   }
   if (left.type === VAR) {
     if (left.name === right.name) return 0;

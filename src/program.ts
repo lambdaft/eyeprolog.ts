@@ -621,6 +621,7 @@ function buildProgramFromSources(sources: any, options: any): any {
 function loadSourcesIntoBuilder(builder: any, sources: any, options: any, fast: any): any {
   const ensured = new Set();
   const loadedModules = new Set();
+  const loadingModules = new Set(); // Track modules currently being loaded to detect cycles
   const operatorState = createParserOperatorState([], true, { isoStrict: options.isoStrict === true });
   const parserFlagState = { doubleQuotes: options.doubleQuotes ?? 'chars' };
   const prepared = sources.map((source: any) => ({
@@ -637,7 +638,7 @@ function loadSourcesIntoBuilder(builder: any, sources: any, options: any, fast: 
         ? item.source
         : item.source?.text ?? item.source?.source ?? '';
       const context = { module: 'user' };
-      if (!loadSourceIntoBuilder(builder, text, item.options, ensured, loadedModules, fast, context)) return false;
+      if (!loadSourceIntoBuilder(builder, text, item.options, ensured, loadedModules, fast, context, loadingModules)) return false;
     }
     builder.program.doubleQuotes = parserFlagState.doubleQuotes;
     return true;
@@ -665,7 +666,7 @@ function sourcePath(options: any): any {
   return path.resolve(base, filename);
 }
 
-function loadSourceIntoBuilder(builder: any, source: any, options: any, ensured: any, loadedModules: any, fast: any, context: any): any {
+function loadSourceIntoBuilder(builder: any, source: any, options: any, ensured: any, loadedModules: any, fast: any, context: any, loadingModules: any = new Set()): any {
   // @ts-expect-error TS7034: auto-suppressed
   const batch = [];
   const flush = () => {
@@ -702,10 +703,19 @@ function loadSourceIntoBuilder(builder: any, source: any, options: any, ensured:
       clause.module = context.module;
       builder.addClauses([clause]);
       const loaded = readModuleSource(use.designation, options);
+      // Check for circular module dependencies
+      if (loadingModules.has(loaded.name)) {
+        throw new PrologError('existence_error(module)', loaded.designation);
+      }
       if (!loadedModules.has(loaded.name)) {
-        const childContext = { module: loaded.name };
-        if (!loadSourceIntoBuilder(builder, loaded.text, loaded.options, ensured, loadedModules, fast, childContext)) {
-          throw FAST_PARSE_ABORT;
+        loadingModules.add(loaded.name);
+        try {
+          const childContext = { module: loaded.name };
+          if (!loadSourceIntoBuilder(builder, loaded.text, loaded.options, ensured, loadedModules, fast, childContext, loadingModules)) {
+            throw FAST_PARSE_ABORT;
+          }
+        } finally {
+          loadingModules.delete(loaded.name);
         }
       }
       builder.program.importModule(context.module, loaded.name, use.imports);
@@ -724,7 +734,7 @@ function loadSourceIntoBuilder(builder: any, source: any, options: any, ensured:
     flush();
     const child = readIncludedSource(include, options, ensured);
     if (!child) return;
-    if (!loadSourceIntoBuilder(builder, child.text, child.options, ensured, loadedModules, fast, context)) {
+    if (!loadSourceIntoBuilder(builder, child.text, child.options, ensured, loadedModules, fast, context, loadingModules)) {
       throw FAST_PARSE_ABORT;
     }
   };

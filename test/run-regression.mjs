@@ -2566,6 +2566,108 @@ path(X, Z) :- edge(X, Y), path(Y, Z).
         assertIncludes(result.stdout, 'collatzTrajectory(1, [1]).\n', 'stdout');
       },
     },
+    {
+      name: 'solver depth limit stops deep recursion',
+      run: () => {
+        const program = Program.parse('loop :- loop.\n');
+        const solver = new Solver(program, { maxDepth: 10 });
+        const goal = parseGoalText('loop');
+        const solutions = [...solver.solve([goal], new Env(), 0)];
+        assertEqual(solver.depthLimitExceeded, true, 'depth limit exceeded flag');
+        assertEqual(solutions.length, 0, 'no solutions for infinite loop');
+      },
+    },
+    {
+      name: 'solver inference limit stops runaway derivations',
+      run: () => {
+        const program = Program.parse('p(_).\n');
+        const solver = new Solver(program, { maxInferences: 50 });
+        const goal = parseGoalText('p(_)');
+        const solutions = [...solver.solve([goal], new Env(), 0)];
+        assertEqual(solver.inferenceLimitExceeded, true, 'inference limit exceeded flag');
+        assertEqual(solutions.length <= 50, true, 'stopped at inference limit');
+      },
+    },
+    {
+      name: 'solution limit applies inside findall',
+      run: () => {
+        const result = run(':- use_module(library(lists)).\nanswer(Bag) :- findall(X, between(1, 100, X), Bag).\n', {
+          goal: 'answer(Bag)',
+          solutionLimit: 3,
+        });
+        assertEqual(result.stdout, 'answer([1, 2, 3]).\n', 'findall truncated at solution limit');
+      },
+    },
+    {
+      name: 'parser preserves Unicode astral plane characters',
+      run: () => {
+        const clauses = parseProgramText("emoji('😀').\n");
+        assertEqual(termToString(clauses[0].head, new Env(), true), "emoji('😀')", 'astral plane preserved');
+      },
+    },
+    {
+      name: 'parser rejects invalid hexadecimal escapes',
+      run: () => {
+        let threw = false;
+        try { parseProgramText("p('\\x').\n"); } catch (_) { threw = true; }
+        assertEqual(threw, true, 'invalid hex escape rejected');
+      },
+    },
+    {
+      name: 'parser preserves NUL in double-quoted strings',
+      run: () => {
+        const clauses = parseProgramText('p("\\0\\").\n', { doubleQuotes: 'codes' });
+        assertEqual(termToString(clauses[0].head, new Env(), true), 'p([0])', 'NUL preserved as code 0');
+      },
+    },
+    {
+      name: 'error precedence favors instantiation over type',
+      run: () => {
+        let error = null;
+        try { run('p(X) :- X is 1 + a.\n', { goal: 'p(X)' }); } catch (e) { error = e; }
+        assertEqual(error?.message, 'error(instantiation_error)', 'uninstantiated arithmetic raises instantiation_error');
+      },
+    },
+    {
+      name: 'permission error beats existence error for static retract',
+      run: () => {
+        let error = null;
+        try { run('static_fact.\n', { goal: 'retract(static_fact)' }); } catch (e) { error = e; }
+        assertEqual(error?.message, 'error(permission_error(modify, static_procedure), /(static_fact, 0))', 'static retract permission error');
+      },
+    },
+    {
+      name: 'empty string round-trips through atom_string',
+      run: () => {
+        const result = run("answer(A, S) :- atom_string('', A), atom_string(A, S).\n", { goal: 'answer(A, S)' });
+        assertEqual(result.stdout, 'answer("", "").\n', 'empty string round-trip');
+      },
+    },
+    {
+      name: 'sub_atom with empty substring',
+      run: () => {
+        const result = run('answer(X) :- sub_atom("abc", 2, 0, _, X).\n', { goal: 'answer(X)' });
+        assertEqual(result.stdout, 'answer("").\n', 'empty substring');
+      },
+    },
+    {
+      name: 'DCG phrase with non-list input fails',
+      run: () => {
+        let error = null;
+        try {
+          run('sentence --> [hello].\n', { goal: 'phrase(sentence, hello)' });
+        } catch (e) { error = e; }
+        assertEqual(error?.message, 'error(type_error(list), hello)', 'non-list DCG input type error');
+      },
+    },
+    {
+      name: 'module-qualified cut is not a valid procedure',
+      run: () => {
+        let error = null;
+        try { run(':- use_module(library(lists)).\n', { goal: 'lists:!' }); } catch (e) { error = e; }
+        assertIncludes(error?.message ?? '', 'existence_error(procedure)', 'qualified cut is not a procedure');
+      },
+    },
   ];
 }
 

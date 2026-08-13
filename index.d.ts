@@ -21,6 +21,8 @@ export interface EyePrologRunOptions {
   isoStrict?: boolean;
   /** Initial ISO interpretation of double-quoted list notation. Defaults to chars. */
   doubleQuotes?: 'chars' | 'codes' | 'atom';
+  /** Enable non-standard fast paths (Pi accumulator, etc.). Disabled in strict ISO mode. */
+  fastPaths?: boolean;
   ioOptions?: {
     input?: string;
     write?: (text: string) => void;
@@ -32,6 +34,8 @@ export interface EyePrologRunResult {
   stdout: string;
   stats: EyePrologStats;
   haltCode: number | null;
+  mermaidProof: string | null;
+  mermaidProofs: string[];
 }
 
 export class StreamManager {
@@ -179,6 +183,7 @@ export class Solver {
   cloneForInnerGoal(solutionLimit?: number): Solver;
   solve(goals: EyePrologTerm | EyePrologTerm[], env?: Env, depth?: number): Iterable<Env>;
   activeVariant(goal: EyePrologTerm, env: Env): boolean;
+  fastPathsEnabled: boolean;
 }
 
 export const VAR: 'var';
@@ -248,6 +253,8 @@ export function runQuads(source: string | Program, options?: EyePrologRunOptions
 export function whyProof(program: Program, goal: EyePrologTerm, options?: EyePrologRunOptions): { ok: boolean; text: string };
 export function whyNoProof(goal: EyePrologTerm): string;
 export function explainProof(program: Program, goal: EyePrologTerm, options?: EyePrologRunOptions): { ok: boolean; text: string };
+export function whyProofNode(program: Program, goal: EyePrologTerm, options?: EyePrologRunOptions): { ok: boolean; node: any; env: any };
+export function renderProofToMermaid(program: Program, goal: EyePrologTerm, options?: EyePrologRunOptions): string;
 
 declare const eyeprolog: {
   VAR: typeof VAR;
@@ -312,6 +319,8 @@ declare const eyeprolog: {
   whyProof: typeof whyProof;
   whyNoProof: typeof whyNoProof;
   explainProof: typeof explainProof;
+  whyProofNode: typeof whyProofNode;
+  renderProofToMermaid: typeof renderProofToMermaid;
 };
 
 export default eyeprolog;

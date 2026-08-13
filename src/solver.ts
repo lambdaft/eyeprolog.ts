@@ -3,7 +3,7 @@
 import {
   COMPOUND, Env, compound, copyResolved, deref, emptyList, flattenConjunction, freshTerm,
   // @ts-expect-error TS6133: auto-suppressed
-  numberTerm, numberTextFromDouble, termIsGround, termToString, unify, variantTerms,
+  numberTerm, numberTextFromDouble, termIsGround, termToString, unify, variantTerms, variable, Term,
 } from './term.js';
 import { PrologError, getStrictIsoRegistry } from './iso.js';
 import { getEyePrologRegistry } from './standard-library.js';
@@ -501,13 +501,19 @@ export class Solver {
     // the caller's remaining goals are solved. Keeping the goal active
     // through rest goals over-prunes valid transitive/recursive derivations.
     this.active.push({ goal, env: goalEnv });
-    for (const bodyEnv of this._solveInner(body, env, depth + 1)) {
+    try {
+      for (const bodyEnv of this._solveInner(body, env, depth + 1)) {
+        this.active.pop();
+        try {
+          yield* this._solveInner(rest, bodyEnv, depth + 1);
+        } finally {
+          this.active.push({ goal, env: goalEnv });
+        }
+        if (this.solutionsSeen >= this.solutionLimit && depth === 0) break;
+      }
+    } finally {
       this.active.pop();
-      yield* this._solveInner(rest, bodyEnv, depth + 1);
-      this.active.push({ goal, env: goalEnv });
-      if (this.solutionsSeen >= this.solutionLimit && depth === 0) break;
     }
-    this.active.pop();
   }
 
     solutionLimit: any;
@@ -1212,20 +1218,17 @@ function copyResolvedWithKey(term: any, env: any, variables: any): any {
       id = variables.size;
       variables.set(value.name, id);
     }
-    return { term: termModuleCache.variable(value.name), key: `var:${id}` };
+    return { term: variable(value.name), key: `var:${id}` };
   }
   if (!value.args?.length) {
     return {
-      term: new termModuleCache.Term(value.type, value.name, value.args),
+      term: new Term(value.type, value.name, value.args),
       key: `${value.type}:${value.name}`,
     };
   }
   const children = value.args.map((arg: any) => copyResolvedWithKey(arg, env, variables));
   return {
-    term: termModuleCache.compound(value.name, children.map((child: any) => child.term)),
+    term: compound(value.name, children.map((child: any) => child.term)),
     key: `${value.type}:${value.name}(${children.map((child: any) => child.key).join(',')})`,
   };
 }
-
-// Avoid circular import surprises in older Node loaders.
-import * as termModuleCache from './term.js';

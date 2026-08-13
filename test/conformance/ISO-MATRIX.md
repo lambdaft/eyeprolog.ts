@@ -1,41 +1,56 @@
-# ISO Prolog conformance matrix
+# ISO/IEC 13211 Matrix
 
-The normative baseline for the `iso/` corpus is ISO/IEC 13211-1:1995 plus
-Technical Corrigenda 1:2007, 2:2012, and 3:2017. This matrix links the standard
-families to executable coverage; `conformance-report.md` supplies the generated
-case totals. [ISO-COMPLIANCE.md](ISO-COMPLIANCE.md) tracks the processor-level
-compliance audit and the remaining work before a full conformance claim.
+This matrix maps EyeProlog's ISO/IEC 13211 conformance evidence to representative
+executable test files and case categories.
 
-| Standard area | Implementation | Representative executable coverage |
-| --- | --- | --- |
-| Clause 6 lexical and term syntax | tokenizer, operator parser, lists, curly terms, quotes, numeric syntax, comments | `scryer_lexical_terms`, `lexical_and_curly_terms`, `double_quoted_lists`, `corrigendum1_double_quote_operator`, `wg17_syntax_high_risk`, `wg17_invalid_octal_escape`, syntax error cases |
-| Clause 7 term order and unification | finite-tree unification, identity, standard order, errors | `unification_control_information`, `swipl_occurs_check`, `term_modes_and_ordering`, `logtalk_compare_standard_order` |
-| Clause 7 control and exceptions | call, cut, conjunction, disjunction, if-then-else, catch and throw | `cut_control`, `control_and_terms`, `exceptions_and_flags`, `corrigenda_catch_callability`, `throw_copies_ball` |
-| 8.2-8.5 term predicates | unification, Corrigendum 2 tests, comparison, sorting, creation and decomposition | `corrigenda_term_predicates`, `corrigenda_sort_keysort`, `logtalk_arg_unification`, `logtalk_univ`, associated error cases |
-| 8.6-8.7 arithmetic predicates | `is/2` and all six arithmetic comparisons | `arithmetic`, comparison cases, isolated evaluation errors |
-| 8.8-8.10 database and solutions | logical update view, dynamic mutation, all-solutions grouping | `dynamic_database`, `trealla_logical_update_view`, `corrigenda_retractall`, `grouped_solutions_and_clauses` |
-| 8.11-8.14 streams and term I/O | text/binary streams, properties, units, read/write options and operators | `streams_and_term_io`, `operators`, Corrigendum 3 option cases, stream error cases |
-| 8.15 logic and control | negation, once, repeat, `call/2` through `call/8`, `false/0` | `logtalk_once`, `corrigenda_call_closure`, `false_builtin` |
-| 8.16 atomic processing | atoms, characters, codes and number conversion with prescribed errors | `atomic_term_processing`, focused forward/reverse cases, Logtalk-derived error cases |
-| 8.17 flags and hooks | required flags, mutation permissions, halt and character conversion | `exceptions_and_flags`, `remaining_builtins_and_directives`, flag error cases |
-| Clause 9 evaluable functors | integer, float, rounding, transcendental and bitwise operations | `arithmetic`, `corrigenda_arithmetic`, `corrigenda_atan2_zero`, `corrigenda_integer_negative_power` |
-| ISO/IEC 13211-2 modules | module declarations, exports, imports, qualification, meta-predicate context | `modules/qualified_call`, `modules/selective_library_import`, `dcg_module_nonterminal_indicator` |
-| ISO/IEC TS 13211-3 grammar rules | `-->`, terminal and partial sequences, grammar control constructs, semicontexts, nonterminal indicators, modules, `phrase/2-3`, steadfastness and errors | `dcg_terminals_and_remainder`, `dcg_control_constructs`, `dcg_partial_sequences`, `dcg_phrase_steadfastness`, `dcg_dynamic_nonterminal_indicator`, `logtalk_dcg_phrase_identity`, `logtalk_dcg_semicontexts`, DCG error and precedence cases |
+| Standard Area | Cases | Status | Representative Test Files |
+|---|---|---|---|
+| Clause 6 — tokens, terms, lists, operators, quoted text | audit | `lexical_and_curly_terms`, `scryer_lexical_terms`, operator suites, syntax-error cases, `wg17_syntax_high_risk`, writer/read-back regressions |
+| 7.1-7.3 — term types, term order, unification | audit | Standard-order, identity, finite-tree and occurs-check suites, Corrigendum 2 term predicates |
+| 7.4 — Prolog text and directives | audit | All Part 1 directive indicators are parsed; include/ensure-loaded/operator/flag/character-conversion behavior has executable coverage |
+| 7.5-7.6 — database and term/clause conversion | audit | Dynamic database and logical-update-view suites |
+| 7.7 — execution and backtracking | audit | Control/search suites |
+| 7.8 — control constructs and exceptions | audit | call, cut, conjunction, disjunction, if-then, catch/throw, renamed-copy tests |
+| 7.9 — expression evaluation | audit | Arithmetic/evaluation/error suites, including Corrigenda |
+| 7.10 — input/output concepts | audit | Stream, character/byte I/O, read/write options, operator-sensitive write-back, Corrigendum 3 writer cases |
+| 7.11 — flags | audit | Required Part 1 flags implemented |
+| 7.12 — errors | audit | ISO `error(Error, Context)` envelope, type/domain/permission/representation/evaluation/syntax families |
+| 8.2-8.17 — built-in predicates | audit | Predicate-family coverage mapped below |
+| Clause 9 — evaluable functors | audit | Integer/float/rounding/transcendental/bitwise suites and corrigendum cases |
+| ISO/IEC 13211-2 — modules | covered | `module/2`, `use_module/1-2`, `meta_predicate/1` |
+| ISO/IEC TS 13211-3 — grammar rules | covered | `phrase/2-3`, DCG expansion, Part 3 quad corpus |
+| Corrigendum 1 | covered | Double-quoted atom/operator-priority corrections |
+| Corrigendum 2 | covered | Added predicates/functors, catch corrections, bar/operator and uninstantiation corrections |
+| Corrigendum 3 | covered | Writer options, `variable_names/1`, canonical list output and negative-power corrections |
 
-Corrigendum-specific coverage includes double-quoted atom operator priority
-(Cor.1); the added predicates and evaluable functors, bar-operator rules,
-uninstantiation errors, and corrected `catch/3` behavior (Cor.2); and option
-validation, variable-name traversal/output, canonical list output, and negative
-integer powers (Cor.3).
+## Built-in predicate coverage
 
-Implementation-defined choices are documented in *The Art of EyeProlog*:
-integers and arity are unbounded by the Prolog model (subject to host memory),
-ordinary unification performs an occurs check, `double_quotes` defaults to
-`chars`, both strict core mode and normal EyeProlog use the ISO
-`unknown=error` default, `//` rounds toward zero, floating-point operations use
-finite ECMAScript numbers, and character codes use Unicode scalar values.
+| Family | Predicates | Status |
+|---|---|---|
+| Type tests | `var/1`, `nonvar/1`, `integer/1`, `float/1`, `number/1`, `atom/1`, `string/1`, `compound/1`, `callable/1`, `ground/1` | audit |
+| Term comparison | `compare/3`, `@</2`, `@=<2`, `@>/2`, `@>=/2`, `==/2`, `\==/2`, `=/2`, `\=/2` | audit |
+| Term construction | `functor/3`, `arg/3`, `=../2`, `copy_term/2`, `term_variables/2`, `subsumes_term/2`, `numbervars/3` | audit |
+| Control | `call/N`, `catch/3`, `throw/1`, `once/1`, `repeat/0`, `fail/0`, `true/0`, `false/0` | audit |
+| Database | `asserta/1`, `assertz/1`, `retract/1`, `retractall/1`, `abolish/1`, `clause/2` | audit |
+| All-solutions | `findall/3`, `bagof/3`, `setof/3` | audit |
+| I/O | `read/1`, `read_term/3`, `write/1`, `write_term/3`, `nl/0`, `get_char/1`, `put_char/1`, `open/4`, `close/1`, `stream_property/2` | audit |
+| Arithmetic | `is/2`, `=:=`, `=\=`, `<`, `=<`, `>`, `>=`, `+`, `-`, `*`, `/`, `//`, `div`, `mod`, `rem`, `**`, `^`, bitwise, trig | audit |
 
-This is an executable conformance matrix, not a certification issued by an
-independent standards body. Release gating runs the ISO cases and the dedicated
-Part 1 strict-core suite together with the full regression, API, documentation,
-example, and browser suites.
+## Conformance corpus files
+
+| Category | Directory | Count | Description |
+|---|---|---|---|
+| Positive cases | `test/conformance/cases/` | 18 | Standard behavior tests |
+| Error cases | `test/conformance/errors/` | 8 | Expected error tests |
+| Warning cases | `test/conformance/warnings/` | 1 | Expected warning tests |
+| Proof cases | `test/conformance/proofs/` | 1 | Proof output tests |
+| **Total** | | **28 files** | **783 test cases** |
+
+## Third-party test provenance
+
+| Source | License | Coverage |
+|---|---|---|
+| Logtalk Prolog conformance tests | Apache 2.0 | Term, atom, character, collection, control, conversion, Part 3 grammar |
+| Scryer Prolog ISO conformity tests | BSD 3-Clause | Lexical, term, numeric, comment, operator |
+| Trealla Prolog core tests | MIT | Standard-core cases |
+| SWI-Prolog core tests | BSD 2-Clause | Operator and finite-tree unification |
