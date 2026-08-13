@@ -1,6 +1,8 @@
 # EyeProlog.ts
 
-EyeProlog.ts is a strict TypeScript port of the amazing original [EyeProlog](https://github.com/eyereasoner/eyeprolog) engine. All credit for the original architecture, design, and ISO Prolog compliance goes to the original authors. The primary purpose of this port is to bring EyeProlog into modern, generic TypeScript projects with strict typing, enabling developers to ergonomically embed this powerful inference engine and Definite Clause Grammar (DCG) capabilities directly into their TypeScript stacks without battling dynamic JavaScript boundaries or missing type definitions.
+EyeProlog.ts is a strict TypeScript port of the amazing original [EyeProlog](https://github.com/eyereasoner/eyeprolog) engine created by Jos De Roo. All credit for the original architecture, design, and ISO Prolog compliance goes to the original authors.
+
+The primary purpose of this port is to bring EyeProlog into modern TypeScript projects with **extreme correctness and strict static typing**. We aim to provide an unyielding level of precision—ensuring strict ISO/IEC 13211 compliance, exact choice-point cut semantics, sound CLP(Z) integer constraint solving, and robust standard term ordering—so that developers can ergonomically embed this powerful inference engine and Definite Clause Grammar (DCG) capabilities directly into their TypeScript stacks without battling dynamic JavaScript boundaries or missing type safety guarantees.
 
 EyeProlog.ts turns portable ISO Prolog programs into answers and inspectable proofs natively within a strict TypeScript runtime.
 
