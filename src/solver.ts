@@ -532,6 +532,7 @@ export class Solver {
     solveStacks: any;
     inferences: any;
     solutionsSeen: any;
+    fastPathsEnabled: boolean;
     cutEpoch: any;
 }
 

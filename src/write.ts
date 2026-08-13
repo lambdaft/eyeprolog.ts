@@ -108,9 +108,52 @@ function operatorName(name: any): any {
   return quoteAtom(name);
 }
 
+const DEFAULT_ISO_OPERATORS = [
+  { priority: 1200, specifier: 'xfx', name: ':-' },
+  { priority: 1200, specifier: 'xfx', name: '-->' },
+  { priority: 1200, specifier: 'fx', name: ':-' },
+  { priority: 1200, specifier: 'fx', name: '?-' },
+  { priority: 1100, specifier: 'xfy', name: ';' },
+  { priority: 1050, specifier: 'xfy', name: '->' },
+  { priority: 1000, specifier: 'xfy', name: ',' },
+  { priority: 700, specifier: 'xfx', name: '=' },
+  { priority: 700, specifier: 'xfx', name: '\\=' },
+  { priority: 700, specifier: 'xfx', name: '==' },
+  { priority: 700, specifier: 'xfx', name: '\\==' },
+  { priority: 700, specifier: 'xfx', name: '@<' },
+  { priority: 700, specifier: 'xfx', name: '@=' },
+  { priority: 700, specifier: 'xfx', name: '@>' },
+  { priority: 700, specifier: 'xfx', name: '@>=' },
+  { priority: 700, specifier: 'xfx', name: '=..' },
+  { priority: 700, specifier: 'xfx', name: 'is' },
+  { priority: 700, specifier: 'xfx', name: '=:=', },
+  { priority: 700, specifier: 'xfx', name: '=\\=' },
+  { priority: 700, specifier: 'xfx', name: '<' },
+  { priority: 700, specifier: 'xfx', name: '=<' },
+  { priority: 700, specifier: 'xfx', name: '>' },
+  { priority: 700, specifier: 'xfx', name: '>=' },
+  { priority: 500, specifier: 'yfx', name: '+' },
+  { priority: 500, specifier: 'yfx', name: '-' },
+  { priority: 500, specifier: 'yfx', name: '/\\' },
+  { priority: 500, specifier: 'yfx', name: '\\/' },
+  { priority: 400, specifier: 'yfx', name: '*' },
+  { priority: 400, specifier: 'yfx', name: '/' },
+  { priority: 400, specifier: 'yfx', name: '//' },
+  { priority: 400, specifier: 'yfx', name: 'div' },
+  { priority: 400, specifier: 'yfx', name: 'mod' },
+  { priority: 400, specifier: 'yfx', name: 'rem' },
+  { priority: 400, specifier: 'yfx', name: '<<' },
+  { priority: 400, specifier: 'yfx', name: '>>' },
+  { priority: 200, specifier: 'xfx', name: '**' },
+  { priority: 200, specifier: 'xfy', name: '^' },
+  { priority: 200, specifier: 'fy', name: '-' },
+  { priority: 200, specifier: 'fy', name: '\\' },
+];
+
 function operatorTable(definitions: any): any {
   const table = new Map();
-  for (const definition of definitions ?? []) {
+  const list = definitions ?? DEFAULT_ISO_OPERATORS;
+  for (const definition of list) {
     if (!definition || definition.priority === 0) continue;
     const entries = table.get(definition.name) ?? [];
     entries.push(definition);

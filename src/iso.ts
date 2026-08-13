@@ -3,7 +3,7 @@ import {
   ATOM, COMPOUND, NUMBER, STRING, VAR, Env,
   atom, compareTerms, compound, copyResolved, deref, emptyList,
   isDecimalInteger, listFromItems, numberTerm, numberTextFromDouble,
-  properListItems, termIsGround, unify, variable, variantTerms,
+  properListItems, termIsGround, termToString, unify, variable, variantTerms,
 } from './term.js';
 import { createParserOperatorState, parseClauses, parseGoalText } from './parser.js';
 import { formatTermForWrite } from './write.js';
@@ -11,9 +11,16 @@ import { emptyTerminalSequence, expandDcgBody, isListOrPartialList, validateDcgE
 
 let isoFresh = 0;
 
+function formatErrorDetail(term: any): string {
+  if (term == null) return '';
+  if (typeof term === 'string') return term;
+  return termToString(term, new Env(), true);
+}
+
 export class PrologError extends Error {
   constructor(formal: any, culprit: any = null) {
-    const detail = culprit == null ? formal : `${formal}, ${formatTermForWrite(culprit, new Env(), { quoted: true })}`;
+    const formalStr = formatErrorDetail(formal);
+    const detail = culprit == null ? formalStr : `${formalStr}, ${formatErrorDetail(culprit)}`;
     super(`error(${detail})`);
     this.name = 'PrologError';
     this.formal = formal;
