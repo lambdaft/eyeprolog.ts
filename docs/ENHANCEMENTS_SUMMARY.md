@@ -43,7 +43,7 @@ Three comprehensive guides have been created:
    - Unit Testing
    - Caching with TTL
 
-3. **[INTEGRATION_EXAMPLES.ts](./INTEGRATION_EXAMPLES.ts)** (Working code)
+3. **[INTEGRATION_EXAMPLES.ts](../INTEGRATION_EXAMPLES.ts)** (Working code)
    - Complete `QueryBuilder` implementation
    - `ProgramBuilder` DSL
    - Type-safe queries with generics

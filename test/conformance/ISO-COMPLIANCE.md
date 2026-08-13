@@ -4,7 +4,7 @@ This ledger is the release-facing audit for EyeProlog's ISO/IEC 13211-1 core.
 The normative baseline is ISO/IEC 13211-1:1995 together with Technical
 Corrigenda 1:2007, 2:2012, and 3:2017. It complements
 [ISO-MATRIX.md](ISO-MATRIX.md), which maps standard families to representative
-executable tests, and the generated [`conformance-report.md`](../../conformance-report.md),
+executable tests, and the generated [`conformance-report.md`](../../docs/conformance-report.md),
 which gives current case totals.
 
 The ledger deliberately does **not** claim independent certification. A row

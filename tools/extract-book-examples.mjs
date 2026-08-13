@@ -5,7 +5,7 @@ import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const bookPath = path.join(root, 'the-art-of-eyeprolog.md');
+const bookPath = path.join(root, 'docs', 'the-art-of-eyeprolog.md');
 const outputRoot = path.join(root, 'examples', 'book');
 const checkOnly = process.argv.includes('--check');
 const book = fs.readFileSync(bookPath, 'utf8');
@@ -51,7 +51,7 @@ const readme = [
   '# The Art of EyeProlog — inline examples',
   '',
   'These files are generated from the complete `eyeprolog` code blocks in',
-  '[The Art of EyeProlog](../../the-art-of-eyeprolog.md). They are grouped by chapter and',
+  '[The Art of EyeProlog](../../docs/the-art-of-eyeprolog.md). They are grouped by chapter and',
   'retain the source text from the book. Goal fragments and non-EyeProlog blocks are',
   'not extracted.',
   '',

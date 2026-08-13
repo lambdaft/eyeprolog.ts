@@ -8,7 +8,7 @@ EyeProlog.ts turns portable ISO Prolog programs into answers and inspectable pro
 
 <p>
   <a href="https://eyereasoner.github.io/eyeprolog/the-art-of-eyeprolog">
-    <img src="book-assets/title-page.svg" alt="Read The Art of EyeProlog" title="Click to read The Art of EyeProlog" width="320">
+    <img src="../book-assets/title-page.svg" alt="Read The Art of EyeProlog" title="Click to read The Art of EyeProlog" width="320">
   </a><br>
   <strong>Click the cover to read <em>The Art of EyeProlog</em> (the original comprehensive manual).</strong>
 </p>

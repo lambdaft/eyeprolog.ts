@@ -1445,11 +1445,11 @@ function documentationSyncCases() {
     {
       name: 'README cover links to the book and the book documents runtime boundaries',
       run: () => {
-        const readme = fs.readFileSync(path.join(packageRoot, 'README.md'), 'utf8');
-        const book = fs.readFileSync(path.join(packageRoot, 'the-art-of-eyeprolog.md'), 'utf8');
+        const readme = fs.readFileSync(path.join(packageRoot, 'docs', 'README.md'), 'utf8');
+        const book = fs.readFileSync(path.join(packageRoot, 'docs', 'the-art-of-eyeprolog.md'), 'utf8');
         assertIncludes(
           readme,
-          '<a href="https://eyereasoner.github.io/eyeprolog/the-art-of-eyeprolog">\n    <img src="book-assets/title-page.svg" alt="Read The Art of EyeProlog"',
+          '<a href="https://eyereasoner.github.io/eyeprolog/the-art-of-eyeprolog">\n    <img src="../book-assets/title-page.svg" alt="Read The Art of EyeProlog"',
           'README cover links to the book',
         );
         for (const filename of ['src/iso.js', 'src/dcg.js', 'src/standard-library.js',
@@ -1544,7 +1544,7 @@ function documentationSyncCases() {
     {
       name: 'committed conformance report is current',
       run: () => {
-        const reportFile = path.join(packageRoot, 'conformance-report.md');
+        const reportFile = path.join(packageRoot, 'docs', 'conformance-report.md');
         assertEqual(fs.existsSync(reportFile), true, 'conformance-report.md exists');
         assertEqual(fs.readFileSync(reportFile, 'utf8'), formatConformanceReport(buildConformanceReport()), 'conformance-report.md');
       },
@@ -1563,7 +1563,7 @@ function documentationSyncCases() {
       name: 'installation docs avoid unsupported Node and global npm permission traps',
       run: () => {
         assertEqual(pkg.engines?.node, '>=18', 'supported Node range');
-        for (const filename of ['README.md', 'the-art-of-eyeprolog.md']) {
+        for (const filename of ['docs/README.md', 'docs/the-art-of-eyeprolog.md']) {
           const text = fs.readFileSync(path.join(packageRoot, filename), 'utf8');
           assertIncludes(text, 'node --version', `${filename} checks Node version`);
           assertIncludes(text, 'npx --yes eyeprolog', `${filename} offers a non-global launch`);
@@ -2685,7 +2685,7 @@ function sectionLabel(name) {
 }
 
 function bookReferenceDocumentationIssues() {
-  const book = fs.readFileSync(path.join(packageRoot, 'the-art-of-eyeprolog.md'), 'utf8');
+  const book = fs.readFileSync(path.join(packageRoot, 'docs', 'the-art-of-eyeprolog.md'), 'utf8');
   const guide = fs.readFileSync(path.join(testRoot, 'conformance', 'README.md'), 'utf8');
   const issues = [];
 
@@ -2712,7 +2712,7 @@ function bookReferenceDocumentationIssues() {
   for (const heading of ['## 38. Language and ISO profile', '## 39. Built-in predicates by programming role', '## 40. Running EyeProlog: command line and corpus']) {
     if (!book.includes(heading)) issues.push(`book is missing ${heading}`);
   }
-  if (!guide.includes('[*The Art of EyeProlog*](../../the-art-of-eyeprolog.md) is the reference')) {
+  if (!guide.includes('[*The Art of EyeProlog*](../../docs/the-art-of-eyeprolog.md) is the reference')) {
     issues.push('test guide does not identify the book as the reference');
   }
   if (!guide.includes('not a separate\nlanguage specification')) {
@@ -2771,7 +2771,7 @@ function exampleCorpusSyncIssues() {
   const issues = arrayDiffMessages(listGoldenExampleNames(), examples, 'examples/output');
   const checks = [
     {
-      file: path.join(packageRoot, 'the-art-of-eyeprolog.md'),
+      file: path.join(packageRoot, 'docs', 'the-art-of-eyeprolog.md'),
       pattern: /top-level directory contains \*\*(\d+) self-contained runnable programs\*\*/,
     },
   ];
@@ -2802,7 +2802,7 @@ function proofCorpusSyncIssues() {
   }
   const checks = [
     {
-      file: path.join(packageRoot, 'the-art-of-eyeprolog.md'),
+      file: path.join(packageRoot, 'docs', 'the-art-of-eyeprolog.md'),
       pattern: /\*\*(\d+) selected programs\*\* have a checked/,
     },
   ];
@@ -2819,7 +2819,7 @@ function proofCorpusSyncIssues() {
 }
 
 function bookExampleCatalogIssues() {
-  const book = fs.readFileSync(path.join(packageRoot, 'the-art-of-eyeprolog.md'), 'utf8');
+  const book = fs.readFileSync(path.join(packageRoot, 'docs', 'the-art-of-eyeprolog.md'), 'utf8');
   const section = between(book, '### Further examples', '## 42. Standards, limits, and implementation boundaries');
   const names = [...section.matchAll(/github\.com\/eyereasoner\/eyeprolog\/blob\/main\/examples\/([A-Za-z0-9_-]+)\.pl/g)]
     .map((match) => match[1]);
@@ -2853,7 +2853,7 @@ function playgroundStaticIssues() {
   const issues = [];
   const playgroundPath = path.join(packageRoot, 'playground.html');
   const html = fs.readFileSync(playgroundPath, 'utf8');
-  const readme = fs.readFileSync(path.join(packageRoot, 'README.md'), 'utf8');
+  const readme = fs.readFileSync(path.join(packageRoot, 'docs', 'README.md'), 'utf8');
   if (!pkg.files?.includes('playground.html')) issues.push('package files must include playground.html');
   if (!readme.includes('[Playground](https://eyereasoner.github.io/eyeprolog/playground)')) issues.push('README must link to the GitHub Pages playground URL');
   if (!html.includes('<meta name="viewport" content="width=device-width, initial-scale=1">')) issues.push('missing mobile viewport meta');
@@ -2955,17 +2955,17 @@ function registeredBuiltinSummary() {
 }
 
 function bookBuiltinNames() {
-  const book = fs.readFileSync(path.join(packageRoot, 'the-art-of-eyeprolog.md'), 'utf8');
+  const book = fs.readFileSync(path.join(packageRoot, 'docs', 'the-art-of-eyeprolog.md'), 'utf8');
   return documentedBuiltinNames(between(book, '## 39. Built-in predicates by programming role', '### The EyeProlog library'), 2);
 }
 
 function bookEyePrologLibraryNames() {
-  const book = fs.readFileSync(path.join(packageRoot, 'the-art-of-eyeprolog.md'), 'utf8');
+  const book = fs.readFileSync(path.join(packageRoot, 'docs', 'the-art-of-eyeprolog.md'), 'utf8');
   return documentedBuiltinNames(between(book, '<!-- eyeprolog-library-catalog:start -->', '<!-- eyeprolog-library-catalog:end -->'), 2);
 }
 
 function bookBuiltinSummary() {
-  const book = fs.readFileSync(path.join(packageRoot, 'the-art-of-eyeprolog.md'), 'utf8');
+  const book = fs.readFileSync(path.join(packageRoot, 'docs', 'the-art-of-eyeprolog.md'), 'utf8');
   const match = book.match(/(?:registers|contains) (\d+) name\/arity entries across (\d+) names/);
   if (match == null) throw new Error('book builtin summary not found');
   return { entries: Number(match[1]), names: Number(match[2]) };
@@ -3050,7 +3050,7 @@ function misleadingDependencyInstallDocs() {
 
 function documentationSourceStyleIssues() {
   const issues = [];
-  const file = path.join(packageRoot, 'the-art-of-eyeprolog.md');
+  const file = path.join(packageRoot, 'docs', 'the-art-of-eyeprolog.md');
   const text = fs.readFileSync(file, 'utf8');
   if (text.includes('```prolog')) {
     issues.push('the-art-of-eyeprolog.md: use eyeprolog code fences instead of prolog fences');
@@ -3109,7 +3109,7 @@ function documentedConformanceMetricIssues() {
   const total = report.total.total;
   const checks = [
     {
-      file: path.join(packageRoot, 'the-art-of-eyeprolog.md'),
+      file: path.join(packageRoot, 'docs', 'the-art-of-eyeprolog.md'),
       pattern: /contains (\d+) cases, including (\d+) focused ISO\s+cases/,
       expected: [total, iso],
       labels: ['total', 'ISO'],
@@ -3148,7 +3148,7 @@ function markdownLinkTargets(text) {
 }
 
 function bookIntroOutputIssues() {
-  const book = fs.readFileSync(path.join(packageRoot, 'the-art-of-eyeprolog.md'), 'utf8');
+  const book = fs.readFileSync(path.join(packageRoot, 'docs', 'the-art-of-eyeprolog.md'), 'utf8');
   const match = book.match(/The (?:first|EyeProlog) command should print:\s*```text\n([\s\S]*?)```/);
   if (match == null) return ['the-art-of-eyeprolog.md: introductory output block not found'];
   const documented = `${match[1].trimEnd()}\n`;

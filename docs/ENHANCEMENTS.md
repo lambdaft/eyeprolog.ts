@@ -39,7 +39,7 @@ While preserving full architectural respect and ISO Prolog compliance from the o
 
 ## 4. Test Infrastructure & Audit Hardening
 
-- **Dedicated Audit Regression Suite**: Added [`test/run-audit-regressions.mjs`](test/run-audit-regressions.mjs) to continuously verify:
+- **Dedicated Audit Regression Suite**: Added `../test/run-audit-regressions.mjs` with 17 new regression tests to continuously verify:
   1. Exact solution-limit counting under deep recursion.
   2. Cut isolation within nested meta-calls.
   3. `PrologError` term string rendering.

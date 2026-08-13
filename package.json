@@ -26,17 +26,13 @@
   },
   "homepage": "https://github.com/lambdaft/eyeprolog.ts#readme",
   "files": [
-    "LICENSE.md",
-    "README.md",
+    "docs",
     "index.js",
     "index.d.ts",
     "playground.html",
     "bin",
     "src",
     "tools",
-    "conformance-report.md",
-    "the-art-of-eyeprolog.md",
-    "why-eyeprolog.md",
     "book-assets",
     "examples",
     "test"
@@ -54,7 +50,7 @@
     "test:examples": "node test/run-examples.mjs",
     "test:regression": "node test/run-regression.mjs",
     "test:playground": "node test/run-playground.mjs",
-    "preversion": "npm test && node test/run-conformance-report.mjs conformance-report.md",
+    "preversion": "npm test && node test/run-conformance-report.mjs docs/conformance-report.md",
     "postversion": "git push origin HEAD --follow-tags"
   },
   "devDependencies": {

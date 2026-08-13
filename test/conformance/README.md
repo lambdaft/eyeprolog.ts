@@ -2,7 +2,7 @@
 
 This directory contains executable tests for the EyeProlog implementation and
 reasoner.
-[*The Art of EyeProlog*](../../the-art-of-eyeprolog.md) is the reference for the
+[*The Art of EyeProlog*](../../docs/the-art-of-eyeprolog.md) is the reference for the
 supported ISO Prolog profile, built-ins, extensions, and reasoner behavior.
 
 The suite is intentionally file-based. Exact standard output, errors, warnings,
@@ -72,7 +72,7 @@ Summarize conformance coverage by category:
 
 ```sh
 node test/run-conformance-report.mjs
-node test/run-conformance-report.mjs conformance-report.md
+node test/run-conformance-report.mjs docs/conformance-report.md
 ```
 
 Run matching conformance cases by passing a filename or directory fragment:
@@ -103,7 +103,7 @@ Scryer Prolog, Trealla Prolog, and SWI-Prolog. Their upstream identifiers and li
 are recorded in [THIRD_PARTY.md](THIRD_PARTY.md).
 
 The corpus has 378 cases in `iso/` and 787 file-based conformance cases in
-total. The generated `conformance-report.md` is the authoritative source for
+total. The generated `docs/conformance-report.md` is the authoritative source for
 current category totals. Together with regression, documentation-sync, API,
 example, and book-example checks, `npm test` is the release gate.
 
