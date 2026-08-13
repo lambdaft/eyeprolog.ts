@@ -13,10 +13,10 @@ EyeProlog.ts turns portable ISO Prolog programs into answers and inspectable pro
   <strong>Click the cover to read <em>The Art of EyeProlog</em> (the original comprehensive manual).</strong>
 </p>
 
-**[Playground](https://eyereasoner.github.io/eyeprolog/playground)** | **[Why EyeProlog?](https://eyereasoner.github.io/eyeprolog/why-eyeprolog)** — Discover the original purpose and design.
+**[Playground](https://eyereasoner.github.io/eyeprolog/playground)** | **[Why EyeProlog?](https://eyereasoner.github.io/eyeprolog/why-eyeprolog)** | **[Enhancements Guide](ENHANCEMENTS.md)** — Discover original design & TypeScript improvements.
 
 The book is the reference for the language, command line, API,
-examples, proofs, conformance, and implementation boundaries for both `eyeprolog` and `eyeprolog.ts`.
+examples, proofs, conformance, and implementation boundaries for both `eyeprolog` and `eyeprolog.ts`. See [`ENHANCEMENTS.md`](ENHANCEMENTS.md) for a comprehensive list of architectural improvements, ISO compliance hardening, and developer API enhancements over the original JavaScript engine.
 
 ## Quick start
 
@@ -84,6 +84,21 @@ noun --> [world] | [prolog].
 ```
 
 **EyeProlog.ts features special ongoing ergonomic improvements for `dcg.ts` to allow easy embedding of these grammars natively in TypeScript.**
+
+## Visual proof tree rendering & Web Playground
+
+EyeProlog.ts provides interactive visual derivation trees for goal resolution. In addition to textual proof explanations, derivation trees can be rendered directly as styled Mermaid flowcharts (`graph TD`):
+
+```ts
+import { Program, renderProofToMermaid } from 'eyeprolog.ts';
+
+const program = Program.parse('human(socrates).\nmortal(X) :- human(X).\n');
+const mermaidGraph = renderProofToMermaid(program, 'mortal(socrates)');
+console.log(mermaidGraph);
+// Renders styled Mermaid flowchart with color-coded nodes for facts, rules, and built-ins
+```
+
+Try it interactively in the **[Web Playground](https://eyereasoner.github.io/eyeprolog/playground)** by checking *"Show proof explanations"* in Advanced Configuration and clicking the **Visual Proof Tree (Graph)** tab.
 
 ## Development
 
