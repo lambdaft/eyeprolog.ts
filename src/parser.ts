@@ -402,9 +402,16 @@ class Parser {
         this.take();
         this.take();
         let value = this.take();
-        if (!value || value === '\n') throw new Error(`parse line ${line}: bad character code constant`);
-        if (value === '\\') value = this.readEscape(line);
-        const code = value.codePointAt(0);
+        if (!value || (value !== ' ' && isWhitespaceCode(value.charCodeAt(0)))) {
+          throw new Error(`parse line ${line}: bad character code constant`);
+        }
+        if (value === "'") {
+          if (this.peek() !== "'") throw new Error(`parse line ${line}: bad character code constant`);
+          this.take();
+        } else if (value === '\\') {
+          value = this.readEscape(line);
+        }
+        const code = value.codePointAt(0)!;
         return { type: TOK.NUMBER, text: String(negative ? -code : code), line };
       }
       if (this.peek() === '0' && ['b', 'o', 'x'].includes(this.peek(1))) {

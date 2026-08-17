@@ -45,3 +45,12 @@ While preserving full architectural respect and ISO Prolog compliance from the o
   3. `PrologError` term string rendering.
   4. Fast-path opt-in flag behaviors.
 - **783+ Conformance Cases**: Revalidated against the full ISO/IEC 13211-1 suite (including Technical Corrigenda 1–3), ISO/IEC 13211-2 modules, and ISO/IEC TS 13211-3:2025 grammar rules.
+
+---
+
+## 5. Upstream Synchronization & Conformity Updates
+
+Inversed & synchronized with latest upstream releases from `eyereasoner/eyeprolog:main` (tags `v1.2.6` → `v1.2.40` by Jos De Roo):
+- **Negation Over Disjunction (`\+ (A ; B)`)**: Incorporated control-branch solution counter normalization (`solveControlBranch`), ensuring strict ISO compliance where `\+ (true ; true)` fails cleanly.
+- **Disjunction Cut Scoping**: Enforced isolated cut epoch tracking inside disjunction branches (`(A, ! ; B)`).
+- **Character Code Constant Parser Upgrades**: Added support for ISO single-quote character code constants: doubled apostrophes (`0'''` = char code 39), space constants (`0' ` = char code 32), and Unicode scalar codes (`0'😀`).
