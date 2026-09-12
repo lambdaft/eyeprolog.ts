@@ -69,7 +69,7 @@ export class DCG {
     if (t.type === ATOM) return t.name;
     if (t.type === 'number') return t.name;
     if (t.type === COMPOUND && t.name === '.' && t.arity === 2) {
-      const arr = [];
+      const arr: any[] = [];
       let cursor = t;
       while (cursor.type === COMPOUND && cursor.name === '.' && cursor.arity === 2) {
         arr.push(this.fromPrologTerm(cursor.args[0], env));
@@ -127,7 +127,7 @@ export class DCG {
      
      const varNames = new Set(extractVariables(goal));
      
-     const results = [];
+     const results: any[] = [];
      for (const env of this.solver.solve([goal], new Env(), 0)) {
          const bindings: any = {};
          for (const name of varNames) {
@@ -156,7 +156,7 @@ export class DCG {
     const ruleTerm = parseGoalText(startRule, { doubleQuotes: 'chars', operatorDefinitions: [] });
     const goal = compound('phrase', [ruleTerm, TokensVar]);
 
-    const results = [];
+    const results: any[] = [];
     for (const env of this.solver.solve([goal], new Env(), 0)) {
       const resultTokens = this.fromPrologTerm(TokensVar, env);
       results.push(resultTokens);

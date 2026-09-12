@@ -4,9 +4,19 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
 import { goalsFromSource } from './goal-metadata.js';
+import { memoryStatistics } from './platform.js';
 
 let engineModule: any = null;
 let explanationModule: any = null;
+
+// The usage text documents the input file as optional, and `--goal` is
+// meaningful on its own.  Only fall back to stdin when it is actually
+// redirected: on an interactive terminal there is nothing to read, and
+// blocking on it makes `eyeprolog --goal G` look like it does nothing.
+// An explicit `-` argument still selects stdin in either case.
+export function defaultsToStdin(fileCount: any, stdinIsTty: any): any {
+  return fileCount === 0 && !stdinIsTty;
+}
 
 export async function main(argv: any): Promise<any> {
   if (argv.length === 0) {
@@ -24,9 +34,14 @@ export async function main(argv: any): Promise<any> {
   const options = {
     files: [],
     proof: false,
+    proofDetail: 'abstract',
+    verifyProof: null,
     quads: false,
+    quiet: false,
     stats: false,
     isoStrict: false,
+    portable: false,
+    autoload: true,
     version: false,
     warnings: false,
     goals: [],
@@ -44,12 +59,27 @@ export async function main(argv: any): Promise<any> {
       return;
     } else if (!endOptions && (arg === '--proof' || arg === '-p')) {
       options.proof = true;
+    } else if (!endOptions && arg === '--proof-detail') {
+      const detail = argv[++i];
+      if (detail !== 'abstract' && detail !== 'expanded') throw new Error('--proof-detail requires abstract or expanded');
+      options.proof = true;
+      options.proofDetail = detail;
+    } else if (!endOptions && arg === '--verify-proof') {
+      const file = argv[++i];
+      if (file == null) throw new Error('--verify-proof requires a file');
+      options.verifyProof = file;
     } else if (!endOptions && (arg === '--quads' || arg === '-q')) {
       options.quads = true;
+    } else if (!endOptions && arg === '--quiet') {
+      options.quiet = true;
     } else if (!endOptions && (arg === '--stats' || arg === '-s')) {
       options.stats = true;
     } else if (!endOptions && arg === '--iso-strict') {
       options.isoStrict = true;
+    } else if (!endOptions && arg === '--portable') {
+      options.portable = true;
+    } else if (!endOptions && arg === '--no-autoload') {
+      options.autoload = false;
     } else if (!endOptions && (arg === '--version' || arg === '-v')) {
       options.version = true;
     } else if (!endOptions && (arg === '--warnings' || arg === '-w')) {
@@ -57,8 +87,7 @@ export async function main(argv: any): Promise<any> {
     } else if (!endOptions && (arg === '--goal' || arg === '-g')) {
       const goal = argv[++i];
       if (goal == null) throw new Error(`option ${arg} requires a goal`);
-      // @ts-expect-error TS2345: auto-suppressed
-      options.goals.push(goal);
+      (options.goals as any[]).push(goal);
     } else if (!endOptions && arg.startsWith('-') && !arg.startsWith('--') && arg.length > 2) {
       const flags = arg.slice(1);
       for (const flag of flags) {
@@ -76,8 +105,7 @@ export async function main(argv: any): Promise<any> {
     } else if (!endOptions && arg.startsWith('-') && arg !== '-') {
       throw new Error(`unknown option: ${arg}`);
     } else {
-      // @ts-expect-error TS2345: auto-suppressed
-      options.files.push(arg);
+      (options.files as any[]).push(arg);
     }
   }
 
@@ -89,9 +117,18 @@ export async function main(argv: any): Promise<any> {
   if (options.isoStrict && options.quads) {
     throw new Error('--iso-strict cannot be combined with --quads');
   }
+  if (options.verifyProof != null && options.quads) {
+    throw new Error('--verify-proof cannot be combined with --quads');
+  }
+  if (options.verifyProof != null && options.proof) {
+    throw new Error('--verify-proof cannot be combined with --proof or --proof-detail');
+  }
+  if (options.verifyProof != null && options.goals.length > 0) {
+    throw new Error('--verify-proof cannot be combined with --goal');
+  }
 
   if (options.isoStrict && options.files.length === 0 && options.goals.length === 0 &&
-      !options.proof && !options.stats && !options.warnings) {
+      options.verifyProof == null && !options.proof && !options.quiet && !options.stats && !options.warnings) {
     const engine = await loadEngine();
     const { runRepl } = await import('./repl.js');
     const exitCode = await runRepl(engine, {
@@ -104,12 +141,11 @@ export async function main(argv: any): Promise<any> {
     return;
   }
 
-  if (options.files.length === 0) {
-    // @ts-expect-error TS2345: auto-suppressed
-    options.files.push('-');
+  if (defaultsToStdin(options.files.length, process.stdin.isTTY)) {
+    (options.files as any[]).push('-');
   }
 
-  const sourceParts = [];
+  const sourceParts: any[] = [];
   let usedStdin = false;
 
   for (const file of options.files) {
@@ -130,9 +166,14 @@ export async function main(argv: any): Promise<any> {
     }
   }
 
-  if (options.goals.length === 0 && !options.quads) {
-    // @ts-expect-error TS2345: auto-suppressed
-    for (const source of sourceParts) options.goals.push(...goalsFromSource(source.text));
+  if (sourceParts.length === 0) {
+    // No file and no redirected stdin: run the requested goals against an
+    // empty database rather than against nothing at all.
+    sourceParts.push({ text: '', filename: '<empty>' });
+  }
+
+  if (options.goals.length === 0 && !options.quads && options.verifyProof == null) {
+    for (const source of sourceParts) (options.goals as any[]).push(...goalsFromSource(source.text));
   }
 
   // The ISO Prolog working-example quad files assume the Prologue predicates
@@ -147,23 +188,56 @@ export async function main(argv: any): Promise<any> {
 
   const engine = await loadEngine();
   let program = engine.Program.parseSources(sourceParts, {
-    sourceMetadata: options.proof || options.isoStrict,
+    sourceMetadata: options.proof || options.verifyProof != null || options.isoStrict,
     isoStrict: options.isoStrict,
+    autoload: options.autoload,
+    autoloadGoals: options.goals,
+    onWarning: printSourceWarning,
   });
 
-  if (options.warnings) printWarnings(program);
+  const portabilityFailures = program.interopPortabilityWarnings ?? [];
+  // Shadowing is reported unconditionally: silently replacing a library
+  // predicate for the whole program is the failure mode this diagnostic exists
+  // to surface, so it must not depend on opting in to --warnings.
+  printLibraryShadowingWarnings(program);
+  if (options.warnings || (options.portable && portabilityFailures.length > 0)) printWarnings(program);
+  if (options.portable && portabilityFailures.length > 0) {
+    process.exitCode = 1;
+    return;
+  }
 
-  if (!options.quads || options.goals.length > 0) await runDefault(engine, program, options);
+  if (options.verifyProof != null) {
+    const explanation = await loadExplanation();
+    const proofText = await fs.readFile(options.verifyProof, 'utf8');
+    const certificates = explanation.proofCertificatesFromText(proofText, program);
+    if (certificates.length === 0) throw new Error(`no why/2 proof certificate found in ${options.verifyProof}`);
+    const registry = options.isoStrict ? engine.getStrictIsoRegistry() : engine.getEyePrologRegistry();
+    for (let i = 0; i < certificates.length; i++) {
+      const checked = explanation.verifyProof(program, certificates[i], { registry });
+      if (!checked.ok) throw new Error(`proof certificate ${i + 1} failed verification: ${checked.error}`);
+    }
+    process.stdout.write(`verified ${certificates.length} proof certificate${certificates.length === 1 ? '' : 's'}.\n`);
+    return;
+  }
+
+  if (!options.quads || options.goals.length > 0) {
+    if (options.goals.length === 0 && !options.isoStrict && engine.hasForwardRules(program)) {
+      await runForwardDefault(engine, program, options);
+    } else {
+      await runDefault(engine, program, options);
+    }
+  }
   if (options.quads) {
     const result = engine.runQuads(program, { initialize: options.goals.length === 0 });
     process.stdout.write(result.stdout);
     if (result.failed > 0) process.exitCode = 1;
+    else if (result.undecided > 0) process.exitCode = 2;
   }
 }
 
 async function loadEngine(): Promise<any> {
   if (engineModule == null) {
-    const [term, parser, program, solver, iso, library, write, quads] = await Promise.all([
+    const [term, parser, program, solver, iso, library, write, quads, execute, cleanup] = await Promise.all([
       import('./term.js'),
       import('./parser.js'),
       import('./program.js'),
@@ -172,8 +246,13 @@ async function loadEngine(): Promise<any> {
       import('./standard-library.js'),
       import('./write.js'),
       import('./quads.js'),
+      import('./execute.js'),
+      import('./cleanup.js'),
     ]);
-    engineModule = { ...term, ...parser, ...program, ...solver, ...iso, ...library, ...write, ...quads };
+    // CLI loading is an entry-point layer above solver.js and the standard
+    // registry, so lifecycle installation stays acyclic.
+    cleanup.installCleanupLifecycle(solver.Solver);
+    engineModule = { ...term, ...parser, ...program, ...solver, ...iso, ...library, ...write, ...quads, ...execute };
   }
   return engineModule;
 }
@@ -183,66 +262,55 @@ async function loadExplanation(): Promise<any> {
   return explanationModule;
 }
 
+async function runForwardDefault(engine: any, program: any, options: any): Promise<any> {
+  const registry = engine.getEyePrologRegistry();
+  const solver = new engine.Solver(program, {
+    registry,
+    ioOptions: {
+      write: (text: any) => process.stdout.write(String(text)),
+      errorWrite: (text: any) => process.stderr.write(String(text)),
+    },
+  });
+  try {
+    const result = engine.executeForwardRules(program, solver, {
+      onAnswer: (line: any) => { if (!options.quiet) process.stdout.write(line); },
+      onFuse: (line: any) => { if (!options.quiet) process.stdout.write(line); },
+      onDiagnostic: (line: any) => process.stderr.write(line),
+    });
+    if (result.haltCode != null) process.exitCode = result.haltCode;
+  } finally {
+    if (options.stats) printStats(solver.stats);
+  }
+}
+
 async function runDefault(engine: any, program: any, options: any): Promise<any> {
   const registry = options.isoStrict ? engine.getStrictIsoRegistry() : engine.getEyePrologRegistry();
   const solver = new engine.Solver(program, {
     registry,
     isoStrict: options.isoStrict,
-    ioOptions: { write: (text: any) => process.stdout.write(String(text)) },
+    ioOptions: {
+      write: (text: any) => process.stdout.write(String(text)),
+      errorWrite: (text: any) => process.stderr.write(String(text)),
+    },
   });
   program = solver.program;
-  const goals = options.goals.map((text: any) => {
-    const goal = engine.parseGoalText(text, {
-      doubleQuotes: solver.prologFlags.get('double_quotes')?.value?.name ?? 'chars',
-      operatorDefinitions: [...program.operators.values()],
-      isoStrict: options.isoStrict,
-    });
-    if (goal.type === 'var') throw new engine.PrologError('instantiation_error');
-    if (goal.type !== 'atom' && goal.type !== 'compound') throw new engine.PrologError('type_error(callable)', goal);
-    return goal;
-  });
-  const queriedKeys = new Set(goals.map((goal: any) => `${goal.name}/${goal.arity}`));
-  const writeOptions = {
-    doubleQuotes: solver.prologFlags.get('double_quotes')?.value?.name ?? 'chars',
-    operators: [...program.operators.values()],
-    quoted: true,
-  };
-  const facts = program.sourceFactLines(queriedKeys, writeOptions);
-  const lines = new Set();
+  const goals = engine.normalizeGoals(options.goals, solver);
   const explanation = options.proof ? await loadExplanation() : null;
   try {
-    solver.runInitializations();
-    for (const goal of goals) {
-      solver.solutionsSeen = 0;
-      for (const env of solver.solve([goal], new engine.Env(), 0)) {
-        if (!engine.termIsGround(goal, env)) continue;
-
-        const currentWriteOptions = {
-          doubleQuotes: solver.prologFlags.get('double_quotes')?.value?.name ?? 'chars',
-          operators: [...program.operators.values()],
-          quoted: true,
-        };
-        const line = `${engine.formatTermForWrite(goal, env, currentWriteOptions)}.\n`;
-        if (facts.has(line) || lines.has(line)) continue;
-
-        lines.add(line);
-
-        process.stdout.write(line);
-        if (options.proof) writeExplanation(explanation, program, engine.copyResolved(goal, env), registry);
-      }
-    }
-  } catch (error) {
-    // @ts-expect-error TS2339: auto-suppressed
-    if (error?.name !== 'HaltSignal') throw error;
-    // @ts-expect-error TS2339: auto-suppressed
-    process.exitCode = error.code;
+    const { haltCode } = engine.executeGoals(program, solver, goals, {
+      onAnswer: (line: any, resolved: any) => {
+        if (!options.quiet) process.stdout.write(line);
+        if (options.proof) writeExplanation(explanation, program, resolved, registry, options);
+      },
+    });
+    if (haltCode != null) process.exitCode = haltCode;
+  } finally {
+    if (options.stats) printStats(solver.stats);
   }
-
-  if (options.stats) printStats(solver.stats);
 }
 
-function writeExplanation(explanation: any, program: any, resolved: any, registry: any): any {
-  const proof = explanation.whyProof(program, resolved, { registry });
+function writeExplanation(explanation: any, program: any, resolved: any, registry: any, options: any = {}): any {
+  const proof = explanation.whyProof(program, resolved, { registry, proofDetail: options?.proofDetail ?? 'abstract' });
   process.stdout.write(proof.text);
   if (!proof.ok) process.stdout.write(explanation.whyNoProof(resolved));
 }
@@ -264,10 +332,16 @@ Input:
 Options:
   -h, --help            Show this help text and exit.
   -p, --proof           Enable proof explanations.
+  --proof-detail mode   Use abstract or expanded proof detail (implies --proof).
+  --verify-proof file   Verify why/2 proof certificates against the input program.
   -q, --quads           Run embedded quad tests and fail if any do not hold.
-  -s, --stats           Print solver statistics to stderr after execution.
+                        Note: -q is quads, not quiet; --quiet has no short form.
+  --quiet               Suppress answer terms while preserving Prolog output.
+  -s, --stats           Print solver and memory statistics to stderr after execution.
   --iso-strict          Use ISO/IEC 13211-1 core + Corrigenda 1-3 only;
-                        reject EyeProlog language extensions and disable automatic tabling.
+                        reject EyeProlog language extensions.
+  --portable            Enforce the EyeProlog/Trealla/Scryer interop profile.
+  --no-autoload         Disable bundled library predicate autoloading.
   -v, --version         Show the package version and exit.
   -w, --warnings        Print non-fatal portability warnings to stderr.
   -g, --goal goal       Solve goal and print its ground answers; may be repeated.
@@ -288,7 +362,32 @@ function readStdin(): any {
   });
 }
 
+
+function printSourceWarning(warning: any): any {
+  if (warning.kind !== 'singleton') return;
+  process.stderr.write(`Warning: singleton: ${warning.name}, near ${warning.filename}:${warning.line}
+`);
+}
+
+function printLibraryShadowingWarnings(program: any): any {
+  for (const warning of program.libraryShadowingWarnings ?? []) {
+    process.stderr.write('eyeprolog warning: user definition shadows a bundled library predicate\n');
+    process.stderr.write(`  ${warning.indicator} replaces library(${warning.library}) ${warning.indicator} for all user code in this program\n`);
+    process.stderr.write(`  import it explicitly with :- use_module(library(${warning.library}), [${warning.indicator}]). to make this an error\n`);
+  }
+}
+
 function printWarnings(program: any): any {
+  for (const warning of program.interopPortabilityWarnings ?? []) {
+    if (warning.kind === 'library') {
+      process.stderr.write('eyeprolog warning: non-portable library dependency\n');
+      process.stderr.write(`  library(${warning.library}) is outside the EyeProlog/Trealla/Scryer interop profile\n`);
+    } else if (warning.kind === 'predicate') {
+      process.stderr.write('eyeprolog warning: non-portable library predicate\n');
+      process.stderr.write(`  ${warning.indicator} from library(${warning.library}) is outside the interop profile\n`);
+    }
+  }
+
   const errors = program.negationStratificationErrors;
   if (errors.length === 0) return;
 
@@ -300,20 +399,18 @@ function printWarnings(program: any): any {
 
 function printStats(stats: any): any {
   process.stderr.write('eyeprolog stats:\n');
-  for (const [key, value] of Object.entries(stats)) {
+  for (const [key, value] of Object.entries({ ...stats, ...memoryStatistics() })) {
     process.stderr.write(`  ${key}: ${value}\n`);
   }
 }
 
 async function packageVersion(): Promise<any> {
-  for (const rel of ['../../package.json', '../package.json']) {
-    try {
-      const text = await fs.readFile(new URL(rel, import.meta.url), 'utf8');
-      const pkg = JSON.parse(text);
-      if (pkg && typeof pkg.version === 'string' && pkg.version) return pkg.version;
-    } catch (_) {
-      // Continue searching
-    }
+  try {
+    const text = await fs.readFile(new URL('../package.json', import.meta.url), 'utf8');
+    const pkg = JSON.parse(text);
+    if (pkg && typeof pkg.version === 'string' && pkg.version) return pkg.version;
+  } catch (_) {
+    // Fall through to a stable marker if package metadata is unavailable.
   }
 
   return 'unknown';

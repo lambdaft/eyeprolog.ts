@@ -179,7 +179,7 @@ function domainValues(term: any, env: any): any {
     if (upper - lower + 1n > BigInt(MAX_ENUMERATED_DOMAIN)) {
       throw new PrologError('representation_error(clpz_domain)');
     }
-    const values = [];
+    const values: any[] = [];
     for (let value = lower; value <= upper; value++) values.push(value);
     return values;
   }
@@ -201,7 +201,7 @@ function domainsByRoot(env: any): any {
   const store = storeOf(env);
   const cached = domainCacheByState.get(env._state);
   if (cached?.domains === store.domains) return cached.roots;
-  const roots = new Map();
+  const roots: Map<any, any> = new Map();
   for (const [name, values] of store.domains) {
     const resolvedRoot = rootVariableName(variable(name), env);
     if (resolvedRoot == null) continue;
@@ -292,7 +292,7 @@ function integerListArgument(term: any, env: any): any {
 }
 
 function integerRange(lower: any, upper: any): any {
-  const values = [];
+  const values: any[] = [];
   for (let value = BigInt(lower); value <= BigInt(upper); value++) values.push(value);
   return values;
 }
@@ -368,8 +368,8 @@ function gccPairs(term: any, env: any): any {
 }
 
 function gccOptions(term: any, env: any, rowCount: any, columnCount: any): any {
-  let cost = null;
-  let matrix = null;
+  let cost: any = null;
+  let matrix: any = null;
   for (const option of listArgument(term, env)) {
     const resolved = deref(option, env);
     if (resolved.type === COMPOUND && resolved.name === 'consistency' && resolved.arity === 1 &&
@@ -455,7 +455,7 @@ function lexPairTruth(left: any, right: any, env: any): any {
 function circuitTruth(terms: any, env: any): any {
   if (terms.length === 0) return true;
   const values = terms.map((term: any) => expressionValue(term, env));
-  const seenValues = new Set();
+  const seenValues: Set<any> = new Set();
   for (let index = 0; index < values.length; index++) {
     const value = values[index];
     if (value == null) continue;
@@ -466,7 +466,7 @@ function circuitTruth(terms: any, env: any): any {
     seenValues.add(key);
   }
   if (values.some((value: any) => value == null)) return true;
-  const visited = new Set();
+  const visited: Set<any> = new Set();
   let node = 1;
   for (let step = 0; step < values.length; step++) {
     if (visited.has(node)) return false;
@@ -491,7 +491,7 @@ function comparedOrder(left: any, right: any): any {
 
 function globalTruth(global: any, env: any): any {
   if (global.kind === 'allDistinct') {
-    const seen = new Set();
+    const seen: Set<any> = new Set();
     for (const term of global.terms) {
       const value = expressionValue(term, env);
       if (value == null) continue;
@@ -667,7 +667,7 @@ function bindLinearEquality(left: any, right: any, env: any): any {
 }
 
 function hasDistinctMatching(domains: any, forcedIndex: any = -1, forcedValue: any = null): any {
-  const matchedByValue = new Map();
+  const matchedByValue: Map<any, any> = new Map();
   if (forcedIndex >= 0) {
     if (!domains[forcedIndex].some((value: any) => value === forcedValue)) return false;
     matchedByValue.set(forcedValue, forcedIndex);
@@ -702,7 +702,7 @@ function popcount32(value: any): any {
 }
 
 function hallSetDomains(domains: any): any {
-  const valueIndices = new Map();
+  const valueIndices: Map<any, any> = new Map();
   for (const domain of domains) {
     for (const value of domain) {
       if (!valueIndices.has(value)) valueIndices.set(value, valueIndices.size);
@@ -731,8 +731,8 @@ function hallSetDomains(domains: any): any {
 }
 
 function propagateAllDistinct(global: any, env: any): any {
-  const bound = new Set();
-  const variables = new Set();
+  const bound: Set<any> = new Set();
+  const variables: Set<any> = new Set();
   for (const term of global.terms) {
     const resolved = deref(term, env);
     if (resolved.type === VAR) {
@@ -962,8 +962,8 @@ function parseLabelingOptions(term: any, env: any): any {
 }
 
 function unresolvedLabelVariables(terms: any, env: any): any {
-  const variables = [];
-  const seen = new Set();
+  const variables: any[] = [];
+  const seen: Set<any> = new Set();
   for (const term of terms) {
     const resolved = deref(term, env);
     if (resolved.type === NUMBER) {
@@ -981,7 +981,7 @@ function unresolvedLabelVariables(terms: any, env: any): any {
 
 function chooseVariable(variables: any, env: any, variableOrder: any): any {
   if (variableOrder !== 'ff') return { index: 0, values: domainForRoot(variables[0].name, env) };
-  let selected = null;
+  let selected: any = null;
   for (let index = 0; index < variables.length; index++) {
     const values = domainForRoot(variables[index].name, env);
     if (values == null) throw new PrologError('instantiation_error');
@@ -1048,7 +1048,7 @@ function* fdSizeBuiltin({ goal, env }: any): any {
 }
 
 function valuesToDomain(values: any): any {
-  const runs = [];
+  const runs: any[] = [];
   for (const value of values) {
     const last = runs[runs.length - 1];
     if (last && value === last[1] + 1n) last[1] = value;

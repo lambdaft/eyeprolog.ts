@@ -2,11 +2,10 @@
 // Grammar rules are lowered to ordinary clauses during program preparation;
 // phrase/2-3 use the same body expansion for dynamically supplied grammars.
 import {
-  // @ts-expect-error TS6133: auto-suppressed
-  ATOM, COMPOUND, VAR, Env, atom, compound, deref, emptyList,
+  ATOM, COMPOUND, VAR, Env, compactListLength, compound, deref, emptyList,
   flattenConjunction, variable,
 } from './term.js';
-import { PrologError } from './iso.js';
+import { PrologError } from './errors.js';
 
 let dcgFresh = 0;
 
@@ -33,9 +32,9 @@ function listWithTail(items: any, tail: any): any {
 }
 
 function terminalItems(term: any, env: any = new Env()): any {
-  const items = [];
+  const items: any[] = [];
   const original = term;
-  const seen = new Set();
+  const seen: Set<any> = new Set();
   let cursor = deref(term, env);
   while (cursor.type === COMPOUND && cursor.name === '.' && cursor.arity === 2) {
     if (seen.has(cursor)) throw new PrologError('type_error(list)', original);
@@ -225,12 +224,12 @@ function invalidControlGoal(goal: any): any {
 }
 
 function splitGrammarHead(head: any): any {
-  let terminals = null;
+  let terminals: any = null;
   if (head.type === COMPOUND && head.name === ',' && head.arity === 2) {
     terminals = head.args[1];
     head = head.args[0];
   }
-  let module = null;
+  let module: any = null;
   if (head.type === COMPOUND && head.name === ':' && head.arity === 2) {
     if (head.args[0].type === VAR) throw new PrologError('instantiation_error');
     if (head.args[0].type !== ATOM) throw new PrologError('type_error(atom)', head.args[0]);
@@ -274,14 +273,18 @@ export function expandDcgRuleClause(clause: any, defaultModule: any = 'user'): a
     module,
     grammarRule: clause.head,
   };
-  // @ts-expect-error TS2339: auto-suppressed
-  if (clause.source) expanded.source = clause.source;
+  if (clause.source) (expanded as any).source = clause.source;
   return expanded;
 }
 
 export function isListOrPartialList(term: any, env: any): any {
-  const seen = new Set();
+  const seen: Set<any> = new Set();
   let cursor = deref(term, env);
+  // A compact list skeleton has a fixed proper spine by construction. Its
+  // elements may later receive bindings, but those bindings cannot change the
+  // list tail shape, so phrase/2-3 need not expand the entire lazy spine merely
+  // to validate it as a list.
+  if (compactListLength(cursor) != null) return true;
   while (cursor.type === COMPOUND && cursor.name === '.' && cursor.arity === 2) {
     if (seen.has(cursor)) return false;
     seen.add(cursor);

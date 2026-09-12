@@ -1,53 +1,86 @@
 // Interactive top level for the eyeprolog command.
 import fs from 'node:fs/promises';
+import { readSync } from 'node:fs';
 import path from 'node:path';
 import { createInterface } from 'node:readline';
 import { formalErrorTerm } from './iso.js';
+import { autoloadProgramGoals } from './program.js';
+import {
+  characterCodeConstantEnd, continuesGraphicToken, isTerminatingFullStop, quotedEscapeEnd,
+} from './syntax-scan.js';
 
 const ANSWER_HELP = `
 SPACE, "n" or ";": next solution, if any
 RETURN or ".": stop enumeration
 "a": enumerate all solutions
-"f": enumerate the next 5 solutions
+"f": enumerate through the next group of 5 solutions
 "h": display this help message
 "w": write terms without depth limit
 "p": print terms with depth limit
 `;
+
+const SCRIPTED_NEXT_QUERY = Symbol('scripted-next-query');
 
 export async function runRepl(engine: any, options: any = {}): Promise<any> {
   const input = options.input ?? process.stdin;
   const output = options.output ?? process.stdout;
   const errorOutput = options.errorOutput ?? process.stderr;
   const reader = new LineReader(input, output);
-  // @ts-expect-error TS7034: auto-suppressed
-  const sources = [];
-  // @ts-expect-error TS7005: auto-suppressed
-  let state = makeState(engine, sources, output, options);
+  const sources: any[] = [];
+  let state = makeState(engine, sources, output, options, null, reader);
   let exitCode = 0;
 
   try {
-    state.solver.runInitializations();
+    runWithTerminalSignals(reader, () => state.solver.runInitializations());
     while (true) {
       const text = await readQuery(reader);
       if (text == null) break;
       if (!text.trim()) continue;
 
+      let resultIndent = '   ';
       try {
         const goal = parseGoal(engine, state, text);
+        // A complete, successfully parsed query has left the top-level reader
+        // and is about to execute. Show two spaces immediately so a terminal
+        // user can distinguish that state from a reader waiting for more text;
+        // the final result adds the third indentation space below. A direct
+        // halt has no result and exits immediately, so it needs no marker.
+        if (!isHaltGoal(goal)) {
+          output.write('  ');
+          resultIndent = ' ';
+        }
         if (!options.isoStrict && isUseModuleGoal(goal)) {
           sources.push({ text: `:- ${text}.\n`, filename: '<repl>' });
-          state = makeState(engine, sources, output, options, state);
-          state.solver.runInitializations();
-          output.write('   true.\n');
+          state = makeState(engine, sources, output, options, state, reader);
+          runWithTerminalSignals(reader, () => state.solver.runInitializations());
+          output.write(' true.\n');
           continue;
         }
         const consultFiles = options.isoStrict ? null : consultDesignations(engine, goal);
         if (consultFiles != null) {
-          for (const filename of consultFiles) sources.push(await readSource(filename));
-          state = makeState(engine, sources, output, options, state);
-          state.solver.runInitializations();
-          output.write('   true.\n');
+          for (const filename of consultFiles) {
+            const source = filename === 'user'
+              ? await readUserSource(reader, state.solver)
+              : await readSource(filename);
+            replaceConsultedSource(sources, source);
+          }
+          state = makeState(engine, sources, output, options, state, reader);
+          runWithTerminalSignals(reader, () => state.solver.runInitializations());
+          output.write(' true.\n');
           continue;
+        }
+
+        // Queries entered after the initial Program was prepared need the same
+        // bundled-library autoload resolution as file and -g execution.  This
+        // is intentionally after parsing: predicate autoloading cannot provide
+        // syntax operators retroactively (libraries such as clpz must still be
+        // imported explicitly before their operators are used).
+        if (!state.strictIso && options.autoload !== false) {
+          autoloadProgramGoals(state.program, [goal], {
+            autoload: true,
+            doubleQuotes: state.solver.prologFlags.get('double_quotes')?.value?.name ?? 'chars',
+          });
+          runWithTerminalSignals(reader, () => state.solver.runInitializations());
         }
 
         const flagsBefore = snapshotFlagValues(state.solver);
@@ -61,18 +94,15 @@ export async function runRepl(engine: any, options: any = {}): Promise<any> {
         } finally {
           rememberFlagOverrides(state, flagsBefore);
         }
-      } catch (error) {
-        // @ts-expect-error TS2339: auto-suppressed
+      } catch (error: any) {
         if (error?.name === 'HaltSignal') {
-          // @ts-expect-error TS2339: auto-suppressed
           exitCode = error.code;
           break;
         }
-        output.write(`   ${formatError(engine, state, error)}\n`);
+        output.write(`${resultIndent}${formatError(engine, state, error)}\n`);
       }
     }
-  } catch (error) {
-    // @ts-expect-error TS2339: auto-suppressed
+  } catch (error: any) {
     errorOutput.write(`eyeprolog: ${error?.message ?? String(error)}\n`);
     exitCode = 1;
   } finally {
@@ -83,11 +113,15 @@ export async function runRepl(engine: any, options: any = {}): Promise<any> {
 }
 
 class LineReader {
+      [key: string]: any;
+  static syncWait = new Int32Array(new SharedArrayBuffer(4));
+
   constructor(input: any, output: any) {
     this.input = input;
     this.output = output;
     this.terminal = Boolean(input.isTTY && output.isTTY && typeof input.setRawMode === 'function');
     this.history = [];
+    this.pendingLines = [];
     this.currentPrompt = '?- ';
     this.open();
   }
@@ -105,16 +139,30 @@ class LineReader {
     this.lines = this.readline[Symbol.asyncIterator]();
   }
 
+  async nextLine(): Promise<any> {
+    if (this.pendingLines.length > 0) return { done: false, value: this.pendingLines.shift() };
+    return this.lines.next();
+  }
+
   async read(prompt: any): Promise<any> {
     this.currentPrompt = prompt;
     this.readline.setPrompt(prompt);
     this.output.write(prompt);
-    const result = await this.lines.next();
+    const result = await this.nextLine();
     return result.done ? null : result.value;
   }
 
   async readControl(prompt: any): Promise<any> {
-    if (!this.terminal) return this.read(prompt);
+    if (!this.terminal) {
+      const result = await this.nextLine();
+      if (result.done) return null;
+      if (!isScriptedAnswerControl(result.value)) {
+        this.pendingLines.unshift(result.value);
+        return SCRIPTED_NEXT_QUERY;
+      }
+      this.output.write(prompt);
+      return result.value;
+    }
     this.output.write(prompt);
     this.history = [...this.readline.history];
     this.currentPrompt = '?- ';
@@ -147,28 +195,132 @@ class LineReader {
     return control;
   }
 
+  canReadTermSynchronously(): any {
+    return this.terminal && Number.isInteger(this.input.fd);
+  }
+
+  readInteractiveTermSync(solver: any = null): any {
+    if (!this.canReadTermSynchronously()) return null;
+    let source = '';
+    let prompt = '|: ';
+    while (true) {
+      this.output.write(prompt);
+      const line = this.readTerminalLineSync();
+      if (line == null) return source.trim() ? source : null;
+      source += `${line}\n`;
+      const end = terminalFullStop(source, solver);
+      if (end >= 0) {
+        return source.slice(0, end + 1) + '\n';
+      }
+      prompt = '|    ';
+    }
+  }
+
+  readInteractiveUnitSync(): any {
+    if (!this.canReadTermSynchronously()) return null;
+    this.output.write('|: ');
+    const line = this.readTerminalLineSync();
+    if (line == null) return null;
+    // The interactive line editor uses Enter to submit character input.  Do
+    // not leave that submission newline buffered for the next get_/peek_
+    // call (matching SWI/Scryer top-level behaviour).  An empty submitted
+    // line still represents an actual newline character.
+    return line.length === 0 ? '\n' : line;
+  }
+
+  readTerminalLineSync(): any {
+    const byte = Buffer.allocUnsafe(1);
+    const bytes: any[] = [];
+    while (true) {
+      let count;
+      try {
+        count = readSync(this.input.fd, byte, 0, 1, null);
+      } catch (error: any) {
+        // Node keeps terminal fds non-blocking.  Once readline is suspended,
+        // a synchronous read can therefore report EAGAIN while waiting for
+        // the user. Sleep briefly and retry; terminal signals still retain
+        // their native action because no readline signal handler is installed.
+        if (error?.code === 'EAGAIN' || error?.code === 'EWOULDBLOCK') {
+          Atomics.wait(LineReader.syncWait, 0, 0, 10);
+          continue;
+        }
+        throw error;
+      }
+      // In canonical terminal mode Ctrl-D on an empty line makes read(2)
+      // return zero bytes.  Scope that EOF to the current Prolog read rather
+      // than closing the outer readline iterator / top-level loop.
+      if (count === 0) {
+        return bytes.length === 0 ? null : Buffer.from(bytes).toString('utf8');
+      }
+      if (byte[0] === 10) {
+        if (bytes.at(-1) === 13) bytes.pop() as any;
+        return Buffer.from(bytes).toString('utf8');
+      }
+      bytes.push(byte[0]);
+    }
+  }
+
+  suspendForComputation(): any {
+    if (!this.terminal || !this.readline) return false;
+    // Node readline installs terminal signal handling while the interface is
+    // open. During a synchronous Prolog search that prevents the terminal's
+    // normal SIGINT/SIGTSTP actions from taking effect until JavaScript yields.
+    // Close readline while the solver is running so Ctrl-C can terminate and
+    // Ctrl-Z can suspend an otherwise non-terminating computation immediately.
+    this.history = [...this.readline.history];
+    this.readline.close();
+    this.readline = null;
+    this.lines = null;
+    return true;
+  }
+
+  resumeAfterComputation(suspended: any): any {
+    if (suspended && !this.readline) this.open();
+  }
+
   close(): any {
     if (this.input.isRaw) this.input.setRawMode(false);
     this.readline?.close();
   }
-
-    readline: any;
-    input: any;
-    output: any;
-    currentPrompt: any;
-    terminal: any;
-    history: any;
-    lines: any;
 }
 
-function makeState(engine: any, sources: any, output: any, options: any = {}, previousState: any = null): any {
+function isScriptedAnswerControl(line: any): any {
+  if (line == null || line === '' || line === '\r' || line === '\n' || line === ' ') return true;
+  const control = line.trim();
+  return control.startsWith('.') || [';', 'n', 'a', 'f', 'w', 'p', 'h'].includes(control);
+}
+
+function runWithTerminalSignals(reader: any, operation: any): any {
+  const suspended = reader.suspendForComputation();
+  try {
+    return operation();
+  } finally {
+    reader.resumeAfterComputation(suspended);
+  }
+}
+
+function makeState(engine: any, sources: any, output: any, options: any = {}, previousState: any = null, reader: any = null): any {
   const strictIso = options.isoStrict === true;
-  const program = engine.Program.parseSources(sources, { strictIso, sourceMetadata: strictIso });
+  const program = engine.Program.parseSources(sources, {
+    isoStrict: strictIso,
+    sourceMetadata: strictIso,
+    autoload: !strictIso && options.autoload !== false,
+  });
   const solver = new engine.Solver(program, {
     registry: strictIso ? engine.getStrictIsoRegistry() : engine.getEyePrologRegistry(),
     isoStrict: strictIso,
     ioOptions: { write: (text: any) => output.write(String(text)) },
   });
+  const userInput = solver.io.resolve('user_input');
+  if (userInput && reader?.canReadTermSynchronously()) {
+    // The solver is synchronous. While pullSolution() has readline suspended,
+    // let ISO input request terminal data exactly when read/1-2, read_term/2-3,
+    // or a character/code input predicate actually executes. This also works
+    // inside conjunctions and user predicates instead of only when an input
+    // predicate is the whole REPL goal.
+    userInput.interactiveReadTerm = () => reader.readInteractiveTermSync(solver);
+    userInput.interactiveReadUnit = () => reader.readInteractiveUnitSync();
+  }
   const flagOverrides = new Map(previousState?.flagOverrides ?? []);
   for (const [name, value] of flagOverrides) {
     const definition = solver.prologFlags.get(name);
@@ -204,10 +356,14 @@ async function readQuery(reader: any): Promise<any> {
 }
 
 async function prepareInteractiveTermInput(state: any, goal: any, reader: any): Promise<any> {
+  // Real terminals are serviced on demand from readTermFromStream() while the
+  // synchronous solver is running.  Keep the older async preloader only as a
+  // fallback for piped/non-TTY REPL tests and scripted input.
+  if (reader.canReadTermSynchronously()) return;
   const stream = interactiveTermInputStream(state, goal);
-  if (stream == null || terminalFullStop(String(stream.content).slice(stream.position)) >= 0) return;
+  if (stream == null || terminalFullStop(String(stream.content).slice(stream.position), state.solver) >= 0) return;
 
-  const text = await readInteractiveTerm(reader);
+  const text = await readInteractiveTerm(reader, state.solver);
   if (text == null) return;
   stream.content += text;
   stream.pastEnd = false;
@@ -215,7 +371,7 @@ async function prepareInteractiveTermInput(state: any, goal: any, reader: any): 
 
 function interactiveTermInputStream(state: any, goal: any): any {
   if (goal.type !== 'compound') return null;
-  let reference = null;
+  let reference: any = null;
   if (goal.name === 'read' && goal.arity === 1) {
     reference = state.solver.io.currentInput;
   } else if (goal.name === 'read' && goal.arity === 2) {
@@ -241,50 +397,33 @@ function explicitInputReference(term: any): any {
   return null;
 }
 
-async function readInteractiveTerm(reader: any): Promise<any> {
+async function readInteractiveTerm(reader: any, solver: any = null): Promise<any> {
   let source = '';
   let prompt = '|: ';
   while (true) {
     const line = await reader.read(prompt);
     if (line == null) return source.trim() ? source : null;
     source += `${line}\n`;
-    const end = terminalFullStop(source);
-    if (end >= 0) return source.slice(0, end + 1) + '\n';
+    const end = terminalFullStop(source, solver);
+    if (end >= 0) {
+      return source.slice(0, end + 1) + '\n';
+    }
     prompt = '|    ';
   }
 }
 
-function quotedEscapeEnd(source: any, index: any): any {
-  const escaped = source[index + 1] ?? '';
-  if (!escaped) return index;
-
-  // ISO 6.4.2.1 octal and hexadecimal escapes are terminated by a
-  // backslash.  Consume that terminator as part of the escape so the REPL
-  // scanner does not mistake it for an escape of the following quote.
-  if (escaped === 'x') {
-    let cursor = index + 2;
-    while (/^[0-9A-Fa-f]$/.test(source[cursor] ?? '')) cursor++;
-    return source[cursor] === '\\' ? cursor : Math.max(index + 1, cursor - 1);
+function activeCharConverter(solver: any): any {
+  if (solver?.prologFlags.get('char_conversion')?.value?.name !== 'on' || solver.charConversions.size === 0) {
+    return null;
   }
-  if (/^[0-9]$/.test(escaped)) {
-    let cursor = index + 1;
-    // Scan all decimal digits here, including 8 and 9.  This scanner only
-    // locates the end of a candidate quoted escape; the parser remains
-    // authoritative and rejects non-octal digits.
-    while (/^[0-9]$/.test(source[cursor] ?? '')) cursor++;
-    return source[cursor] === '\\' ? cursor : Math.max(index + 1, cursor - 1);
-  }
-
-  // Meta escapes, symbolic control escapes, and continuation escapes consume
-  // one character after the backslash.  The parser performs validity checks.
-  return index + 1;
+  return (character: any) => solver.charConversions.get(character) ?? character;
 }
 
-function terminalFullStop(source: any): any {
-  let quote = null;
+function terminalFullStop(source: any, solver: any = null): any {
+  const convert = activeCharConverter(solver);
+  let quote: any = null;
   let lineComment = false;
   let blockComment = false;
-  let depth = 0;
 
   for (let i = 0; i < source.length; i++) {
     const ch = source[i];
@@ -303,17 +442,28 @@ function terminalFullStop(source: any): any {
     if (quote != null) {
       if (ch === '\\') {
         i = quotedEscapeEnd(source, i);
+      } else if (ch === '\n' || ch === '\r') {
+        // A literal newline can never be repaired by a later line: ISO
+        // 6.4.2.1 excludes it from quoted characters. Return this boundary
+        // immediately so the parser reports a syntax error instead of the
+        // top level prompting forever for a closing quote.
+        return i;
       } else if (ch === quote) {
         if (next === quote) i++;
         else quote = null;
       }
       continue;
     }
+    const characterCodeEnd = characterCodeConstantEnd(source, i);
+    if (characterCodeEnd != null) {
+      i = characterCodeEnd;
+      continue;
+    }
     if (ch === '%') {
       lineComment = true;
       continue;
     }
-    if (ch === '/' && next === '*') {
+    if (ch === '/' && next === '*' && !continuesGraphicToken(source, i)) {
       blockComment = true;
       i++;
       continue;
@@ -322,9 +472,12 @@ function terminalFullStop(source: any): any {
       quote = ch;
       continue;
     }
-    if ('([{'.includes(ch)) depth++;
-    else if (')]}'.includes(ch)) depth = Math.max(0, depth - 1);
-    else if (ch === '.' && depth === 0 && onlyLayoutAndComments(source.slice(i + 1))) return i;
+    // ISO 8.14.1.1 locates the end token lexically before read-term parsing.
+    // An unmatched opening bracket therefore must not make the top level wait
+    // for more input after a terminating full stop; parsing the collected text
+    // is what reports the syntax error (for example `[l.` or `{.`).
+    if (isTerminatingFullStop(source, i, convert) &&
+        onlyLayoutAndComments(source.slice(i + 1))) return i;
   }
   return -1;
 }
@@ -350,11 +503,38 @@ function isUseModuleGoal(goal: any): any {
   return goal.type === 'compound' && goal.name === 'use_module' && [1, 2].includes(goal.arity);
 }
 
+function isHaltGoal(goal: any): any {
+  return (goal.type === 'atom' && goal.name === 'halt') ||
+    (goal.type === 'compound' && goal.name === 'halt' && goal.arity === 1);
+}
+
 function consultDesignations(engine: any, goal: any): any {
+  // The traditional [file]. top-level shorthand and explicit consult/1 use
+  // the same resolver and modern reconsult semantics.  Accept reconsult/1 as
+  // a compatibility alias as well; contemporary consult/1 already replaces
+  // clauses previously loaded from the same source.
   if (goal.type === 'atom' && goal.name === '[]') return [];
-  if (goal.type !== 'compound' || goal.name !== '.' || goal.arity !== 2) return null;
-  const items = engine.properListItems(goal, new engine.Env());
-  if (items == null) return null;
+  if (goal.type === 'compound' && goal.name === '.' && goal.arity === 2) {
+    return consultListDesignations(engine, goal);
+  }
+  if (goal.type === 'compound' && ['consult', 'reconsult'].includes(goal.name) && goal.arity === 1) {
+    return consultArgumentDesignations(engine, goal.args[0]);
+  }
+  return null;
+}
+
+function consultArgumentDesignations(engine: any, term: any): any {
+  if (term.type === 'var') throw new engine.PrologError('instantiation_error');
+  if (term.type === 'atom') return term.name === '[]' ? [] : [term.name];
+  if (term.type === 'compound' && term.name === '.' && term.arity === 2) {
+    return consultListDesignations(engine, term);
+  }
+  throw new engine.PrologError('type_error(atom)', term);
+}
+
+function consultListDesignations(engine: any, list: any): any {
+  const items = engine.properListItems(list, new engine.Env());
+  if (items == null) throw new engine.PrologError('type_error(list)', list);
   return items.map((item: any) => {
     if (item.type === 'var') throw new engine.PrologError('instantiation_error');
     if (item.type !== 'atom') throw new engine.PrologError('type_error(atom)', item);
@@ -362,18 +542,65 @@ function consultDesignations(engine: any, goal: any): any {
   });
 }
 
-async function readSource(designation: any): Promise<any> {
-  let filename = path.resolve(designation);
-  try {
-    await fs.access(filename);
-  } catch (error) {
-    if (path.extname(filename)) throw error;
-    filename += '.pl';
+function replaceConsultedSource(sources: any, source: any): any {
+  const index = sources.findIndex((existing: any) =>
+    source.consultPath != null && existing.consultPath === source.consultPath);
+  if (index >= 0) sources[index] = source;
+  else sources.push(source);
+}
+
+function missingSource(error: any): any {
+  return error?.code === 'ENOENT' || error?.code === 'ENOTDIR';
+}
+
+async function resolvedConsultFilename(designation: any): Promise<any> {
+  const requested = path.resolve(designation);
+  // Long-standing Prolog consult convention: for an extensionless name, try
+  // the .pl source first and use the unsuffixed path only as a fallback.
+  if (!path.extname(requested)) {
+    const prologFile = `${requested}.pl`;
+    try {
+      await fs.access(prologFile);
+      return await fs.realpath(prologFile);
+    } catch (error: any) {
+      if (!missingSource(error)) throw error;
+    }
   }
+  await fs.access(requested);
+  return fs.realpath(requested);
+}
+
+async function readSource(designation: any): Promise<any> {
+  const filename = await resolvedConsultFilename(designation);
   return {
     text: await fs.readFile(filename, 'utf8'),
     filename: path.basename(filename),
     baseDir: path.dirname(filename),
+    // Keep host-only provenance so consulting the same resolved file again
+    // replaces its previous source instead of accumulating stale clauses.
+    consultPath: filename,
+  };
+}
+
+async function readUserSource(reader: any, solver: any): Promise<any> {
+  let text = '';
+  while (true) {
+    const term = await readInteractiveTerm(reader, solver);
+    if (term == null) break;
+    const end = terminalFullStop(term, solver);
+    const body = end < 0 ? term : term.slice(0, end);
+    // `user` is the traditional interactive consult pseudo-file. Stop at an
+    // unquoted end_of_file term, just as a physical input stream would. The
+    // source accumulated before it is then prepared as one ordinary Prolog
+    // text so directives and operator declarations retain normal file order.
+    if (body.replace(/\s|%[^\n]*(?:\n|$)|\/\*[\s\S]*?\*\//g, '') === 'end_of_file') break;
+    text += term;
+  }
+  return {
+    text,
+    filename: '<user>',
+    baseDir: process.cwd(),
+    consultPath: '<user>',
   };
 }
 
@@ -382,39 +609,60 @@ async function solveQuery(engine: any, state: any, goal: any, reader: any, outpu
   const solver = state.solver;
   solver.solutionsSeen = 0;
   const solutions = solver.solve([goal], new engine.Env(), 0);
-  let current = pullSolution(solver, solutions);
+  let current = pullSolution(solver, solutions, reader);
   if (current.error) {
     if (current.error?.name === 'HaltSignal') return { halted: true, code: current.error.code };
     throw current.error;
   }
 
   if (current.result.done) {
-    output.write('   false.\n');
+    output.write(' false.\n');
     return null;
   }
 
   let automatic = 0;
+  let answersShown = 0;
   let firstAnswer = true;
+  let formattingAfterAdvance = false;
   while (!current.result.done) {
-    const next = pullSolution(solver, solutions);
+    // Enumeration is demand-driven: never execute search for a future answer
+    // merely to decide how to punctuate the current one. That search may have
+    // side effects, and it belongs only to an explicit request for another
+    // answer. A scripted non-TTY session may start its next query directly;
+    // LineReader treats that as an implicit stop without consuming the query.
+    if (formattingAfterAdvance) output.write(' ');
+    formattingAfterAdvance = false;
     output.write(current.output);
-    output.write(`${firstAnswer ? '   ' : ''}${formatAnswer(engine, state, variables, current.result.value)}`);
+    const answer = formatAnswer(engine, state, variables, current.result.value);
+    output.write(`${firstAnswer ? ' ' : ''}${answer}`);
+    answersShown++;
     firstAnswer = false;
-    if (!next.error && next.result.done) {
-      output.write('.\n');
+
+    if (!solver.hasPendingAlternatives()) {
+      // The solver is suspended at the yielded answer even though no work is
+      // left. Close the generator to run its cleanup/finally blocks without
+      // advancing search or executing future side effects.
+      if (typeof solutions.return === 'function') solutions.return();
+      output.write(`${continuesGraphicToken(answer, answer.length) ? ' ' : ''}.\n`);
       return null;
     }
 
     if (automatic > 0 || automatic === Infinity) {
       if (automatic !== Infinity) automatic--;
-      output.write('\n;  ');
+      output.write('\n; ');
+      formattingAfterAdvance = true;
     } else {
       while (true) {
-        const controlLine = await reader.readControl('\n;  ');
+        const controlLine = await reader.readControl('\n;');
+        if (controlLine === SCRIPTED_NEXT_QUERY) {
+          if (typeof solutions.return === 'function') solutions.return();
+          output.write(`${continuesGraphicToken(answer, answer.length) ? ' ' : ''}.\n`);
+          return null;
+        }
         if (controlLine == null || controlLine === '' || controlLine === '\r' || controlLine === '\n' ||
             controlLine.trimStart().startsWith('.')) {
           if (typeof solutions.return === 'function') solutions.return();
-          output.write('... .\n');
+          output.write('  ... .\n');
           return null;
         }
         const control = controlLine === ' ' ? ' ' : controlLine.trimStart()[0];
@@ -424,51 +672,70 @@ async function solveQuery(engine: any, state: any, goal: any, reader: any, outpu
           break;
         }
         if (control === 'f') {
-          automatic = 4;
+          const remainder = answersShown % 5;
+          const answersToBoundary = remainder === 0 ? 5 : 5 - remainder;
+          automatic = answersToBoundary - 1;
           break;
         }
         if (control === 'w' || control === 'p') {
-          output.write(`${formatAnswer(engine, state, variables, current.result.value)}`);
+          output.write(`  ${formatAnswer(engine, state, variables, current.result.value)}`);
           continue;
         }
         if (control === 'h') {
           output.write(ANSWER_HELP);
           continue;
         }
-        output.write('Action? ');
+        output.write(' Action? ');
       }
+      output.write(' ');
+      formattingAfterAdvance = true;
     }
 
-    if (next.error) {
-      output.write(next.output);
-      if (next.error?.name === 'HaltSignal') return { halted: true, code: next.error.code };
-      throw next.error;
+    // Drop the displayed substitution before resuming search. The next search
+    // step, including any side effects, happens only after the user asked for
+    // another answer (or selected automatic enumeration).
+    current = null;
+    const requested = pullSolution(solver, solutions, reader);
+    if (requested.error) {
+      if (formattingAfterAdvance) output.write(' ');
+      formattingAfterAdvance = false;
+      output.write(requested.output);
+      if (requested.error?.name === 'HaltSignal') return { halted: true, code: requested.error.code };
+      throw requested.error;
     }
-    current = next;
+    if (requested.result.done) {
+      if (formattingAfterAdvance) output.write(' ');
+      formattingAfterAdvance = false;
+      output.write(`${requested.output}false.\n`);
+      return null;
+    }
+    current = requested;
   }
   return null;
 }
 
-function pullSolution(solver: any, solutions: any): any {
-  const stream = solver.io.resolve('user_output');
-  const originalWrite = stream?.write;
-  let captured = '';
-  if (stream) stream.write = (text: any) => { captured += String(text); };
+function pullSolution(_solver: any, solutions: any, reader: any): any {
+  // Prolog output is an observable side effect of execution, so never hold it
+  // until the search reaches its next leaf. In particular an infinite search
+  // that periodically writes progress must remain observable at the terminal.
+  // Completed queries keep the same byte order because user_output writes are
+  // synchronous and occur before solutions.next() returns its answer.
+  const suspended = reader.suspendForComputation();
   try {
-    return { result: solutions.next(), output: captured };
-  } catch (error) {
-    return { error, output: captured };
+    return { result: solutions.next(), output: '' };
+  } catch (error: any) {
+    return { error, output: '' };
   } finally {
-    if (stream) stream.write = originalWrite;
+    reader.resumeAfterComputation(suspended);
   }
 }
 
 function queryVariables(goal: any): any {
-  const variables = [];
-  const seen = new Set();
-  const stack = [goal];
+  const variables: any[] = [];
+  const seen: Set<any> = new Set();
+  const stack: any[] = [goal];
   while (stack.length) {
-    const term = stack.pop();
+    const term = stack.pop() as any;
     if (term.type === 'var') {
       if (!term.name.startsWith('__anon') && !seen.has(term.name)) {
         seen.add(term.name);
@@ -482,7 +749,7 @@ function queryVariables(goal: any): any {
 }
 
 function formatAnswer(engine: any, state: any, variables: any, env: any): any {
-  const bindings = [];
+  const bindings: any[] = [];
   const queryVariableNames = new Set(variables.map((variable: any) => variable.name));
   const names = new Map(variables.map((variable: any) => [variable.name, variable.name]));
   const operators = [...state.program.operators.values()];
@@ -496,28 +763,91 @@ function formatAnswer(engine: any, state: any, variables: any, env: any): any {
   const valueMaxPriority = equality == null
     ? 699
     : equality.specifier === 'xfy' ? equality.priority : equality.priority - 1;
+  const answerWriteOptions = {
+    quoted: true,
+    minimalOperatorSpacing: true,
+    operators,
+    variableNames: names,
+    operatorAtomsAsArgs: true,
+    dottedGraphicAtoms: true,
+    doubleQuotes: state.solver.prologFlags.get('double_quotes')?.value?.name ?? 'chars',
+    doubleBar: !state.strictIso,
+  };
   let generated = 0;
+  // Names generated for otherwise-anonymous variables (`_A`, `_B`, ...) must
+  // never collide with a name the query itself is already using for a
+  // *different* variable (e.g. a query literally naming `_A`) — printing an
+  // internal fresh variable as `_A` right next to the user's own `_A` binding
+  // falsely suggests they are the same variable (issue #108).
+  const usedDisplayNames = new Set(names.values());
+  const nextGeneratedName = () => {
+    let candidate;
+    do { candidate = `_${letterName(generated++)}`; } while (usedDisplayNames.has(candidate));
+    usedDisplayNames.add(candidate);
+    return candidate;
+  };
 
-  for (const variable of variables) collectUnboundVariables(engine, variable, env, names, () => `_${letterName(generated++)}`);
+  // Meta-predicate wrappers can make a query variable alias an internal fresh
+  // variable. Keep residual constraints tied to the query's visible name.
+  for (const variable of variables) {
+    const root = engine.deref(variable, env);
+    if (root.type === 'var' && !names.has(root.name)) names.set(root.name, variable.name);
+  }
+  for (const variable of variables) collectUnboundVariables(engine, variable, env, names, nextGeneratedName);
   for (const variable of variables) {
     const value = engine.deref(variable, env);
     if (value.type === 'var' &&
         (value.name === variable.name || !queryVariableNames.has(value.name))) continue;
     bindings.push(`${variable.name} = ${engine.formatTermForWrite(value, env, {
-      quoted: true,
-      operators,
-      variableNames: names,
+      ...answerWriteOptions,
       maxPriority: valueMaxPriority,
+      // A binding value is the right-hand `arg` of =/2.  ISO 6.3.3.1 permits
+      // current operator atoms in argument and list-element positions without
+      // quotes, just as writeq/1 already prints them.
     })}`);
+  }
+  for (const constraint of env.variableConstraints?.() ?? []) {
+    const residual = constraint.residualGoal?.(env);
+    if (residual == null) continue;
+    collectUnboundVariables(engine, residual, env, names, nextGeneratedName);
+    bindings.push(engine.formatTermForWrite(residual, env, answerWriteOptions));
+  }
+  // Residual attributes are part of the answer even when the attributed
+  // variable was created inside a called predicate and is not itself a query
+  // variable (issue #87).  First retain visible query names for attributed
+  // roots, then project every remaining live attributed root with a generated
+  // top-level variable name.  This also makes call_residue_vars/2 useful at the
+  // top level: variables returned through its list share the same name with the
+  // projected constraint instead of appearing unconstrained.
+  const projectedAttributeRoots: Set<any> = new Set();
+  const attributeRoots: any[] = [];
+  for (const variable of variables) {
+    const root = engine.deref(variable, env);
+    if (root.type !== 'var' || !env.hasPrologAttributes?.(root.name)) continue;
+    names.set(root.name, variable.name);
+    attributeRoots.push(root);
+  }
+  for (const name of env.attributedVariableNames?.() ?? []) {
+    const root = engine.deref(engine.variable(name), env);
+    if (root.type === 'var') attributeRoots.push(root);
+  }
+  for (const root of attributeRoots) {
+    if (projectedAttributeRoots.has(root.name) || !env.hasPrologAttributes?.(root.name)) continue;
+    projectedAttributeRoots.add(root.name);
+    if (!names.has(root.name)) names.set(root.name, nextGeneratedName());
+    for (const residual of state.solver.attributeResidualGoals(root, env)) {
+      collectUnboundVariables(engine, residual, env, names, nextGeneratedName);
+      bindings.push(engine.formatTermForWrite(residual, env, answerWriteOptions));
+    }
   }
   return bindings.length === 0 ? 'true' : bindings.join(', ');
 }
 
 function collectUnboundVariables(engine: any, term: any, env: any, names: any, nextName: any): any {
-  const stack = [term];
-  const seen = new Set();
+  const stack: any[] = [term];
+  const seen: Set<any> = new Set();
   while (stack.length) {
-    const current = engine.deref(stack.pop(), env);
+    const current = engine.deref(stack.pop() as any, env);
     if (current.type === 'var') {
       if (!seen.has(current.name)) {
         seen.add(current.name);
@@ -536,20 +866,35 @@ function letterName(index: any): any {
 }
 
 function formatError(engine: any, state: any, error: any): any {
-  if (error?.name === 'PrologError') {
+  if (error?.name === 'PrologError' || (error?.name === 'ThrownTerm' && error.term != null)) {
     const env = new engine.Env();
-    const variableNames = new Map();
+    const variableNames: Map<any, any> = new Map();
     let generated = 0;
     // ISO 7.12.1 represents processor errors as error(ErrorTerm, ImpDef).
     // Reuse the same conversion as catch/3 so uncaught errors at the top
     // level cannot lose the implementation-defined context or misplace a
     // culprit as the second argument of error/2.
-    const term = formalErrorTerm(error);
+    // A thrown ball that is already an error/2 envelope is the same thing a
+    // built-in raises, so display it the same way. Wrapping only that case in
+    // throw/1 made one error print two different ways depending on whether the
+    // engine or Prolog code raised it. Other balls keep the wrapper, because
+    // throw(foo) has no error/2 envelope to show.
+    const thrownBall = error.name === 'ThrownTerm' ? engine.deref(error.term, env) : null;
+    const thrownIsErrorEnvelope = thrownBall != null
+      && thrownBall.type === 'compound' && thrownBall.name === 'error' && thrownBall.arity === 2;
+    const term = error.name === 'ThrownTerm'
+      ? (thrownIsErrorEnvelope ? thrownBall : engine.compound('throw', [error.term]))
+      : formalErrorTerm(error);
     collectUnboundVariables(engine, term, env, variableNames, () => `_${letterName(generated++)}`);
     return `${engine.formatTermForWrite(term, env, {
       quoted: true,
+      // Match the spacing successful answers use: operator layout only where
+      // ISO 6.3.4/6.4 needs it to keep the text readable back as the same
+      // term, so contexts print as [outer-1, atom_length/2].
+      minimalOperatorSpacing: true,
       operators: [...state.program.operators.values()],
       variableNames,
+      doubleBar: !state.strictIso,
     })}.`;
   }
   const message = error?.message ?? String(error);

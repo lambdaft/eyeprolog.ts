@@ -1,21 +1,19 @@
-// Host-supplied goal metadata embedded in ordinary Prolog comments.
-// The source remains valid ISO Prolog text because processors may ignore it.
-export function goalsFromSource(source: any): any {
-  const goals = [];
+export function extractGoalDirectives(source: any): any {
   const lines = String(source ?? '').split(/\r?\n/);
+  const goals: any[] = [];
   for (let index = 0; index < lines.length; index++) {
-    // @ts-expect-error TS2532: auto-suppressed
-    const match = lines[index].match(/^\s*%%\s*goal:\s*(.*)$/);
+    const line = lines[index];
+    if (!line) continue;
+    const match = line.match(/^\s*%%\s*goal:\s*(.*)$/);
     if (!match) continue;
-    let goal = match[1];
-    // @ts-expect-error TS2532: auto-suppressed
-    while (lines[index + 1]?.match(/^\s*%%/) && !lines[index + 1].match(/^\s*%%\s*goal:/)) {
+    let goal = match[1] ?? '';
+    while (lines[index + 1] && lines[index + 1]!.match(/^\s*%%/) && !lines[index + 1]!.match(/^\s*%%\s*goal:/)) {
       index++;
-      // @ts-expect-error TS2532: auto-suppressed
-      goal += `\n${lines[index].replace(/^\s*%%\s?/, '')}`;
+      goal += `\n${lines[index]!.replace(/^\s*%%\s?/, '')}`;
     }
-    // @ts-expect-error TS18048: auto-suppressed
     goals.push(goal.trim());
   }
   return goals;
 }
+
+export const goalsFromSource = extractGoalDirectives;
