@@ -31,6 +31,7 @@
     "docs",
     "index.js",
     "index.d.ts",
+    "playground.html",
     "bin",
     "src",
     "test"
@@ -41,14 +42,15 @@
   "scripts": {
     "build": "tsc -p tsconfig.json && node -e \"fs.mkdirSync('dist/src/lib', { recursive: true }); fs.cpSync('src/lib', 'dist/src/lib', { recursive: true });\"",
     "test": "node test/run-all.mjs",
-    "generate": "node docs/tools/extract-book-examples.mjs",
+    "benchmark": "node test/benchmark.mjs",
+    "generate": "node tools/generate-library-autoload-index.mjs && node tools/generate-predicate-reference.mjs && node tools/extract-book-examples.mjs",
     "test:eyeprolog": "node test/run-all.mjs",
     "test:conformance": "node test/run-conformance.mjs",
     "test:iso-strict": "node test/run-iso-strict.mjs",
     "test:examples": "node test/run-examples.mjs",
     "test:regression": "node test/run-regression.mjs",
     "test:playground": "node test/run-playground.mjs",
-    "preversion": "npm test && node test/run-conformance-report.mjs docs/conformance-report.md",
+    "preversion": "npm test && node test/run-conformance-report.mjs conformance-report.md",
     "postversion": "git push origin HEAD --follow-tags"
   },
   "devDependencies": {

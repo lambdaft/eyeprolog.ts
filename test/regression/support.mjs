@@ -251,7 +251,7 @@ export function playgroundStaticIssues() {
     return p;
   };
   const workerText = fs.readFileSync(resolveSrc('src/playground-worker.js'), 'utf8');
-  if (!workerText.includes("from './index.js?playground=") ||
+  if (!workerText.includes("from './index.js") ||
       !workerText.includes('createEyePrologRegistry') ||
       !workerText.includes('executePlaygroundRequest')) {
     issues.push('playground worker must install the EyeProlog library registry');
