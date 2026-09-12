@@ -1,9 +1,6 @@
 {
   "name": "eyeprolog.ts",
   "private": true,
-  "publishConfig": {
-    "access": "public"
-  },
   "version": "1.5.84",
   "description": "EyeProlog turns facts and rules into answers and proofs.",
   "type": "module",
