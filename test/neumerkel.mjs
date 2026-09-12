@@ -4,7 +4,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { Program, formatQuadTerm, run, runQuads } from '../dist/src/index.js';
+import { Program, formatQuadTerm, run, runQuads } from '../src/index.js';
 import {
   countTopLevelTerms,
   decodeDocument,

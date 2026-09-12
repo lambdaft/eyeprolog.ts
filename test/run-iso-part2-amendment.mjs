@@ -2,8 +2,8 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { run } from '../dist/src/index.js';
-import { Program } from '../dist/src/program.js';
+import { run } from '../src/index.js';
+import { Program } from '../src/program.js';
 import { TestReporter, assertEqual, isMainModule, runStandalone } from './test-style.mjs';
 
 function withModuleTree(files, test) {

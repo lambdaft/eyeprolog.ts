@@ -3,11 +3,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import * as publicApi from '../../dist/src/index.js';
-import { BuiltinRegistry, Env, Program, Solver, atom, compactVariableList, compound, copyResolved, createDefaultRegistry, eyePrologAmbiguousLibraryAutoload, eyePrologLibraryAutoload, eyePrologLibraryAutoloadModules, getEyePrologRegistry, getStrictIsoRegistry, listFromItems, numberTerm, numberTextFromDouble, parseProgramText, run as runEyeProlog, standardLibrarySources, termToString, unify, variable } from '../../dist/src/index.js';
-import { ISO_OPERATOR_DEFINITIONS, parseGoalText, parseNumberTokenText, tryParseClausesFastInto } from '../../dist/src/parser.js';
-import { defaultsToStdin } from '../../dist/src/cli.js';
-import { formatTermForWrite } from '../../dist/src/write.js';
+import * as publicApi from '../../src/index.js';
+import { BuiltinRegistry, Env, Program, Solver, atom, compactVariableList, compound, copyResolved, createDefaultRegistry, eyePrologAmbiguousLibraryAutoload, eyePrologLibraryAutoload, eyePrologLibraryAutoloadModules, getEyePrologRegistry, getStrictIsoRegistry, listFromItems, numberTerm, numberTextFromDouble, parseProgramText, run as runEyeProlog, standardLibrarySources, termToString, unify, variable } from '../../src/index.js';
+import { ISO_OPERATOR_DEFINITIONS, parseGoalText, parseNumberTokenText, tryParseClausesFastInto } from '../../src/parser.js';
+import { defaultsToStdin } from '../../src/cli.js';
+import { formatTermForWrite } from '../../src/write.js';
 import { assertEqual, assertIncludes, assertNotIncludes } from '../test-style.mjs';
 import {
   DCG_HANDOFF_TEST_TIMEOUT_MS,
@@ -1721,7 +1721,7 @@ c4 ?- call((!;1)).
     {
       name: 'number_chars/2 to read/2 cross-check stays bounded under a small heap (issue #29)',
       run: () => {
-        const engineUrl = new URL('../dist/src/index.js', testDirUrl).href;
+        const engineUrl = new URL('../src/index.js', testDirUrl).href;
         const script = `
           import {
             Program, Solver, Env, atom, compound, variable, listFromItems,
@@ -3164,7 +3164,7 @@ c4 ?- call((!;1)).
     {
       name: 'deep tail-consuming DCG avoids quadratic occurs scans and recursive ground-goal copying',
       run: () => {
-        const engineUrl = new URL('../dist/src/index.js', testDirUrl).href;
+        const engineUrl = new URL('../src/index.js', testDirUrl).href;
         const script = `
           import { Program, Solver, Env, atom, compound, listFromItems } from ${JSON.stringify(engineUrl)};
           const program = Program.parse(${JSON.stringify('s --> [].\ns --> [x], s.\n')});
@@ -3189,7 +3189,7 @@ c4 ?- call((!;1)).
     {
       name: 'Trealla-style DCG hand-off autoloads time/1 and ... //0 without quadratic occurs checks (issue #49)',
       run: () => {
-        const engineUrl = new URL('../dist/src/index.js', testDirUrl).href;
+        const engineUrl = new URL('../src/index.js', testDirUrl).href;
         const script = `
           import { run } from ${JSON.stringify(engineUrl)};
           const source = ${JSON.stringify('a --> ..., epsilon.\nepsilon --> [].\n')};
@@ -3236,7 +3236,7 @@ c4 ?- call((!;1)).
     {
       name: 'Trealla-style DCG hand-off reaches 65536 cells without the solver depth ceiling',
       run: () => {
-        const engineUrl = new URL('../dist/src/index.js', testDirUrl).href;
+        const engineUrl = new URL('../src/index.js', testDirUrl).href;
         const script = `
           import { run } from ${JSON.stringify(engineUrl)};
           const source = ${JSON.stringify(':- set_prolog_flag(occurs_check, true).\na --> ..., epsilon.\nepsilon --> [].\n')};

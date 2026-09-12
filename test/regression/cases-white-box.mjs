@@ -3,12 +3,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import * as publicApi from '../../dist/src/index.js';
-import { Env, Program, atom, compound, copyResolved, flattenConjunction, listFromItems, numberTerm, parseProgramText, properListItems, stringTerm, termIsGround, termToString, unify, variable, variantTerms } from '../../dist/src/index.js';
-import { ISO_OPERATOR_DEFINITIONS, parseGoalText, parseNumberTokenText } from '../../dist/src/parser.js';
-import { compareTerms } from '../../dist/src/term.js';
-import { formatTermForWrite } from '../../dist/src/write.js';
-import { selectClauseCandidates } from '../../dist/src/program.js';
+import * as publicApi from '../../src/index.js';
+import { Env, Program, atom, compound, copyResolved, flattenConjunction, listFromItems, numberTerm, parseProgramText, properListItems, stringTerm, termIsGround, termToString, unify, variable, variantTerms } from '../../src/index.js';
+import { ISO_OPERATOR_DEFINITIONS, parseGoalText, parseNumberTokenText } from '../../src/parser.js';
+import { compareTerms } from '../../src/term.js';
+import { formatTermForWrite } from '../../src/write.js';
+import { selectClauseCandidates } from '../../src/program.js';
 import { assertEqual, assertIncludes, assertNotIncludes } from '../test-style.mjs';
 import { goalsFromSource } from '../goal-metadata.mjs';
 import {

@@ -3,8 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { TestReporter, isMainModule, runStandalone } from './test-style.mjs';
-import { parseClauses } from '../dist/src/parser.js';
-import { ATOM, COMPOUND, NUMBER, Env, properListItems } from '../dist/src/term.js';
+import { parseClauses } from '../src/parser.js';
+import { ATOM, COMPOUND, NUMBER, Env, properListItems } from '../src/term.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', 'src');
 
