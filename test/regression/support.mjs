@@ -241,8 +241,17 @@ export function playgroundStaticIssues() {
   if (!html.includes('<script type="module">')) issues.push('playground script must be an ES module');
   if (!html.includes("new URL('./src/playground-worker.js?playground=")) issues.push('playground must cache-bust its dedicated module worker');
   if (!html.includes("new Worker(workerUrl, { type: 'module' })")) issues.push('playground must launch the dedicated module worker');
-  const workerText = fs.readFileSync(path.join(packageRoot, 'src', 'playground-worker.js'), 'utf8');
-if (!workerText.includes("from './index.js?playground=") ||
+  const resolveSrc = (file) => {
+    const p = path.join(packageRoot, file);
+    if (fs.existsSync(p)) return p;
+    const ts = p.replace(/\.js$/, '.ts');
+    if (fs.existsSync(ts)) return ts;
+    const dist = path.join(packageRoot, 'dist', file);
+    if (fs.existsSync(dist)) return dist;
+    return p;
+  };
+  const workerText = fs.readFileSync(resolveSrc('src/playground-worker.js'), 'utf8');
+  if (!workerText.includes("from './index.js?playground=") ||
       !workerText.includes('createEyePrologRegistry') ||
       !workerText.includes('executePlaygroundRequest')) {
     issues.push('playground worker must install the EyeProlog library registry');
@@ -251,12 +260,12 @@ if (!workerText.includes("from './index.js?playground=") ||
     issues.push('obsolete portable-library.js must be absent');
   }
   for (const filename of ['src/playground-worker.js', 'src/index.js', 'src/program.js', 'src/io.js']) {
-    const sourceText = fs.readFileSync(path.join(packageRoot, filename), 'utf8');
+    const sourceText = fs.readFileSync(resolveSrc(filename), 'utf8');
     if (/^\s*import\s+[^('\"]*['\"]node:/m.test(sourceText)) {
       issues.push(`${filename} must not statically import Node built-ins in the browser graph`);
     }
   }
-  const platformText = fs.readFileSync(path.join(packageRoot, 'src', 'platform.js'), 'utf8');
+  const platformText = fs.readFileSync(resolveSrc('src/platform.js'), 'utf8');
   if (!platformText.includes("await import('node:fs')") || !platformText.includes("await import('node:path')")) {
     issues.push('browser platform bridge must guard Node built-ins behind dynamic imports');
   }

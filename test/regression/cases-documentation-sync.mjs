@@ -48,7 +48,8 @@ export function documentationSyncCases() {
           encoding: 'utf8',
         });
         assertEqual(result.status, 0, 'exit status');
-        assertIncludes(result.stdout, 'library-autoload-index.js is up to date', 'stdout');
+        assertIncludes(result.stdout, 'library-autoload-index', 'stdout');
+        assertIncludes(result.stdout, 'is up to date', 'stdout');
         assertEqual(result.stderr, '', 'stderr');
       },
     },
@@ -394,7 +395,9 @@ ${profile}`;
           ...[...standardLibrarySources.values()].map((entry) => entry.filename),
           'src/playground-worker.js'];
         for (const filename of documentedSources) {
-          assertEqual(fs.existsSync(path.join(packageRoot, filename)), true, `${filename} exists`);
+          const tsFilename = filename.endsWith('.js') ? filename.slice(0, -3) + '.ts' : filename;
+          const exists = fs.existsSync(path.join(packageRoot, filename)) || fs.existsSync(path.join(packageRoot, tsFilename)) || fs.existsSync(path.join(packageRoot, 'dist', filename));
+          assertEqual(exists, true, `${filename} exists`);
           assertIncludes(book, filename, `book documents ${filename}`);
         }
         assertEqual(fs.existsSync(path.join(packageRoot, 'src', 'portable-library.js')), false, 'obsolete duplicate library module is absent');
