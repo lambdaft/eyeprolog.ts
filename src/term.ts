@@ -104,7 +104,6 @@ export const compactVariableList = (length: any, variablePrefix: any) => {
 };
 export const isCompactList = (term: any) => term instanceof CompactListTerm;
 export type EyePrologTerm = any;
-export const EyePrologTerm = Term;
 export interface CompactState { maxPossiblyBoundIndex: bigint; }
 export const compactListLength = (term: any) => typeof term?._compactLength === 'bigint' ? term._compactLength : null;
 

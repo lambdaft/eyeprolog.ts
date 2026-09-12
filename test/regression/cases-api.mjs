@@ -1388,7 +1388,7 @@ answer(ok) :-
         assertEqual(solver.program, program, 'solver keeps original program object');
         assertEqual(program.findGroup('append', 3)?.module, 'lists', 'append/3 is imported from library(lists)');
         assertEqual(fs.existsSync(path.join(packageRoot, 'src', 'lib', 'eyeprolog.pl')), false, 'obsolete umbrella module is absent');
-        assertEqual(fs.existsSync(path.join(packageRoot, 'src', 'standard-library.js')), true, 'standard module registry exists');
+        assertEqual(fs.existsSync(path.join(packageRoot, 'src', 'standard-library.js')) || fs.existsSync(path.join(packageRoot, 'src', 'standard-library.ts')), true, 'standard module registry exists');
         assertEqual(fs.existsSync(path.join(packageRoot, 'src', 'lib', 'aggregate.pl')), true, 'aggregate module exists');
         assertEqual(fs.existsSync(path.join(packageRoot, 'src', 'lib', 'clpz.pl')), true, 'CLP(Z) module exists');
         assertEqual(fs.existsSync(path.join(packageRoot, 'src', 'lib', 'iso_ext.pl')), true, 'ISO extension module exists');

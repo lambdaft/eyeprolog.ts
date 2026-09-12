@@ -184,10 +184,16 @@ async function withStaticServer(run) {
     try {
       const url = new URL(request.url ?? '/', 'http://127.0.0.1');
       const relative = decodeURIComponent(url.pathname).replace(/^\/+/, '') || 'playground.html';
-      const filename = path.resolve(packageRoot, relative);
+      let filename = path.resolve(packageRoot, relative);
       if (filename !== packageRoot && !filename.startsWith(`${packageRoot}${path.sep}`)) {
         response.writeHead(403).end('forbidden');
         return;
+      }
+      if (!fs.statSync(filename, { throwIfNoEntry: false })?.isFile() && relative.startsWith('src/')) {
+        const distFile = path.resolve(packageRoot, 'dist', relative);
+        if (fs.statSync(distFile, { throwIfNoEntry: false })?.isFile()) {
+          filename = distFile;
+        }
       }
       if (!fs.statSync(filename, { throwIfNoEntry: false })?.isFile()) {
         response.writeHead(404).end('not found');

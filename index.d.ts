@@ -1,4 +1,8 @@
 export interface EyePrologStats {
+  /** Alternating-fixed-point rounds used to build WFS models. */
+  wfs_fixpoint_rounds: number;
+  /** Undefined WFS atoms encountered while resolving query goals. */
+  wfs_undefined_answers: number;
   [key: string]: number;
 }
 
@@ -8,10 +12,14 @@ export interface EyePrologRunOptions {
   /** Host-supplied goals, executed in order. */
   goals?: Array<string | EyePrologTerm>;
   proof?: boolean;
+  /** Proof detail: abstract keeps library predicates as trusted leaves; expanded opens bundled Prolog library clauses. */
+  proofDetail?: 'abstract' | 'expanded';
   why?: boolean;
   explain?: boolean;
   maxDepth?: number;
   maxInferences?: number;
+  /** Soft JavaScript heap ceiling in bytes; exhaustion raises resource_error(memory). */
+  maxMemoryBytes?: number;
   solutionLimit?: number;
   registry?: BuiltinRegistry;
   sourceMetadata?: boolean;
@@ -19,6 +27,8 @@ export interface EyePrologRunOptions {
   analyzeNegation?: boolean;
   /** Restrict parsing and execution to ISO/IEC 13211-1:1995 plus Corrigenda 1-3. */
   isoStrict?: boolean;
+  /** Autoload uniquely mapped predicates from the conservative interop profile. Defaults to true outside strict ISO mode. */
+  autoload?: boolean;
   /** Initial ISO interpretation of double-quoted list notation. Defaults to chars. */
   doubleQuotes?: 'chars' | 'codes' | 'atom';
   /** Enable non-standard fast paths (Pi accumulator, etc.). Disabled in strict ISO mode. */
@@ -26,6 +36,7 @@ export interface EyePrologRunOptions {
   ioOptions?: {
     input?: string;
     write?: (text: string) => void;
+    errorWrite?: (text: string) => void;
   };
   [key: string]: unknown;
 }
@@ -34,8 +45,20 @@ export interface EyePrologRunResult {
   stdout: string;
   stats: EyePrologStats;
   haltCode: number | null;
-  mermaidProof: string | null;
-  mermaidProofs: string[];
+  mermaidProof?: string | null;
+  mermaidProofs?: string[];
+}
+
+export interface EyePrologForwardRunResult {
+  haltCode: number | null;
+  rounds: number;
+  derived: number;
+}
+
+export interface EyePrologForwardRunOptions {
+  onAnswer?: (line: string, term: EyePrologTerm) => void;
+  onFuse?: (line: string, term: EyePrologTerm) => void;
+  onDiagnostic?: (line: string) => void;
 }
 
 export class StreamManager {
@@ -73,8 +96,15 @@ export interface EyePrologQuad {
 
 export interface EyePrologQuadResult {
   ok: boolean;
-  kind?: 'failed' | 'malformed' | 'bad_identifier' | 'unsupported';
+  kind?: 'failed' | 'malformed' | 'bad_identifier' | 'unsupported' | 'undecided';
   expected?: EyePrologTerm;
+  reason?: string;
+  /** The quad's query term, for a caller building its own per-result label. */
+  query?: EyePrologTerm;
+  /** The quad's identifier, or null when the quad has none. */
+  id?: EyePrologTerm | null;
+  /** The source line this answer description starts on, when known. */
+  line?: number | null;
 }
 
 export interface EyePrologQuadRunResult {
@@ -82,7 +112,18 @@ export interface EyePrologQuadRunResult {
   total: number;
   passed: number;
   failed: number;
+  undecided: number;
   results: EyePrologQuadResult[];
+}
+
+export interface EyePrologQuadRunOptions extends EyePrologRunOptions {
+  initialize?: boolean;
+  /** Search budget for ordinary quad descriptions before reporting an undecided result. */
+  quadMaxInferences?: number;
+  /** Depth bound used when a quad explicitly expects loops. */
+  loopMaxDepth?: number;
+  /** Inference bound used when a quad explicitly expects loops. */
+  loopMaxInferences?: number;
 }
 
 export interface EyePrologPredicateGroup {
@@ -95,7 +136,11 @@ export interface EyePrologPredicateGroup {
   rejectedDemandIndexes: Set<string>;
   tabled: boolean;
   recursive: boolean;
+  listTailRecursive: boolean;
   tableInputPositions: number[];
+  tableAllVariants: boolean;
+  /** True when the group is evaluated by EyeProlog's finite-Datalog WFS evaluator. */
+  wfsDatalog: boolean;
   negationStratum: number | null;
 }
 
@@ -107,6 +152,14 @@ export class Term {
   name: string;
   args: EyePrologTerm[];
   get arity(): number;
+}
+
+export class CompactListTerm {
+  readonly type: 'compound';
+  readonly name: '.';
+  readonly args: EyePrologTerm[];
+  readonly arity: 2;
+  mayContainVariable(name: string): boolean;
 }
 
 export class Env {
@@ -154,7 +207,12 @@ export interface BuiltinDefinition {
   eyePrologLibrary: boolean;
 }
 
-export type BuiltinHandler = (context: { solver: Solver; goal: EyePrologTerm; env: Env }) => Iterable<Env>;
+export interface BuiltinIterator extends IterableIterator<Env> {
+  hasPendingAlternatives?: () => boolean;
+}
+
+export type BuiltinHandler =
+  (context: { solver: Solver; goal: EyePrologTerm; env: Env }) => BuiltinIterator;
 
 export class BuiltinRegistry {
   constructor();
@@ -175,6 +233,7 @@ export class Solver {
   maxInferences: number;
   inferences: number;
   inferenceLimitExceeded: boolean;
+  maxMemoryBytes: number;
   solutionLimit: number;
   solutionsSeen: number;
   active: unknown[];
@@ -183,7 +242,11 @@ export class Solver {
   cloneForInnerGoal(solutionLimit?: number): Solver;
   solve(goals: EyePrologTerm | EyePrologTerm[], env?: Env, depth?: number): Iterable<Env>;
   activeVariant(goal: EyePrologTerm, env: Env): boolean;
-  fastPathsEnabled: boolean;
+}
+
+export class DCG {
+  static phrase(program: Program, ruleName: string, inputTokens: string[] | EyePrologTerm[], args?: EyePrologTerm[]): boolean;
+  static generate(program: Program, ruleName: string, args?: EyePrologTerm[]): string[][];
 }
 
 export const VAR: 'var';
@@ -200,6 +263,9 @@ export function numberTerm(value: string | number): Term;
 export function compound(name: string, args?: EyePrologTerm[]): Term;
 export function emptyList(): Term;
 export function cons(head: EyePrologTerm, tail: EyePrologTerm): Term;
+export function compactVariableList(length: bigint | number | string, variablePrefix: string): CompactListTerm | Term;
+export function isCompactList(term: EyePrologTerm | null | undefined): term is CompactListTerm;
+export function compactListLength(term: EyePrologTerm | null | undefined): bigint | null;
 export function deref(term: EyePrologTerm, env: Env): EyePrologTerm;
 export function isScalar(term: EyePrologTerm | null | undefined): boolean;
 export function isEmptyList(term: EyePrologTerm | null | undefined): boolean;
@@ -238,6 +304,12 @@ export const standardLibrarySources: ReadonlyMap<string, { filename: string; sou
 export const eyePrologLibraryIndicators: readonly string[];
 export const eyePrologNativeLibraryIndicators: readonly string[];
 export const eyePrologPortableLibraryIndicators: readonly string[];
+export const eyePrologInteropAutoload: Readonly<Record<string, string>>;
+export const eyePrologLibraryAutoload: Readonly<Record<string, string>>;
+export const eyePrologAmbiguousLibraryAutoload: Readonly<Record<string, readonly string[]>>;
+export const eyePrologLibraryAutoloadModules: readonly string[];
+export const eyePrologInteropLibraryIndicators: readonly string[];
+export const eyePrologInteropLibraryModules: readonly string[];
 export class PrologError extends Error {
   formal: string;
   culprit: EyePrologTerm | null;
@@ -248,20 +320,64 @@ export class HaltSignal extends Error {
   code: number;
   constructor(code?: number);
 }
-export class DCG {
-  static load(sourceCode: string, options?: EyePrologRunOptions): DCG;
-  static loadFile(path: string, options?: EyePrologRunOptions): DCG;
-  parse(startRule: string, tokens: string[]): boolean;
-  parseWithBindings(startRuleSyntax: string, tokens: string[]): Map<string, string> | null;
-  generate(startRule: string, maxResults?: number): string[][];
-}
 export function run(source: string | Program, options?: EyePrologRunOptions): EyePrologRunResult;
-export function runQuads(source: string | Program, options?: EyePrologRunOptions & { initialize?: boolean }): EyePrologQuadRunResult;
-export function whyProof(program: Program, goal: EyePrologTerm, options?: EyePrologRunOptions): { ok: boolean; text: string };
+/** True when a program contains one or more EyeProlog `:+/2` forward rules. */
+export function hasForwardRules(program: Program): boolean;
+/** Execute EyeProlog `:+/2` rules to closure using an existing solver. */
+export function executeForwardRules(program: Program, solver: Solver, options?: EyePrologForwardRunOptions): EyePrologForwardRunResult;
+export function runQuads(source: string | Program, options?: EyePrologQuadRunOptions): EyePrologQuadRunResult;
+/** Render a quad term (query, identifier, or expected answer) the way quad failure reports do. */
+export function formatQuadTerm(program: Program, term: EyePrologTerm): string;
+export interface EyePrologProofMethod {
+  type: 'source' | 'builtin' | 'library' | 'conjunction';
+  kind?: 'fact' | 'rule';
+  filename?: string;
+  clause?: number;
+  name?: string;
+  arity?: number;
+}
+
+export interface EyePrologProofNode {
+  goal: string;
+  method: EyePrologProofMethod;
+  bindings: Array<{ name: string; value: string }>;
+  children: EyePrologProofNode[];
+}
+
+export interface EyePrologProofCertificate {
+  version: 1;
+  detail: 'abstract' | 'expanded';
+  answer: string;
+  proof: EyePrologProofNode;
+}
+
+export interface EyePrologProofResult {
+  ok: boolean;
+  certificate: EyePrologProofCertificate | null;
+  text: string;
+}
+
+export interface EyePrologProofTrustBoundary {
+  type: 'builtin' | 'library';
+  name: string;
+  arity: number;
+  goal: string;
+}
+
+export interface EyePrologProofVerification {
+  ok: boolean;
+  error: string | null;
+  trusted: EyePrologProofTrustBoundary[];
+}
+
+export function proofCertificate(program: Program, goal: EyePrologTerm, options?: EyePrologRunOptions): EyePrologProofResult;
+export function proofCertificatesFromText(text: string, program: Program): EyePrologProofCertificate[];
+export function verifyProof(program: Program, certificate: EyePrologProofCertificate | EyePrologProofResult, options?: EyePrologRunOptions): EyePrologProofVerification;
+export function whyProof(program: Program, goal: EyePrologTerm, options?: EyePrologRunOptions): EyePrologProofResult;
 export function whyNoProof(goal: EyePrologTerm): string;
-export function explainProof(program: Program, goal: EyePrologTerm, options?: EyePrologRunOptions): { ok: boolean; text: string };
-export function whyProofNode(program: Program, goal: EyePrologTerm, options?: EyePrologRunOptions): { ok: boolean; node: any; env: any };
-export function renderProofToMermaid(program: Program, goal: EyePrologTerm, options?: EyePrologRunOptions): string;
+export function explainProof(program: Program, goal: EyePrologTerm, options?: EyePrologRunOptions): EyePrologProofResult;
+export function whyProofNode(program: Program, goal: EyePrologTerm, options?: EyePrologRunOptions): { ok: boolean; node: any };
+export function renderProofToMermaid(proof: any): string;
 
 declare const eyeprolog: {
   VAR: typeof VAR;
@@ -270,6 +386,7 @@ declare const eyeprolog: {
   NUMBER: typeof NUMBER;
   COMPOUND: typeof COMPOUND;
   Term: typeof Term;
+  CompactListTerm: typeof CompactListTerm;
   Env: typeof Env;
   Program: typeof Program;
   Solver: typeof Solver;
@@ -285,6 +402,9 @@ declare const eyeprolog: {
   compound: typeof compound;
   emptyList: typeof emptyList;
   cons: typeof cons;
+  compactVariableList: typeof compactVariableList;
+  isCompactList: typeof isCompactList;
+  compactListLength: typeof compactListLength;
   deref: typeof deref;
   isScalar: typeof isScalar;
   isEmptyList: typeof isEmptyList;
@@ -322,8 +442,20 @@ declare const eyeprolog: {
   eyePrologLibraryIndicators: typeof eyePrologLibraryIndicators;
   eyePrologNativeLibraryIndicators: typeof eyePrologNativeLibraryIndicators;
   eyePrologPortableLibraryIndicators: typeof eyePrologPortableLibraryIndicators;
+  eyePrologInteropAutoload: typeof eyePrologInteropAutoload;
+  eyePrologLibraryAutoload: typeof eyePrologLibraryAutoload;
+  eyePrologAmbiguousLibraryAutoload: typeof eyePrologAmbiguousLibraryAutoload;
+  eyePrologLibraryAutoloadModules: typeof eyePrologLibraryAutoloadModules;
+  eyePrologInteropLibraryIndicators: typeof eyePrologInteropLibraryIndicators;
+  eyePrologInteropLibraryModules: typeof eyePrologInteropLibraryModules;
   run: typeof run;
+  hasForwardRules: typeof hasForwardRules;
+  executeForwardRules: typeof executeForwardRules;
   runQuads: typeof runQuads;
+  formatQuadTerm: typeof formatQuadTerm;
+  proofCertificate: typeof proofCertificate;
+  proofCertificatesFromText: typeof proofCertificatesFromText;
+  verifyProof: typeof verifyProof;
   whyProof: typeof whyProof;
   whyNoProof: typeof whyNoProof;
   explainProof: typeof explainProof;
