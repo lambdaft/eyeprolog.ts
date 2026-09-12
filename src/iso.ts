@@ -2019,9 +2019,9 @@ function* writeTermBuiltin({ solver, goal, env }: any) {
   // implementation dependent unless another procedural requirement constrains it.
   if (streamTerm?.type === VAR) throw new PrologError('instantiation_error');
   const preflight = preflightOptionList(optionTerm, env);
-  requireProperOptionList(preflight);
+  const optionItems = requireProperOptionList(preflight);
   if (goal.arity === 3) streamReference(goal.args[0], env);
-  const options = termWriteOptionsFromItems( env, 'write_term', solver);
+  const options = termWriteOptionsFromItems(optionItems, env, 'write_term', solver);
 
   const stream = goal.arity === 2
     ? solver.io.resolve(solver.io.currentOutput)

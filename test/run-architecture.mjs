@@ -25,9 +25,11 @@ export function runArchitecture(reporter = new TestReporter()) {
       const source = fs.readFileSync(path.join(libRoot, entry.name), 'utf8');
       const adapters = [...new Set([...source.matchAll(/\b(eyeprolog__[A-Za-z0-9_]+)\b/g)].map((match) => match[1]))];
       if (adapters.length === 0) continue;
-      const hostPath = path.join(ROOT, `${module}-host.js`);
+      const hostPath = fs.existsSync(path.join(ROOT, `${module}-host.ts`))
+        ? path.join(ROOT, `${module}-host.ts`)
+        : path.join(ROOT, `${module}-host.js`);
       if (!fs.existsSync(hostPath)) {
-        issues.push(`${entry.name} uses ${adapters.join(', ')} without ${module}-host.js`);
+        issues.push(`${entry.name} uses ${adapters.join(', ')} without ${module}-host.ts`);
         continue;
       }
       const host = fs.readFileSync(hostPath, 'utf8');
@@ -80,9 +82,10 @@ export function runArchitecture(reporter = new TestReporter()) {
     }
   });
   reporter.test('DCG expansion does not depend on the ISO registry facade', () => {
-    const source = fs.readFileSync(path.join(ROOT, 'dcg.js'), 'utf8');
-    if (/from\s+['"]\.\/iso\.js['"]/.test(source)) {
-      throw new Error('dcg.js must import shared error types from errors.js, not iso.js');
+    const dcgPath = fs.existsSync(path.join(ROOT, 'dcg.ts')) ? path.join(ROOT, 'dcg.ts') : path.join(ROOT, 'dcg.js');
+    const source = fs.readFileSync(dcgPath, 'utf8');
+    if (/from\s+['"]\.\/iso(\.js)?['"]/.test(source)) {
+      throw new Error('dcg.ts must import shared error types from errors.js, not iso.js');
     }
   });
   reporter.sectionTotal('source architecture');
@@ -116,7 +119,7 @@ function sourceFiles(root) {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) visit(full);
-      else if (entry.isFile() && entry.name.endsWith('.js')) files.push(full);
+      else if (entry.isFile() && (entry.name.endsWith('.js') || entry.name.endsWith('.ts')) && !entry.name.endsWith('.d.ts')) files.push(full);
     }
   };
   visit(root);
@@ -132,7 +135,10 @@ function importGraph(root) {
     const source = fs.readFileSync(file, 'utf8');
     for (const match of source.matchAll(pattern)) {
       let target = path.resolve(path.dirname(file), match[2]);
-      if (!path.extname(target)) target += '.js';
+      if (target.endsWith('.js') && !known.has(target)) {
+        const tsTarget = target.slice(0, -3) + '.ts';
+        if (known.has(tsTarget)) target = tsTarget;
+      }
       if (known.has(target)) graph.get(path.resolve(file)).push(target);
     }
   }

@@ -2,12 +2,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseClauses } from '../src/parser.js';
-import { ATOM, COMPOUND, NUMBER, Env, properListItems } from '../src/term.js';
+import { parseClauses } from '../dist/src/parser.js';
+import { ATOM, COMPOUND, NUMBER, Env, properListItems } from '../dist/src/term.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const libDir = path.join(root, 'src', 'lib');
-const outputFile = path.join(root, 'src', 'library-autoload-index.js');
+const outputFile = path.join(root, 'src', fs.existsSync(path.join(root, 'src', 'library-autoload-index.ts')) ? 'library-autoload-index.ts' : 'library-autoload-index.js');
 
 function predicateIndicator(nameTerm, arityTerm, extraArity = 0) {
   if (nameTerm?.type !== ATOM || arityTerm?.type !== NUMBER || !/^\d+$/.test(arityTerm.name)) return null;

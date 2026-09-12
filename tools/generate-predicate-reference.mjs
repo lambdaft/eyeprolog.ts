@@ -2,8 +2,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createDefaultRegistry } from '../src/iso.js';
-import { eyePrologLibraryAutoload } from '../src/library-autoload-index.js';
+import { createDefaultRegistry } from '../dist/src/iso.js';
+import { eyePrologLibraryAutoload } from '../dist/src/library-autoload-index.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const metadataFile = path.join(root, 'tools', 'predicate-reference.json');
@@ -70,7 +70,10 @@ function validateMetadata(data, surface) {
     }
     if (typeof entry.source === 'string') {
       for (const source of entry.source.split(';').map((part) => part.trim()).filter(Boolean)) {
-        if (!fs.existsSync(path.join(root, source))) issues.push(`${indicator}: missing source ${source}`);
+        const tsSource = source.endsWith('.js') ? source.slice(0, -3) + '.ts' : source;
+        if (!fs.existsSync(path.join(root, source)) && !fs.existsSync(path.join(root, tsSource)) && !fs.existsSync(path.join(root, 'dist', source))) {
+          issues.push(`${indicator}: missing source ${source}`);
+        }
       }
     }
   }

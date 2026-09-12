@@ -1,5 +1,6 @@
 {
   "name": "eyeprolog.ts",
+  "private": true,
   "publishConfig": {
     "access": "public"
   },

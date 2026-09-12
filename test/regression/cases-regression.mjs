@@ -156,7 +156,7 @@ export function regressionCases() {
       name: 'forward append/3 constructs long shared-variable lists within a bounded heap and time',
       run: () => {
         const script = `
-          import {run} from './src/index.js';
+          import {run} from './dist/src/index.js';
           const result=run('answer(ok) :- length(P,8192),append(P,[1],L1),append(P,[2],L2),compare(R,L1,L2),compare_si(S,L1,L2),R==(<),S==(<).', {goals:['answer(X)']});
           if (!result.stdout.includes('answer(ok)')) throw new Error(result.stdout+'\\n'+result.stderr);
           console.log('ok');
@@ -222,7 +222,7 @@ export function regressionCases() {
         // A separate process bounds regressions in both memory and time. Build
         // the operands directly so this measures comparison, not append/3.
         const script = `
-          import {Program,Solver,Env,getEyePrologRegistry,variable,atom,compound,listFromItems,termToString} from './src/index.js';
+          import {Program,Solver,Env,getEyePrologRegistry,variable,atom,compound,listFromItems,termToString} from './dist/src/index.js';
           const program = Program.parse(':- use_module(library(si)).');
           const solver = new Solver(program,{registry:getEyePrologRegistry()});
           function check(a,b,expected) {

@@ -4,7 +4,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-import { Program, getStrictIsoRegistry } from '../src/index.js';
+import { Program, getStrictIsoRegistry } from '../dist/src/index.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const bookPath = path.join(root, 'the-art-of-eyeprolog.md');
