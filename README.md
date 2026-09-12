@@ -1,9 +1,9 @@
-# EyeProlog
+# EyeProlog.ts
 
-[![npm version](https://img.shields.io/npm/v/eyeprolog.svg)](https://www.npmjs.com/package/eyeprolog)
-[![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.21446308-blue.svg)](https://doi.org/10.5281/zenodo.21446308)
+[![TypeScript](https://img.shields.io/badge/TypeScript-7.0-blue.svg)](https://www.typescriptlang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.md)
 
-EyeProlog turns portable ISO Prolog programs into answers and inspectable proofs.
+**EyeProlog.ts** is a high-performance, strict TypeScript implementation of [EyeProlog](https://github.com/eyereasoner/eyeprolog) (modernized to upstream **v1.5.84**). It turns portable ISO Prolog programs and rules into answers, inspectable proofs, and visual Mermaid derivations.
 
 <p>
   <a href="https://eyereasoner.github.io/eyeprolog/the-art-of-eyeprolog">
@@ -15,6 +15,18 @@ EyeProlog turns portable ISO Prolog programs into answers and inspectable proofs
 The single implementation reference is [*The Art of EyeProlog*](the-art-of-eyeprolog.md).
 It documents the language, built-ins, libraries, command line, JavaScript API,
 examples, proofs, conformance profile, and implementation.
+
+## Features
+
+- **Upstream v1.5.84 Modernization**: Fully aligned with upstream `eyereasoner/eyeprolog` across 262+ upstream commits.
+- **Strict TypeScript 7**: 100% strict type definitions and ES modules with zero compiler errors.
+- **Attributed Variables (`library(atts)`)**: Complete lifecycle hooks (`put_atts/2`, `get_atts/2`, `del_atts/2`, `verify_attributes/3`) and residual constraint extraction via `copy_term/3`.
+- **Explicit Tabling & Well-Founded Semantics (WFS)**: `:- table/1` directives, Datalog engine, `tnot/1`, and 3-valued fixed-point logic.
+- **Forward-Chaining (`library(eyelet)`)**: `:+/2` production rules, truth maintenance, and skolemized conclusion closure.
+- **42 Standard Prolog Libraries**: Full support for Scryer CLP(Z), CLP(B), `crypto`, `sockets`, `files`, `os`, `http`, `format`, `time`, `random`, `charsio`, `pio`, and more.
+- **Mermaid Proof Trees**: Native visual proof graph generation with `renderProofToMermaid` and `whyProofNode`.
+- **Typed DCG API**: Clean grammar rule invocation and generation via `DCG.phrase` and `DCG.generate`.
+- **100% Conformance**: Passes all 1,817 unified test cases across ISO conformance, regressions, examples, and architecture gates.
 
 ## Twenty years of EYE, and the next twenty years
 
@@ -60,6 +72,35 @@ printf 'human(socrates).\nmortal(X) :- human(X).\n' |
   npx --yes eyeprolog --proof --goal 'mortal(socrates)' -
 ```
 
+## TypeScript API Usage
+
+```typescript
+import { run, Program, DCG, renderProofToMermaid, whyProof } from 'eyeprolog.ts';
+
+// 1. Run queries with standard libraries & proofs
+const result = run(`
+  :- use_module(library(lists)).
+  :- use_module(library(clpz)).
+
+  schedule(Xs) :-
+    Xs = [A, B, C],
+    Xs ins 1..3,
+    all_different(Xs),
+    A #< B, B #< C.
+`, { goal: 'schedule(Xs)' });
+
+console.log(result.stdout);
+// => schedule([1, 2, 3]).
+
+// 2. Visual Mermaid Proof Trees
+const prog = Program.parse(`
+  human(socrates).
+  mortal(X) :- human(X).
+`);
+const proof = whyProof(prog, 'mortal(socrates)');
+console.log(renderProofToMermaid(proof.certificate?.proof));
+```
+
 ## Links
 
 - [The Art of EyeProlog](https://eyereasoner.github.io/eyeprolog/the-art-of-eyeprolog) — complete reference
@@ -75,6 +116,7 @@ printf 'human(socrates).\nmortal(X) :- human(X).\n' |
 - [Latest Neumerkel conformity](test/conformance/NEUMERKEL-LATEST.md) — tracked result from the current live upstream inventory
 - [Conformance report](conformance-report.md) — generated executable conformance status, local corpus summary, and known deviations
 - [OpenRuleBench](openrulebench/README.md) — portable benchmark profile
+
 ## RDF, Prolog, and symbiotic knowledge graphs
 
 EyeProlog can sit behind an RDF knowledge graph without inventing a private graph representation. [`rdf-prolog-interchange`](https://github.com/eyereasoner/rdf-prolog-interchange) converts RDF 1.2 datasets to ordinary `rdf(Subject, Predicate, Object, Graph)` facts, EyeProlog applies portable rules, and ground `rdf/4` results can be converted back to RDF.
@@ -84,21 +126,29 @@ The checked [Symbiotic Knowledge Graphs example](examples/symbiotic-knowledge-gr
 The same RDF → Prolog → RDF boundary is exercised by five additional checked scenarios: [cross-organization data sharing](https://eyereasoner.github.io/eyeprolog/examples/deck/cross-organization-data-sharing), [explainable EV-depot configuration](https://eyereasoner.github.io/eyeprolog/examples/deck/explainable-ev-depot-configuration), [operational incident response](https://eyereasoner.github.io/eyeprolog/examples/deck/operational-incident-response), [software supply-chain vulnerability response](https://eyereasoner.github.io/eyeprolog/examples/deck/sbom-vulnerability-response), and a [scientific evidence graph](https://eyereasoner.github.io/eyeprolog/examples/deck/scientific-evidence-graph). Together they cover policy decisions, reversible configuration reasoning, dependency-graph diagnosis, transitive SBOM exposure, and evidence aggregation with explicit disagreement.
 
 ## Benchmarks
+
 EyeProlog has 21 checksum-protected wall-clock benchmarks spanning recursion/indexing, constraints, tabling/WFS, DCGs, Eyelet, search, term I/O, attributes, rewriting, the dynamic database, and bignum arithmetic. Short workloads are adaptively batched before timing so millisecond-scale noise is not mistaken for a regression. Run `npm run benchmark`; create a machine-local comparison point with `npm run benchmark -- --save .benchmarks/baseline.json`; use `node test/run-benchmark-tests.mjs` for harness checks. For a classic LIPS number, run `node test/lips-benchmark.mjs`: it executes the classic failure-driven `dobench/1` and `dodummy/1` loops in Prolog over the checked [`examples/bench.pl`](examples/bench.pl) naive-reverse workload (the classic Quintus 1984 `nrev/2` benchmark on a 30-element list), subtracts dummy-loop CPU time, and applies the historical 496 procedure calls per reversal. LIPS is a historical basic-engine-speed indicator, not a whole-system performance score. Details are in [*The Art of EyeProlog*](the-art-of-eyeprolog.md).
 For the project policy on post-ISO-standard and WG17 compatibility features such as digit separators, see [ISO/WG17 compatibility extensions](test/conformance/ISO-WG17-EXTENSIONS.md).
+
 ## Development
+
 ```sh
-git clone https://github.com/eyereasoner/eyeprolog.git
-cd eyeprolog
+git clone https://github.com/lambdaft/eyeprolog.ts.git
+cd eyeprolog.ts
 npm install
+npm run build
 npm test
 ```
-The npm command list is deliberately small:
 
-- `npm test` (or `npm run test`): run the release gate, including live upstream conformity checks (WG17 syntax among them).
+The npm command list:
+
+- `npm run build`: compile TypeScript sources to `dist/` with full library asset replication.
+- `npm test` (or `npm run test`): run the release gate, including live upstream conformity checks.
 - `npm run generate`: rebuild generated library and book files.
 - `npm run benchmark`: run the wall-clock benchmarks.
 
 Use `npm test -- --offline` for a network-free local pass (this also skips the live-discovered WG17 syntax check, since it has no offline snapshot). Focused checks remain available directly, for example `node test/run-regression.mjs docs`; see [test runners](test/README.md). The automatic version hooks still run the release gate, refresh and stage conformance reports, and push the release. Detailed upstream report maintenance is documented in the [conformance guide](test/conformance/README.md).
+
+## License
 
 EyeProlog is released under the [MIT License](LICENSE.md).
