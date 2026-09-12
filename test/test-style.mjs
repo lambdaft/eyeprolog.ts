@@ -41,14 +41,24 @@ export class TestReporter {
     this.sectionCount++;
   }
 
-  sectionTotal(label = null) {
+  sectionTotal(label = null, elapsedMs = null) {
     if (this.currentSection == null) return;
 
     const ok = this.ok - this.currentSection.okAtStart;
     const total = this.total - this.currentSection.totalAtStart;
-    const ms = nowMs() - this.currentSection.startedAt;
+    const ms = elapsedMs ?? nowMs() - this.currentSection.startedAt;
     const suite = label ?? defaultSectionLabel(this.currentSection.name);
-    this.stdout.write(`${colors.green}OK${colors.reset} ${ok}/${total} ${suite} tests passed ${colors.dim}(${ms} ms)${colors.reset}\n`);
+    // A section can finish without throwing (still an overall OK) while
+    // ok < total: a batch may tolerate a small, explicitly named number of
+    // documented divergences (see test/neumerkel.mjs's KNOWN_QUAD_DIVERGENCES)
+    // rather than requiring every counted item to individually pass. Naming
+    // that gap here keeps "OK x/y ... passed" from reading as self-contradictory
+    // when x is less than y.
+    const shortfall = total - ok;
+    const outcome = shortfall === 0
+      ? 'passed'
+      : `passed with ${shortfall} divergence${shortfall === 1 ? '' : 's'} to be addressed`;
+    this.stdout.write(`${colors.green}OK${colors.reset} ${ok}/${total} ${suite} tests ${outcome} ${colors.dim}(${ms} ms)${colors.reset}\n`);
   }
 
   test(name, run) {
@@ -87,10 +97,31 @@ export class TestReporter {
     }
   }
 
+  testResult(name, { ms = 0, error = null } = {}) {
+    this.total++;
+    const nr = String(this.total).padStart(3, '0');
+
+    if (error == null) {
+      this.ok++;
+      this.stdout.write(`${colors.green}OK${colors.reset} ${nr} ${name} ${colors.dim}(${ms} ms)${colors.reset}\n`);
+      return;
+    }
+
+    this.stderr.write(`${colors.red}FAIL${colors.reset} ${nr} ${name} ${colors.dim}(${ms} ms)${colors.reset}\n`);
+    this.stderr.write(`${error?.stack ?? String(error)}\n`);
+    throw error;
+  }
+
   totalLine() {
     const ms = nowMs() - this.startedAt;
     this.stdout.write(`\n${colors.yellow}== Total${colors.reset}\n`);
-    this.stdout.write(`${colors.green}OK${colors.reset} ${this.ok}/${this.total} tests passed ${colors.dim}(${ms} ms)${colors.reset}\n`);
+    // See the matching note in sectionTotal(): a known, documented divergence
+    // can leave ok below total without the run having failed.
+    const shortfall = this.total - this.ok;
+    const outcome = shortfall === 0
+      ? 'passed'
+      : `passed with ${shortfall} divergence${shortfall === 1 ? '' : 's'} to be addressed`;
+    this.stdout.write(`${colors.green}OK${colors.reset} ${this.ok}/${this.total} tests ${outcome} ${colors.dim}(${ms} ms)${colors.reset}\n`);
   }
 }
 
@@ -100,6 +131,43 @@ export function nowMs() {
 
 export function isMainModule(metaUrl) {
   return process.argv[1] != null && path.resolve(process.argv[1]) === fileURLToPath(metaUrl);
+}
+
+export async function runStandalone(runSuite) {
+  const reporter = new TestReporter();
+  try {
+    await runSuite(reporter);
+    reporter.totalLine();
+  } catch (error) {
+    // TestReporter already prints failures raised inside a test. Preserve a
+    // diagnostic for setup/teardown failures that occur outside reporter.test.
+    if (reporter.ok === reporter.total) {
+      reporter.stderr.write(`${error?.stack ?? String(error)}\n`);
+    }
+    process.exitCode = 1;
+  }
+}
+
+export function assertEqual(actual, expected, label) {
+  if (actual !== expected) {
+    throw new Error(`${label} mismatch\nexpected: ${formatValue(expected)}\nactual:   ${formatValue(actual)}`);
+  }
+}
+
+export function assertIncludes(actual, expected, label) {
+  if (!String(actual).includes(expected)) {
+    throw new Error(`${label} did not include ${formatValue(expected)}\nactual: ${formatValue(actual)}`);
+  }
+}
+
+export function assertNotIncludes(actual, expected, label) {
+  if (String(actual).includes(expected)) {
+    throw new Error(`${label} unexpectedly included ${formatValue(expected)}\nactual: ${formatValue(actual)}`);
+  }
+}
+
+function formatValue(value) {
+  return typeof value === 'string' ? JSON.stringify(value) : String(value);
 }
 
 function defaultSectionLabel(name) {

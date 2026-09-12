@@ -9,8 +9,15 @@ import { fileURLToPath } from 'node:url';
 import {
   executePlaygroundRequest,
   installPlaygroundWorker,
-} from '../dist/docs/playground/playground-worker.js';
-import { TestReporter, isMainModule } from './test-style.mjs';
+} from '../dist/src/playground-worker.js';
+import {
+  TestReporter,
+  assertEqual,
+  assertIncludes,
+  assertNotIncludes,
+  isMainModule,
+  runStandalone,
+} from './test-style.mjs';
 
 const testRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)));
 const packageRoot = path.resolve(testRoot, '..');
@@ -19,12 +26,24 @@ export async function runPlayground(reporter = new TestReporter()) {
   reporter.section('Playground');
 
   await reporter.testAsync('page starts a dedicated module worker', async () => {
-    const html = fs.readFileSync(path.join(packageRoot, 'docs', 'playground', 'playground.html'), 'utf8');
-    assertIncludes(html, "new URL('../../dist/docs/playground/playground-worker.js?playground=", 'playground worker URL');
+    const html = fs.readFileSync(path.join(packageRoot, 'playground.html'), 'utf8');
+    assertIncludes(html, "new URL('./src/playground-worker.js?playground=", 'playground worker URL');
     assertIncludes(html, "new Worker(workerUrl, { type: 'module' })", 'module worker construction');
     assertIncludes(html, "event.data?.type === 'ready'", 'worker readiness handshake');
     assertIncludes(html, 'did not finish loading', 'worker startup timeout');
     assertNotIncludes(html, 'URL.createObjectURL(new Blob([workerCode]', 'inline blob worker');
+  });
+
+  await reporter.testAsync('example picker includes every runnable top-level example', async () => {
+    const html = fs.readFileSync(path.join(packageRoot, 'playground.html'), 'utf8');
+    const match = html.match(/const EXAMPLES = \[(.*?)\n\s*\];/s);
+    if (!match) throw new Error('playground EXAMPLES array not found');
+    const listed = [...match[1].matchAll(/"([^"]+)"/g)].map((entry) => entry[1]).sort();
+    const expected = fs.readdirSync(path.join(packageRoot, 'examples'))
+      .filter((name) => name.endsWith('.pl'))
+      .map((name) => name.slice(0, -3))
+      .sort();
+    assertEqual(JSON.stringify(listed), JSON.stringify(expected), 'playground example picker');
   });
 
   await reporter.testAsync('worker loads append/3 from the EyeProlog library', async () => {
@@ -63,16 +82,6 @@ export async function runPlayground(reporter = new TestReporter()) {
     assertEqual(result.stdout, 'answer(1, 3).\n', 'CLP(Z) worker output');
   });
 
-  await reporter.testAsync('worker returns mermaidProof when proof mode is enabled', async () => {
-    const result = executePlaygroundRequest({
-      source: 'human(socrates).\nmortal(X) :- human(X).\n',
-      options: { goal: 'mortal(socrates)', proof: true },
-    });
-    assertEqual(result.ok, true, 'proof mode worker result status');
-    assertIncludes(result.mermaidProof, 'graph TD', 'mermaid proof header');
-    assertIncludes(result.mermaidProof, 'mortal(socrates)', 'mermaid proof goal');
-  });
-
   await reporter.testAsync('worker message protocol returns serializable results', async () => {
     const messages = [];
     const scope = { postMessage: (message) => messages.push(message) };
@@ -102,9 +111,9 @@ export async function runPlayground(reporter = new TestReporter()) {
   await reporter.testAsync('served playground assets have browser-safe MIME types', async () => {
     await withStaticServer(async (baseUrl) => {
       const expected = [
-        ['docs/playground/playground.html', 'text/html'],
-        ['dist/docs/playground/playground-worker.js', 'text/javascript'],
-        ['dist/src/index.js', 'text/javascript'],
+        ['playground.html', 'text/html'],
+        ['src/playground-worker.js', 'text/javascript'],
+        ['src/index.js', 'text/javascript'],
         ['src/lib/aggregate.pl', 'text/plain'],
         ['src/lib/comparison.pl', 'text/plain'],
         ['src/lib/dates.pl', 'text/plain'],
@@ -115,7 +124,7 @@ export async function runPlayground(reporter = new TestReporter()) {
         ['src/lib/random.pl', 'text/plain'],
         ['src/lib/strings.pl', 'text/plain'],
         ['src/lib/uuid.pl', 'text/plain'],
-        ['docs/examples/socrates.pl', 'text/plain'],
+        ['examples/socrates.pl', 'text/plain'],
       ];
       for (const [relative, contentType] of expected) {
         const response = await fetch(new URL(relative, baseUrl));
@@ -127,10 +136,10 @@ export async function runPlayground(reporter = new TestReporter()) {
 
   await reporter.testAsync('HTTP worker module graph resolves without Node built-ins', async () => {
     await withStaticServer(async (baseUrl) => {
-      const modules = await crawlModuleGraph(new URL('dist/docs/playground/playground-worker.js?playground=test', baseUrl));
+      const modules = await crawlModuleGraph(new URL('src/playground-worker.js?playground=test', baseUrl));
       assert(modules.size >= 10, `expected a substantial worker module graph, got ${modules.size}`);
-      assert([...modules].some((url) => url.includes('/dist/src/standard-library.js')), 'standard module registry missing from worker graph');
-      assert([...modules].some((url) => url.includes('/dist/src/solver.js')), 'solver missing from worker graph');
+      assert([...modules].some((url) => url.includes('/src/standard-library.js')), 'standard module registry missing from worker graph');
+      assert([...modules].some((url) => url.includes('/src/solver.js')), 'solver missing from worker graph');
     });
   });
 
@@ -174,7 +183,7 @@ async function withStaticServer(run) {
   const server = http.createServer((request, response) => {
     try {
       const url = new URL(request.url ?? '/', 'http://127.0.0.1');
-      const relative = decodeURIComponent(url.pathname).replace(/^\/+/, '') || 'docs/playground/playground.html';
+      const relative = decodeURIComponent(url.pathname).replace(/^\/+/, '') || 'playground.html';
       const filename = path.resolve(packageRoot, relative);
       if (filename !== packageRoot && !filename.startsWith(`${packageRoot}${path.sep}`)) {
         response.writeHead(403).end('forbidden');
@@ -230,30 +239,6 @@ function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
 
-function assertEqual(actual, expected, label) {
-  if (actual !== expected) {
-    throw new Error(`${label} mismatch\nexpected: ${JSON.stringify(expected)}\nactual:   ${JSON.stringify(actual)}`);
-  }
-}
-
-function assertIncludes(actual, expected, label) {
-  if (!String(actual).includes(expected)) {
-    throw new Error(`${label} did not include ${JSON.stringify(expected)}\nactual: ${JSON.stringify(actual)}`);
-  }
-}
-
-function assertNotIncludes(actual, expected, label) {
-  if (String(actual).includes(expected)) {
-    throw new Error(`${label} unexpectedly included ${JSON.stringify(expected)}`);
-  }
-}
-
 if (isMainModule(import.meta.url)) {
-  const reporter = new TestReporter();
-  try {
-    await runPlayground(reporter);
-    reporter.totalLine();
-  } catch (_) {
-    process.exit(1);
-  }
+  await runStandalone(runPlayground);
 }

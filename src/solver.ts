@@ -132,6 +132,7 @@ export class Solver {
     // still supply solutionLimit explicitly.
     this.solutionLimit = options.solutionLimit ?? Infinity;
     this.solutionsSeen = 0;
+    this.fastPathsEnabled = options.fastPaths !== false;
     this.prologFlags = options.prologFlags ?? defaultPrologFlags('error', this.isoStrict);
     if (this.isoStrict) {
       for (const name of [...this.prologFlags.keys()]) {

@@ -5,7 +5,7 @@ text_roundtrip(Term, Peek, Code, Mode, Alias) :-
     open('/tmp/eyeprolog-iso-text.txt', write, Output, [alias(iso_text_output), type(text)]),
     writeq(iso_text_output, sample(42)),
     put_char(iso_text_output, '.'),
-    put_char(iso_text_output, 'Z'),
+    put_char(iso_text_output, ' '),
     close(Output),
     open('/tmp/eyeprolog-iso-text.txt', read, Input, [alias(iso_text_input), eof_action(eof_code)]),
     stream_property(Input, mode(Mode)),
@@ -85,3 +85,14 @@ numeric_escape_term_input(ok) :-
     A == '\a',
     B == '\a'.
 
+
+%% goal: malformed_quoted_term_input(ok)
+
+malformed_quoted_term_input(ok) :-
+    open('/tmp/eyeprolog-iso-bad-quoted-term.txt', write, Output, []),
+    put_code(Output, 39), nl(Output),
+    close(Output),
+    open('/tmp/eyeprolog-iso-bad-quoted-term.txt', read, Input, []),
+    catch(read(Input, _), error(syntax_error(read_term), _), Caught = yes),
+    close(Input),
+    Caught == yes.

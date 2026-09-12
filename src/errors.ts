@@ -8,7 +8,8 @@ export class PrologError extends Error {
       [key: string]: any;
 
   constructor(formal: any, culprit: any = null) {
-    const detail = culprit == null ? formal : `${formal}, ${termToString(culprit)}`;
+    const formalStr = typeof formal === 'object' && formal !== null ? termToString(formal) : formal;
+    const detail = culprit == null ? formalStr : `${formalStr}, ${termToString(culprit)}`;
     super(`error(${detail})`);
     this.name = 'PrologError';
     this.formal = formal;

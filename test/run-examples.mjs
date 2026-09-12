@@ -2,16 +2,18 @@
 // Example-output test runner.
 // It compares examples byte-for-byte against golden output so answer and proof changes cannot silently alter results.
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { Worker, isMainThread, parentPort, workerData } from 'node:worker_threads';
 import { Program, run } from '../dist/src/index.js';
 import { fileURLToPath } from 'node:url';
-import { TestReporter, isMainModule } from './test-style.mjs';
+import { TestReporter, isMainModule, runStandalone } from './test-style.mjs';
 import { goalsInProgramOrder } from './goal-metadata.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)));
 const packageRoot = path.resolve(root, '..');
-const examplesDir = path.join(packageRoot, 'docs', 'examples');
+const examplesDir = path.join(packageRoot, 'examples');
 const expectedDir = path.join(examplesDir, 'output');
 const expectedProofDir = path.join(examplesDir, 'proof');
 
@@ -79,18 +81,113 @@ export const proofExamples = [
   'partial-evaluator.pl',
 ];
 
-export function runExamples(reporter = new TestReporter()) {
+export async function runExamples(reporter = new TestReporter()) {
   const files = fs.readdirSync(examplesDir)
     .filter((name) => exampleIsRunnable(name))
     .sort();
 
   reporter.section('Examples');
-  for (const name of files) reporter.test(name, () => runExample(name));
+  await runExampleTasks(files, (name, result) => reporter.testResult(name, result), 3);
   reporter.sectionTotal('examples');
 
   reporter.section('Proof examples');
   for (const name of proofExamples) reporter.test(name, () => runProofExample(name));
   reporter.sectionTotal('proof examples');
+}
+
+
+async function runExampleTasks(tasks, onResult, maxWorkers) {
+  if (tasks.length === 0) return;
+  const parallelism = os.availableParallelism?.() ?? os.cpus().length;
+  const workerCount = Math.min(tasks.length, Math.max(1, Math.min(maxWorkers, parallelism - 1)));
+  if (workerCount === 1) {
+    for (const name of tasks) {
+      const startedAt = performance.now();
+      try {
+        runExample(name);
+        onResult(name, { ms: Math.round(performance.now() - startedAt) });
+      } catch (error) {
+        onResult(name, { ms: Math.round(performance.now() - startedAt), error });
+      }
+    }
+    return;
+  }
+
+  const completedResults = new Map();
+  let nextTask = 0;
+  let nextReport = 0;
+  let completed = 0;
+  let settled = false;
+
+  await new Promise((resolve, reject) => {
+    const workers = Array.from({ length: workerCount }, () => new Worker(new URL(import.meta.url), {
+      workerData: { exampleWorker: true },
+    }));
+
+    const stopWorkers = () => Promise.all(workers.map((worker) => worker.terminate()));
+
+    const fail = (error) => {
+      if (settled) return;
+      settled = true;
+      stopWorkers().finally(() => reject(error));
+    };
+
+    const finish = () => {
+      if (settled || completed !== tasks.length || nextReport !== tasks.length) return;
+      settled = true;
+      stopWorkers().then(() => resolve(), reject);
+    };
+
+    const reportReady = () => {
+      try {
+        while (completedResults.has(nextReport)) {
+          const result = completedResults.get(nextReport);
+          completedResults.delete(nextReport);
+          onResult(tasks[nextReport], result);
+          nextReport++;
+        }
+      } catch (error) {
+        fail(error);
+      }
+    };
+
+    const assign = (worker) => {
+      if (nextTask >= tasks.length || settled) return;
+      worker.postMessage({ id: nextTask, name: tasks[nextTask++] });
+    };
+
+    for (const worker of workers) {
+      worker.on('message', ({ id, ms, error }) => {
+        if (settled) return;
+        completedResults.set(id, {
+          ms,
+          error: error == null ? null : Object.assign(new Error(error.message), { stack: error.stack }),
+        });
+        completed++;
+        reportReady();
+        assign(worker);
+        finish();
+      });
+      worker.on('error', fail);
+      assign(worker);
+    }
+  });
+}
+
+function runExampleWorker() {
+  parentPort.on('message', ({ id, name }) => {
+    const startedAt = performance.now();
+    try {
+      runExample(name);
+      parentPort.postMessage({ id, ms: Math.round(performance.now() - startedAt), error: null });
+    } catch (error) {
+      parentPort.postMessage({
+        id,
+        ms: Math.round(performance.now() - startedAt),
+        error: { message: error?.message ?? String(error), stack: error?.stack ?? String(error) },
+      });
+    }
+  });
 }
 
 
@@ -117,6 +214,11 @@ function runProgramExample(programFile, filename, options) {
   const expectedExit = text.match(/^%\s*expect-exit:\s*(\d+)\s*$/m);
   const program = Program.parseSources([{ text, filename }], {
     sourceMetadata: options.proof,
+    onWarning: (warning) => {
+      if (warning.kind === 'singleton') {
+        process.stderr.write(`Warning: singleton: ${warning.name}, near ${warning.filename}:${warning.line}\n`);
+      }
+    },
   });
   try {
     const result = run(program, { ...options, goals: goalsInProgramOrder(program, text) });
@@ -129,10 +231,6 @@ function runProgramExample(programFile, filename, options) {
 }
 
 function compareOutput(name, expected, actual, label) {
-  if (process.env.UPDATE_GOLDENS === '1') {
-    fs.writeFileSync(expected, actual, 'utf8');
-    return;
-  }
   if (!fs.existsSync(expected)) {
     throw new Error(`missing expected ${label} file: ${path.relative(root, expected)}`);
   }
@@ -159,12 +257,8 @@ function diffText(expected, actualText) {
   return 'outputs differ';
 }
 
-if (isMainModule(import.meta.url)) {
-  const reporter = new TestReporter();
-  try {
-    runExamples(reporter);
-    reporter.totalLine();
-  } catch (_) {
-    process.exit(1);
-  }
+if (!isMainThread && workerData?.exampleWorker) {
+  runExampleWorker();
+} else if (isMainModule(import.meta.url)) {
+  await runStandalone(runExamples);
 }

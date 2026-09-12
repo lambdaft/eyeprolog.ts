@@ -2,25 +2,51 @@
 
 This directory contains executable tests for the EyeProlog implementation and
 reasoner.
-[*The Art of EyeProlog*](../../docs/the-art-of-eyeprolog.md) is the reference for the
+[*The Art of EyeProlog*](../../the-art-of-eyeprolog.md) is the reference for the
 supported ISO Prolog profile, built-ins, extensions, and reasoner behavior.
 
 The suite is intentionally file-based. Exact standard output, errors, warnings,
 and proof output test the behavior of the JavaScript implementation.
-[ISO-MATRIX.md](ISO-MATRIX.md) maps Part 1 normative clause families, all three
-corrigenda, Part 2 modules, and Part 3 definite clause grammars to representative
-executable cases.
+[ISO-COMPLIANCE.md](ISO-COMPLIANCE.md) is the high-level Part 1 review and coverage map. [ISO-BUILTIN-MODE-ERROR-MATRIX.md](ISO-BUILTIN-MODE-ERROR-MATRIX.md)
+tracks the row-by-row built-in review,
+[ISO-TERM-SEMANTICS-MATRIX.md](ISO-TERM-SEMANTICS-MATRIX.md) closes 7.1-7.3,
+[ISO-PROLOG-TEXT-EXECUTION-MATRIX.md](ISO-PROLOG-TEXT-EXECUTION-MATRIX.md)
+closes 7.4-7.8, [ISO-EVALUABLE-FUNCTOR-MATRIX.md](ISO-EVALUABLE-FUNCTOR-MATRIX.md)
+closes 7.9/Clause 9, and [ISO-PROCESSOR-REQUIREMENTS.md](ISO-PROCESSOR-REQUIREMENTS.md)
+decomposes the Clause 5 processor obligations.
+[ISO-CORRIGENDA-MATRIX.md](ISO-CORRIGENDA-MATRIX.md) gives every published
+Corrigenda amendment cluster an executable, editorial, or superseded
+disposition. [ISO-PART2.md](ISO-PART2.md) and [ISO-PART3.md](ISO-PART3.md) record,
+directive by directive and predicate by predicate, what the normal profile
+implements of Part 2 (modules) and Part 3 (definite clause grammar rules),
+including the 2013 module-amendment evidence and the known gaps and deviations.
+Neither part carries a conformance claim. Built-in rows may group closely related conditions only when the
+row names every grouped condition and its executable evidence.
+The exit checklist is embedded in [ISO-COMPLIANCE.md](ISO-COMPLIANCE.md). WG17
+syntax cases are discovered live and executed as part of the Neumerkel
+conformity gate (see [NEUMERKEL-LIVE.md](NEUMERKEL-LIVE.md)); there is no
+separate offline coverage ledger to keep in sync.
+[STC-DRAFT-STATUS.md](STC-DRAFT-STATUS.md) separately tracks executable
+implementation questions from the post-N289 working draft (reviewed through the 2026-08-23 items #73-#76); those cases are
+review evidence, not normative ISO claims.
 
 “Conformance” here means conformance to EyeProlog's documented ISO compatibility
 profile and implementation extensions. The default registry covers the exact
-predicate indicators listed in Appendix B of the book across the supported
-ISO/IEC 13211-1:1995, ISO/IEC 13211-2:2000, and ISO/IEC TS 13211-3:2025
-standard families. [ISO-COMPLIANCE.md](ISO-COMPLIANCE.md) is the explicit
-processor-requirement ledger for the Part 1 strict-core audit. This suite is
-still not an independent certification of every processor requirement, lexical
-edge, option combination, or prescribed error precedence. Cases under `iso/`
+predicate indicators listed in Appendix B of the book across the Part 1 strict-core
+target and the normal-mode module/DCG compatibility families. [ISO-COMPLIANCE.md](ISO-COMPLIANCE.md) is the explicit
+release-facing ledger for the Part 1 strict-core review. This suite is not an independent certification. The release-facing Part 1
+ledger now has explicit dispositions for Clause 5 processor obligations, Clause 6
+syntax/rejection, Clause 7 semantics, the complete 8.2-8.17 built-in family, and
+Clause 9 evaluable functors. Public comparison material remains supporting review
+evidence rather than a duplicated vendored corpus. Cases under `iso/`
 identify standards-derived behavior; other directories cover EyeProlog host
-contracts and extensions.
+contracts and extensions. EyeProlog-only execution features such as explicit
+tabling, `tnot/1` well-founded negation, and `wfs_truth/2` inspection are outside the Part 1 strict-core
+claim. Their focused semantic coverage lives primarily in regression tests;
+`tnot/1` and `wfs_truth/2` are absent from the strict ISO registry. The processor character set is documented as the Unicode scalar repertoire with
+scalar-value collation in both normal and strict profiles; `--iso-strict`
+therefore changes only implementation-specific language facilities, not this
+implementation-defined processor choice.
 
 All conformance files live under topic directories such as `arithmetic/`, `lists/`, `syntax/`, or `variables/`; new top-level numbered files should not be added. The report uses those directories as coverage categories.
 
@@ -49,42 +75,52 @@ Case names may be nested in category directories such as `arithmetic/`, `strings
 
 ## Running the suite
 
-Run all tests, including conformance, regression, documentation sync, API,
-examples, and book examples:
+The release gate is network-aware by design: it checks the current upstream
+Neumerkel conformity material before the deterministic local corpus.
 
 ```sh
 npm test
 ```
 
-Run only the conformance suite:
+For an offline-only development pass:
 
 ```sh
-node test/run-conformance.mjs
+npm test -- --offline
 ```
 
-Run the Part 1 + Corrigenda strict-core processor gate:
+The conformance commands are:
 
 ```sh
-npm run test:iso-strict
+node test/run-conformance-all.mjs          # live Neumerkel + local ISO/conformance layers
+node test/run-conformance-all.mjs --offline  # same local layers, no network
+node test/run-neumerkel.mjs            # the eight live upstream suites only
+node test/run-neumerkel.mjs --cached     # exact last fetched bytes; reproduction only
+node test/run-neumerkel.mjs --cached --verify-report # verify tracked report against last successful live snapshot
+node test/run-iso-strict.mjs                  # Part 1 + Corrigenda strict-core processor gate
+node test/run-iso-part2-amendment.mjs  # 2013 Part 2 amendment module requirements
 ```
 
-Summarize conformance coverage by category:
+`node test/run-neumerkel.mjs` always fetches the current TU Wien sources. It does not skip a
+fetch because a cache exists. The runner discovers the number of active tests from those sources and fails on any newly introduced case EyeProlog does not pass. If the stable, tracked [NEUMERKEL-LATEST.md](NEUMERKEL-LATEST.md) is stale, normal tests warn rather than turning a passing engine run into a failure. `node test/run-neumerkel.mjs --update-report` performs a fresh live run and refreshes the report; after `npm test`, `node test/run-neumerkel.mjs --cached --update-report` refreshes it from the exact successful cached snapshot; and `node test/run-neumerkel.mjs --cached --verify-report` verifies that snapshot without a second network fetch. Exact bytes, SHA-256 hashes, timestamps, and HTTP validators stay under Git-ignored `.cache/neumerkel/` for inspection/reproduction only. See [NEUMERKEL-LIVE.md](NEUMERKEL-LIVE.md).
 
-```sh
-node test/run-conformance-report.mjs
-node test/run-conformance-report.mjs docs/conformance-report.md
-```
+WG17 syntax cases are discovered live, the same way the other seven TU Wien
+sources are: there is no separate vendored snapshot or update step. A small
+offline corpus, `test/conformance/wg17-syntax-cases.json`, additionally pins
+the exact reviewed EyeProlog outcome for most cases, cross-referenced by id
+against the live-discovered cases in `test/neumerkel.mjs`. Every case, live or
+reviewed, is still checked against its upstream Codex expectation
+(`matchesUpstreamExpectation` in `test/run-wg17.mjs`); a reviewed exact outcome
+is an additional regression lock, never an alternative acceptance rule.
 
-Run matching conformance cases by passing a filename or directory fragment:
+Regenerate the top-level local-corpus report with `node test/run-conformance-report.mjs conformance-report.md`. It links to [NEUMERKEL-LATEST.md](NEUMERKEL-LATEST.md) rather than duplicating live evidence. Counts in the tracked Neumerkel report are generated evidence, not permanent constants in project policy.
+
+Run a matching local file-based conformance subset directly with:
 
 ```sh
 node test/run-conformance.mjs reusable
-node test/run-conformance.mjs 092_scalar_string_conversions
 node test/run-conformance.mjs variables/
 node test/run-conformance.mjs error/variables
 ```
-
-The runner executes normal programs with queries in-process through the public JavaScript API so small conformance cases avoid measuring Node startup overhead. Warning and proof cases intentionally use the CLI because warning output and `why/2` proof output are host-interface contracts.
 
 ## Scope
 
@@ -102,10 +138,7 @@ Selected cases are adapted from the ISO and standard-core suites of Logtalk,
 Scryer Prolog, Trealla Prolog, and SWI-Prolog. Their upstream identifiers and licenses
 are recorded in [THIRD_PARTY.md](THIRD_PARTY.md).
 
-The corpus has 378 cases in `iso/` and 787 file-based conformance cases in
-total. The generated `docs/conformance-report.md` is the authoritative source for
-current category totals. Together with regression, documentation-sync, API,
-example, and book-example checks, `npm test` is the release gate.
+The corpus has 395 cases in `iso/` and 812 file-based conformance cases in total. Of those, 11 cases in `stc/` are explicitly labelled working-draft review evidence rather than normative ISO claims. The strict-reader WG17 syntax matrix is discovered dynamically and executed live by the Neumerkel gate, the same as its other seven TU Wien sources; release/report checks separately verify the tracked `NEUMERKEL-LATEST.md`. The generated `conformance-report.md` records local corpus totals and links to that live evidence. Together with regression, documentation-sync, API, example, and book-example checks, `npm test` is the release gate.
 
 ## Updating expected output
 
