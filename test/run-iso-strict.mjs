@@ -17,7 +17,7 @@ import {
   parseProgramText,
   run,
   stringTerm,
-} from '../src/index.js';
+} from '../dist/src/index.js';
 import { TestReporter, isMainModule, runStandalone } from './test-style.mjs';
 
 export function runIsoStrict(reporter = new TestReporter()) {

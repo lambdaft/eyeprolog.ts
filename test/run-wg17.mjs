@@ -15,9 +15,9 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   Env, Program, Solver, parseGoalText, run,
-} from '../src/index.js';
-import { parseTermText } from '../src/parser.js';
-import { variantTerms } from '../src/term.js';
+} from '../dist/src/index.js';
+import { parseTermText } from '../dist/src/parser.js';
+import { variantTerms } from '../dist/src/term.js';
 
 const testRoot = path.dirname(fileURLToPath(import.meta.url));
 

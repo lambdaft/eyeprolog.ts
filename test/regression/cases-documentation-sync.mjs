@@ -3,8 +3,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import * as publicApi from '../../src/index.js';
-import { createDefaultRegistry, eyePrologLibraryIndicators, eyePrologNativeLibraryIndicators, eyePrologPortableLibraryIndicators, standardLibrarySources } from '../../src/index.js';
+import * as publicApi from '../../dist/src/index.js';
+import { createDefaultRegistry, eyePrologLibraryIndicators, eyePrologNativeLibraryIndicators, eyePrologPortableLibraryIndicators, standardLibrarySources } from '../../dist/src/index.js';
 import { assertEqual, assertIncludes, assertNotIncludes } from '../test-style.mjs';
 import { buildConformanceReport, formatConformanceReport } from '../run-conformance-report.mjs';
 import { parseWg17SyntaxTable } from '../../tools/wg17-syntax.mjs';

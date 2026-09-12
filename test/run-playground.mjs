@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import {
   executePlaygroundRequest,
   installPlaygroundWorker,
-} from '../src/playground-worker.js';
+} from '../dist/src/playground-worker.js';
 import {
   TestReporter,
   assertEqual,

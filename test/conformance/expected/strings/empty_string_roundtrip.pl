@@ -1,1 +1,0 @@
-answer(empty_roundtrip, '', '').

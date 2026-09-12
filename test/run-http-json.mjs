@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { Worker } from 'node:worker_threads';
-import { run } from '../src/index.js';
+import { run } from '../dist/src/index.js';
 import { TestReporter, assertEqual, assertIncludes, isMainModule, runStandalone } from './test-style.mjs';
 
 function serverPort(worker) {

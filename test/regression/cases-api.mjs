@@ -3,9 +3,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { BuiltinRegistry, Env, Program, Solver, atom, compound, createDefaultRegistry, eyePrologInteropAutoload, eyePrologInteropLibraryIndicators, eyePrologInteropLibraryModules, eyePrologLibraryAutoload, eyePrologLibraryAutoloadModules, eyePrologLibraryIndicators, eyePrologNativeLibraryIndicators, eyePrologPortableLibraryIndicators, getEyePrologRegistry, listFromItems, makeProgram, proofCertificate, proofCertificatesFromText, run as runEyeProlog, standardLibrarySources, termToString, unify, variable, variantTerms, verifyProof } from '../../src/index.js';
-import { parseGoalText } from '../../src/parser.js';
-import { PrologError, formalErrorTerm } from '../../src/iso.js';
+import { BuiltinRegistry, Env, Program, Solver, atom, compound, createDefaultRegistry, eyePrologInteropAutoload, eyePrologInteropLibraryIndicators, eyePrologInteropLibraryModules, eyePrologLibraryAutoload, eyePrologLibraryAutoloadModules, eyePrologLibraryIndicators, eyePrologNativeLibraryIndicators, eyePrologPortableLibraryIndicators, getEyePrologRegistry, listFromItems, makeProgram, proofCertificate, proofCertificatesFromText, run as runEyeProlog, standardLibrarySources, termToString, unify, variable, variantTerms, verifyProof } from '../../dist/src/index.js';
+import { parseGoalText } from '../../dist/src/parser.js';
+import { PrologError, formalErrorTerm } from '../../dist/src/iso.js';
 import { assertEqual, assertIncludes } from '../test-style.mjs';
 import { goalsFromSource } from '../goal-metadata.mjs';
 import {
@@ -894,7 +894,7 @@ answer(ok) :-
     {
       name: 'fresh-variable generation stays bounded under a small host heap',
       run: () => {
-        const engineUrl = new URL('../src/index.js', testDirUrl).href;
+        const engineUrl = new URL('../dist/src/index.js', testDirUrl).href;
         const programText = 'p(X) :- repeat, q(X).\nq(_).\n';
         const script = `
           import { Program, Solver, Env, parseGoalText, getEyePrologRegistry } from ${JSON.stringify(engineUrl)};
@@ -931,7 +931,7 @@ answer(ok) :-
     {
       name: 'caught number syntax errors do not exhaust memory on distinct inputs',
       run: () => {
-        const engineUrl = new URL('../src/index.js', testDirUrl).href;
+        const engineUrl = new URL('../dist/src/index.js', testDirUrl).href;
         const programText = `
           :- use_module(library(lists)).
           alphabet(['0','1','2','3','4','5','6','7','8','9','.']).
@@ -969,7 +969,7 @@ answer(ok) :-
     {
       name: 'recursive phrase tables stay bounded across distinct inputs (issues #28/#48)',
       run: () => {
-        const engineUrl = new URL('../src/index.js', testDirUrl).href;
+        const engineUrl = new URL('../dist/src/index.js', testDirUrl).href;
         const programText = `
           :- use_module(library(prologue)).
           ... --> [].
@@ -1089,7 +1089,7 @@ answer(ok) :-
     {
       name: 'unbounded length/2 reaches a catchable memory resource error (issue #49)',
       run: () => {
-        const engineUrl = new URL('../src/index.js', testDirUrl).href;
+        const engineUrl = new URL('../dist/src/index.js', testDirUrl).href;
         const script = `
           import { Program, Solver, Env, deref, variable, parseGoalText, getEyePrologRegistry } from ${JSON.stringify(engineUrl)};
           const program = Program.parse(${JSON.stringify(':- use_module(library(lists)).\n')}, { sourceMetadata: false });
@@ -1128,7 +1128,7 @@ answer(ok) :-
     {
       name: 'discarded fixed-length lists stay compact under a bounded heap',
       run: () => {
-        const engineUrl = new URL('../src/index.js', testDirUrl).href;
+        const engineUrl = new URL('../dist/src/index.js', testDirUrl).href;
         const script = `
           import { Program, Solver, Env, parseGoalText, getEyePrologRegistry } from ${JSON.stringify(engineUrl)};
           const program = Program.parse(${JSON.stringify(':- use_module(library(prologue)).\n')}, { sourceMetadata: false });
@@ -1180,8 +1180,8 @@ answer(ok) :-
     {
       name: 'discarded recursive allocations recover after resource_error(memory)',
       run: () => {
-        const engineUrl = new URL('../src/index.js', testDirUrl).href;
-        const platformUrl = new URL('../src/platform.js', testDirUrl).href;
+        const engineUrl = new URL('../dist/src/index.js', testDirUrl).href;
+        const platformUrl = new URL('../dist/src/platform.js', testDirUrl).href;
         const programText = `
           :- use_module(library(prologue)).
           l([]).
@@ -1242,7 +1242,7 @@ answer(ok) :-
     {
       name: 'anonymous Prologue length checks avoid materializing discarded lists',
       run: () => {
-        const engineUrl = new URL('../src/index.js', testDirUrl).href;
+        const engineUrl = new URL('../dist/src/index.js', testDirUrl).href;
         const programText = ':- use_module(library(prologue)).\n';
         const goalText = 'length(_, I), I > 9, N is 2^I, \\+ \\+ length(_, N)';
         const script = `
